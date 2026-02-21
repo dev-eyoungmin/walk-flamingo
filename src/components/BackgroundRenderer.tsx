@@ -137,7 +137,7 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
 
       {/* Near Hills */}
       <Group transform={nearHillsTr}>
-        <Path path={nearHillPath} color="#7QB043" /> {/* Darker Green - logic corrected below */}
+        <Path path={nearHillPath} color="#558B2F" /> {/* Corrected Green */}
         {/* We use manual colors here to be more vibrant than constants */}
         <Path path={nearHillPath} color="#6E9E3B" />
       </Group>
