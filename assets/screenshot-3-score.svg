@@ -1,29 +1,26 @@
 <svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
-  <!-- Blurred Gameplay Background (Overlay) -->
+  <!-- Gameplay Background (Walking) -->
   <image href="./screenshot-1-walk.svg" width="1280" height="720" opacity="0.3"/>
-  <rect width="1280" height="720" fill="rgba(0,0,0,0.7)"/>
+  <rect width="1280" height="720" fill="rgba(0,0,0,0.65)"/>
 
   <!-- High Score Panel -->
-  <rect x="340" y="100" width="600" height="520" rx="30" ry="30" fill="#FFF8F0" stroke="#FF7A9A" stroke-width="8"/>
-  
-  <!-- Title -->
-  <text x="640" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="60" font-weight="900" fill="#FF7A9A">GAME OVER</text>
-  
-  <!-- Score Info -->
-  <text x="640" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#555">DISTANCE</text>
-  <text x="640" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#333">142 m</text>
-  
-  <text x="640" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#888">NEW HIGH SCORE!</text>
-  <path d="M540 410 L 740 410" stroke="#FFD700" stroke-width="3"/>
-
-  <!-- Buttons (Mockup) -->
-  <g transform="translate(490, 480)">
-    <rect width="300" height="80" rx="40" ry="40" fill="#FF7A9A"/>
-    <text x="150" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="35" font-weight="bold" fill="white">PLAY AGAIN</text>
+  <g transform="translate(340, 100)">
+    <rect x="0" y="0" width="600" height="520" rx="30" ry="30" fill="#FFF8F0" stroke="#FF7A9A" stroke-width="8"/>
+    <text x="300" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="60" font-weight="900" fill="#FF7A9A">GAME OVER</text>
+    <text x="300" y="180" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#555">DISTANCE</text>
+    <text x="300" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#333">245m</text>
+    <text x="300" y="320" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#888">BEST: 245m</text>
+    <line x1="200" y1="310" x2="400" y2="310" stroke="#FFD700" stroke-width="3"/>
+    <g transform="translate(150, 380)">
+        <rect width="300" height="80" rx="40" ry="40" fill="#FF7A9A"/>
+        <text x="150" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="35" font-weight="bold" fill="white">RETRY</text>
+    </g>
   </g>
 
-  <!-- Medal Icon -->
-  <circle cx="900" cy="150" r="40" fill="#FFD700" stroke="#DAA520" stroke-width="5"/>
-  <text x="900" y="165" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#FFF">★</text>
+  <!-- New High Score Badge -->
+  <g transform="translate(880, 120) rotate(15)">
+      <circle cx="0" cy="0" r="45" fill="#FFD700" stroke="#DAA520" stroke-width="5"/>
+      <text x="0" y="15" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#FFF">★</text>
+  </g>
 
 </svg>

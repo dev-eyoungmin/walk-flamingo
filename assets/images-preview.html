@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wobbly Flamingo - Store Assets</title>
+    <title>Wobbly Flamingo - Store Assets (Updated)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
         h1 { color: #FF7A9A; margin-bottom: 10px; }
@@ -21,7 +21,9 @@
 </head>
 <body>
 
-    <h1>Wobbly Flamingo Assets</h1>
+    <h1>Wobbly Flamingo Assets (Latest)</h1>
+    <p>Last Updated: <script>document.write(new Date().toLocaleString())</script></p>
+    
     <div class="instructions">
         <strong>How to use:</strong><br>
         1. Right-click on each image.<br>
@@ -35,7 +37,8 @@
         <div class="card">
             <span class="label">App Icon</span>
             <span class="dim">512 x 512 px</span>
-            <img src="./app-icon-generated.svg" width="256" height="256" alt="App Icon">
+            <!-- Add random query param to force reload -->
+            <img src="./app-icon-generated.svg?v=1" width="256" height="256" alt="App Icon">
             <br>
             <a href="./app-icon-generated.svg" download="icon.svg" class="btn">View SVG</a>
         </div>
@@ -44,7 +47,7 @@
         <div class="card" style="grid-column: span 2;">
             <span class="label">Feature Graphic</span>
             <span class="dim">1024 x 500 px</span>
-            <img src="./store-feature-graphic.svg" alt="Feature Graphic">
+            <img src="./store-feature-graphic.svg?v=1" alt="Feature Graphic">
             <br>
             <a href="./store-feature-graphic.svg" download="feature-graphic.svg" class="btn">View SVG</a>
         </div>
@@ -53,7 +56,7 @@
         <div class="card">
             <span class="label">Screenshot 1 (Walking)</span>
             <span class="dim">1280 x 720 px</span>
-            <img src="./screenshot-1-walk.svg" alt="Walking">
+            <img src="./screenshot-1-walk.svg?v=2" alt="Walking">
             <br>
             <a href="./screenshot-1-walk.svg" download="screenshot-1.svg" class="btn">View SVG</a>
         </div>
@@ -61,7 +64,7 @@
         <div class="card">
             <span class="label">Screenshot 2 (Danger)</span>
             <span class="dim">1280 x 720 px</span>
-            <img src="./screenshot-2-lean.svg" alt="Danger">
+            <img src="./screenshot-2-lean.svg?v=2" alt="Danger">
             <br>
             <a href="./screenshot-2-lean.svg" download="screenshot-2.svg" class="btn">View SVG</a>
         </div>
@@ -69,7 +72,7 @@
         <div class="card">
             <span class="label">Screenshot 3 (Game Over)</span>
             <span class="dim">1280 x 720 px</span>
-            <img src="./screenshot-3-score.svg" alt="Game Over">
+            <img src="./screenshot-3-score.svg?v=2" alt="Game Over">
             <br>
             <a href="./screenshot-3-score.svg" download="screenshot-3.svg" class="btn">View SVG</a>
         </div>

@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { Canvas } from '@shopify/react-native-skia';
+import { View, StyleSheet, Platform, Text } from 'react-native';
+import { Canvas, Rect } from '@shopify/react-native-skia';
 import {
   useSharedValue,
   useFrameCallback,
@@ -200,7 +200,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   }, [inputRight]);
 
   const canvasHeight = height - 60;
+  console.log('GameCanvas Render:', { width, height, canvasHeight });
 
+  // DEBUG: Test with simple View first
+  return (
+    <View style={[styles.container, { backgroundColor: 'red' }]}>
+      <Text style={{ color: 'white', fontSize: 30, textAlign: 'center', marginTop: 100 }}>
+        DEBUG MODE: If you see this, Layout is OK.
+      </Text>
+    </View>
+  );
+
+  /*
   return (
     <View style={styles.container}>
       <Canvas style={{ width, height: canvasHeight }}>
@@ -241,6 +252,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       />
     </View>
   );
+  */
 };
 
 const styles = StyleSheet.create({

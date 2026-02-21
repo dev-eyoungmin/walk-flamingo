@@ -1,67 +1,85 @@
 <svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
-  <!-- Sky (Stormy) -->
+  <!-- Sky -->
   <defs>
     <linearGradient id="skyStorm" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#778899"/>
-      <stop offset="100%" stop-color="#C0C0C0"/>
+      <stop offset="0%" stop-color="#4682B4"/>
+      <stop offset="100%" stop-color="#87CEEB"/>
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#skyStorm)"/>
 
-  <!-- Clouds (Darker) -->
-  <path d="M100 200 Q 150 160, 200 200 T 300 200" stroke="#555" stroke-width="40" stroke-linecap="round" opacity="0.8"/>
-  <path d="M800 150 Q 850 110, 900 150 T 1000 150" stroke="#666" stroke-width="50" stroke-linecap="round" opacity="0.8"/>
+  <!-- Sun -->
+  <circle cx="1088" cy="108" r="75" fill="#DAA520" opacity="0.3"/>
+  <circle cx="1088" cy="108" r="57.6" fill="#DAA520" opacity="0.6"/>
+
+  <!-- Clouds (Darker/Stormy) -->
+  <g fill="#DDDDDD" opacity="0.6">
+    <path d="M200 150 Q 260 150, 250 120 Q 220 90, 180 100 Q 140 80, 110 110 Q 100 150, 150 150 Z" />
+    <path d="M800 200 Q 860 200, 850 170 Q 820 140, 780 150 Q 740 130, 710 160 Q 700 200, 750 200 Z" transform="scale(0.8) translate(200, 50)" />
+  </g>
 
   <!-- Hills -->
-  <path d="M0 500 Q 300 400, 600 500 T 1280 450 V 720 H 0 Z" fill="#556B2F"/>
-  <path d="M0 600 Q 400 550, 800 600 T 1280 580 V 720 H 0 Z" fill="#3E5225"/>
+  <path d="M-100 468 Q 213 374, 533 468 T 1380 468 V 720 H -100 Z" fill="#6B8E23"/>
+  <path d="M-100 520 Q 256 462, 612 520 T 1380 520 V 720 H -100 Z" fill="#3E5225"/>
 
   <!-- Ground -->
-  <rect x="0" y="650" width="1280" height="70" fill="#4E342E"/>
-  <line x1="0" y1="650" x2="1280" y2="650" stroke="#2E1C18" stroke-width="5"/>
+  <rect x="0" y="580" width="1280" height="140" fill="#3E2723"/>
 
-  <!-- Wind Effects (Lines) -->
-  <g stroke="white" stroke-width="2" opacity="0.5">
-    <line x1="200" y1="300" x2="400" y2="350"/>
-    <line x1="150" y1="400" x2="300" y2="420"/>
-    <line x1="250" y1="200" x2="450" y2="230"/>
-    <line x1="900" y1="500" x2="1100" y2="520"/>
+  <!-- CHARACTER: ROTATED 35 DEGREES (Hip Pivot) -->
+  <g transform="translate(640, 468) rotate(35)">
+        
+        <!-- LEG (Back - Swinging) -->
+        <g transform="rotate(-25)">
+            <rect x="-8" y="0" width="16" height="94" rx="8" fill="#D05A5A"/>
+            <g transform="translate(0, 94) rotate(10)">
+                <rect x="-6" y="0" width="12" height="94" rx="6" fill="#D05A5A"/>
+                <path d="M-10 94 L30 94 L15 106 L-10 94 Z" fill="#D05A5A"/>
+            </g>
+        </g>
+
+        <!-- LEG (Front) -->
+        <g transform="rotate(5)">
+            <rect x="-8" y="0" width="16" height="94" rx="8" fill="#E86A6A"/>
+            <g transform="translate(0, 94) rotate(-5)">
+                <rect x="-6" y="0" width="12" height="94" rx="6" fill="#E86A6A"/>
+                <path d="M-10 94 L30 94 L15 106 L-10 94 Z" fill="#E86A6A"/>
+            </g>
+        </g>
+
+        <!-- BODY GROUP (Attached correctly to Hip) -->
+        <g transform="translate(0, -10)">
+            <!-- Neck & Head (Correcting tilt) -->
+            <path d="M10 -40 C 40 -90, 20 -130, 50 -170" stroke="#FF7A9A" stroke-width="20" fill="none" stroke-linecap="round" transform="rotate(-20)"/>
+            
+            <g transform="rotate(-20) translate(50, -170)">
+                <circle cx="0" cy="0" r="40" fill="#FF7A9A"/>
+                <!-- Beak -->
+                <path d="M20 2 Q 100 2, 90 22 Q 55 15, 20 12 Z" fill="#FF8845"/>
+                <path d="M75 18 L 90 22 L 83 25 Z" fill="#2A2A2A"/>
+                <!-- Eye -->
+                <circle cx="7" cy="-4" r="15" fill="white"/>
+                <circle cx="7" cy="-4" r="5" fill="#1A1A1A"/>
+            </g>
+
+            <!-- Main Body (Centered near Hip) -->
+            <ellipse cx="-20" cy="-40" rx="72" ry="65" fill="#FF7A9A"/>
+            <circle cx="-30" cy="-50" r="25" fill="#FFA0B8"/>
+            
+            <!-- Wing (Flapping) -->
+            <ellipse cx="-10" cy="-50" rx="40" ry="30" fill="#E8658A" transform="rotate(-30)"/>
+
+            <!-- Tail -->
+            <path d="M-60 -40 Q -90 -70, -80 -100" stroke="#FF6585" stroke-width="14" fill="none" stroke-linecap="round"/>
+        </g>
   </g>
 
-  <!-- Character (Flamingo) - Leaning Dangerously -->
-  <g transform="translate(640, 500) rotate(35)">
-      <!-- Legs (Swinging back for balance) -->
-      <line x1="-20" y1="0" x2="-60" y2="150" stroke="#E86A6A" stroke-width="12" stroke-linecap="round"/>
-      <line x1="20" y1="0" x2="0" y2="150" stroke="#E86A6A" stroke-width="12" stroke-linecap="round"/>
-      
-      <!-- Body -->
-      <ellipse cx="0" cy="-40" rx="80" ry="60" fill="#FF7A9A"/>
-      <path d="M-60 -20 Q -90 -50, -80 -80" stroke="#FF6585" stroke-width="8" fill="none"/>
-      
-      <!-- Wing (Flapping up!) -->
-      <path d="M-20 -40 Q 40 -80, 0 -30" fill="#E8658A" transform="rotate(-20)"/>
+  <!-- UI: Wind Warning -->
+  <text x="40" y="60" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#FF4500" stroke="#333" stroke-width="0.5">WIND GUST!</text>
 
-      <!-- Neck & Head (Trying to correct) -->
-      <path d="M50 -60 Q 90 -100, 70 -160 Q 60 -200, 100 -210" stroke="#FF7A9A" stroke-width="20" fill="none" stroke-linecap="round" transform="rotate(-15)"/>
-      <circle cx="100" cy="-210" r="28" fill="#FF7A9A" transform="rotate(-15)"/>
-      
-      <!-- Beak (Long) -->
-      <g transform="rotate(-15)">
-        <path d="M120 -205 L 180 -195 L 120 -185 Z" fill="#FF8845"/>
-        <path d="M160 -198 L 180 -195 L 170 -190 Z" fill="#2A2A2A"/>
-      </g>
-
-      <!-- Eye (Wide with panic!) -->
-      <circle cx="105" cy="-215" r="8" fill="white" transform="rotate(-15)"/> <!-- Bigger eye -->
-      <circle cx="107" cy="-215" r="2" fill="black" transform="rotate(-15)"/>
+  <!-- Wind Bar (Strong) -->
+  <g transform="translate(1100, 40)">
+      <rect x="0" y="0" width="100" height="15" rx="7" fill="rgba(0,0,0,0.3)"/>
+      <rect x="50" y="0" width="50" height="15" rx="7" fill="#FF4500"/>
   </g>
-
-  <!-- UI: Score & Warning -->
-  <text x="50" y="80" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#FF4500" stroke="#333" stroke-width="2">WIND GUST!</text>
-  <text x="1000" y="80" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" stroke="#333" stroke-width="2">DIST: 82m</text>
-
-  <!-- Wind Indicator (Strong) -->
-  <path d="M1100 150 L 1220 150 M 1190 130 L 1220 150 L 1190 170" stroke="#FF4500" stroke-width="8"/>
-  <text x="1100" y="200" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#FF4500">STRONG!</text>
 
 </svg>

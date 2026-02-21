@@ -27,7 +27,7 @@ export function useDailyFreePlay() {
   }, []);
 
   /** True when the user still has a free game today. */
-  const isFreePlay = loaded && !freePlayUsed;
+  const isFreePlay = __DEV__ || (loaded && !freePlayUsed);
 
   return { isFreePlay, consumeFreePlay, loaded };
 }

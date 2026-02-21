@@ -1,7 +1,7 @@
 import React from 'react';
-import { Text as SkiaText, useFont } from '@shopify/react-native-skia';
+import { Text, Group, Skia, Font } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
-import { COLORS } from '../game/constants';
+import { Platform } from 'react-native';
 
 interface ScoreDisplayProps {
   score: SharedValue<number>;
@@ -14,38 +14,39 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   score,
   x,
   y,
-  fontSize = 28,
+  fontSize = 30,
 }) => {
-  const font = useFont(
-    require('../../assets/fonts/pixel.ttf'),
-    fontSize,
-  );
+  // Load system font (bold)
+  const font = Skia.Font(undefined, fontSize); // Default system font
+  
+  // Format score text: "SCORE: 1234"
+  const text = useDerivedValue(() => {
+    return `SCORE: ${Math.floor(score.value)}`;
+  }, [score]);
 
-  const scoreText = useDerivedValue(() => {
-    return `${Math.floor(score.value)}m`;
-  });
-
-  if (!font) return null;
+  if (!font) {
+    return null;
+  }
 
   return (
-    <>
-      {/* Shadow */}
-      <SkiaText
-        x={x + 2}
-        y={y + 2}
-        text={scoreText}
+    <Group>
+      {/* Shadow / Outline effect for readability */}
+      <Text
+        x={x + 1}
+        y={y + fontSize + 1}
+        text={text}
         font={font}
-        color={COLORS.uiShadow}
-        opacity={0.5}
+        color="rgba(0,0,0,0.5)"
       />
-      {/* Main text */}
-      <SkiaText
+      {/* Main Text */}
+      <Text
         x={x}
-        y={y}
-        text={scoreText}
+        y={y + fontSize}
+        text={text}
         font={font}
-        color={COLORS.uiText}
+        color="white"
+        style="fill"
       />
-    </>
+    </Group>
   );
 };

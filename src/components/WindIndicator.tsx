@@ -1,13 +1,11 @@
 import React from 'react';
 import {
   Group,
-  Path,
+  Rect,
+  Text,
   Skia,
-  Text as SkiaText,
-  useFont,
 } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
-import { COLORS } from '../game/constants';
 
 interface WindIndicatorProps {
   windDirection: SharedValue<number>;
@@ -22,69 +20,77 @@ export const WindIndicator: React.FC<WindIndicatorProps> = ({
   x,
   y,
 }) => {
-  const font = useFont(
-    require('../../assets/fonts/pixel.ttf'),
-    16,
-  );
+  const BAR_W = 100;
+  const BAR_H = 12;
+  const FONT_SIZE = 14;
 
-  const ARROW_W = 22;
-  const GAP = 6;
-  const textX = x + ARROW_W + GAP;
+  const font = Skia.Font(undefined, FONT_SIZE);
 
-  // Wind arrow path (pointing right, will be mirrored for left)
-  const arrowPath = React.useMemo(() => {
-    const path = Skia.Path.Make();
-    path.moveTo(0, 0);
-    path.lineTo(20, 0);
-    path.lineTo(16, -5);
-    path.moveTo(20, 0);
-    path.lineTo(16, 5);
-    return path;
-  }, []);
+  // Derive wind intensity (0.0 ~ 1.0+)
+  const intensity = useDerivedValue(() => {
+    return Math.abs(windForce.value);
+  }, [windForce]);
 
-  const arrowTransform = useDerivedValue(() => {
-    const dir = windDirection.value;
-    const ay = y - 6;
-    if (dir === 0) return [{ translateX: x }, { translateY: ay }];
-    const scaleX = dir > 0 ? 1 : -1;
-    return [
-      { translateX: dir > 0 ? x : x + ARROW_W },
-      { translateY: ay },
-      { scaleX },
-    ];
-  });
+  // Is strong wind? (> 1.5)
+  const isStrong = useDerivedValue(() => {
+    return Math.abs(windForce.value) > 1.5;
+  }, [windForce]);
 
-  const arrowOpacity = useDerivedValue(() => {
-    return Math.min(1, Math.abs(windForce.value) * 2);
-  });
+  // Determine text: "WIND" or "GUST!"
+  const labelText = useDerivedValue(() => {
+    return isStrong.value ? "WIND GUST!" : "WIND";
+  }, [isStrong]);
 
-  const windText = useDerivedValue(() => {
-    const dir = windDirection.value;
-    const speed = Math.abs(windForce.value);
-    if (dir === 0) return 'Wind: -';
-    return `Wind: ${speed.toFixed(1)}`;
-  });
+  // Determine color: White (calm) or Red (strong)
+  const color = useDerivedValue(() => {
+    return isStrong.value ? "#FF4500" : "white";
+  }, [isStrong]);
+
+  // Determine bar width and position based on wind force
+  const barFillW = useDerivedValue(() => {
+    const f = windForce.value; // -3.0 ~ +3.0
+    // Map -3..3 to 0..100 width (centered at 50)
+    // Actually, let's just show magnitude from center
+    return Math.min(Math.abs(f) * 20, 50); // Max 50px each side
+  }, [windForce]);
+  
+  const barX = useDerivedValue(() => {
+    const w = barFillW.value;
+    // If wind > 0 (Right), start at center (50)
+    // If wind < 0 (Left), start at center - w
+    return windForce.value > 0 ? 50 : 50 - w;
+  }, [windForce, barFillW]);
+
 
   if (!font) return null;
 
   return (
-    <Group>
-      <Group transform={arrowTransform} opacity={arrowOpacity}>
-        <Path
-          path={arrowPath}
-          color={COLORS.windArrow}
-          style="stroke"
-          strokeWidth={2}
-          strokeCap="round"
-        />
-      </Group>
-      <SkiaText
-        x={textX}
-        y={y}
-        text={windText}
+    <Group transform={[{ translateX: x }, { translateY: y }]}>
+      
+      {/* Background Bar (Translucent Black) */}
+      <Rect x={0} y={0} width={BAR_W} height={BAR_H} rx={BAR_H/2} color="rgba(0,0,0,0.3)" />
+
+      {/* Wind Strength Bar (Animated) */}
+      <Rect
+        x={barX}
+        y={0}
+        width={barFillW}
+        height={BAR_H}
+        rx={BAR_H/2}
+        color={color}
+      />
+
+      {/* Center Marker (White Dot) */}
+      <Circle cx={50} cy={BAR_H/2} r={3} color="white" />
+
+      {/* Label Text below bar */}
+      <Text
+        x={50 - (labelText.value.length * 4)} // Approximate centering
+        y={BAR_H + FONT_SIZE + 4}
+        text={labelText}
         font={font}
-        color={COLORS.uiText}
-        opacity={0.8}
+        color={color}
+        style="fill"
       />
     </Group>
   );
