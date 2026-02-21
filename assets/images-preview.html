@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wobbly Flamingo - Store Assets</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; color: #333; padding: 20px; text-align: center; }
+        h1 { color: #FF7A9A; margin-bottom: 10px; }
+        p { color: #666; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        img { max-width: 100%; height: auto; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; }
+        .label { font-weight: bold; margin-bottom: 5px; display: block; }
+        .dim { font-size: 0.85em; color: #888; margin-bottom: 15px; display: block; }
+        .btn { display: inline-block; padding: 8px 16px; background: #FF7A9A; color: white; text-decoration: none; border-radius: 20px; font-size: 0.9em; cursor: pointer; }
+        .btn:hover { background: #FF5A80; }
+        .instructions { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 30px; display: inline-block; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <h1>Wobbly Flamingo Assets</h1>
+    <div class="instructions">
+        <strong>How to use:</strong><br>
+        1. Right-click on each image.<br>
+        2. Select "Save Image As..."<br>
+        3. Save as PNG format (most browsers will handle SVG to PNG conversion visually, or use an online converter if needed).<br>
+        4. Use for Play Store / App Store submission.
+    </div>
+
+    <div class="grid">
+        <!-- App Icon -->
+        <div class="card">
+            <span class="label">App Icon</span>
+            <span class="dim">512 x 512 px</span>
+            <img src="./app-icon-generated.svg" width="256" height="256" alt="App Icon">
+            <br>
+            <a href="./app-icon-generated.svg" download="icon.svg" class="btn">View SVG</a>
+        </div>
+
+        <!-- Feature Graphic -->
+        <div class="card" style="grid-column: span 2;">
+            <span class="label">Feature Graphic</span>
+            <span class="dim">1024 x 500 px</span>
+            <img src="./store-feature-graphic.svg" alt="Feature Graphic">
+            <br>
+            <a href="./store-feature-graphic.svg" download="feature-graphic.svg" class="btn">View SVG</a>
+        </div>
+
+        <!-- Screenshots -->
+        <div class="card">
+            <span class="label">Screenshot 1 (Walking)</span>
+            <span class="dim">1280 x 720 px</span>
+            <img src="./screenshot-1-walk.svg" alt="Walking">
+            <br>
+            <a href="./screenshot-1-walk.svg" download="screenshot-1.svg" class="btn">View SVG</a>
+        </div>
+
+        <div class="card">
+            <span class="label">Screenshot 2 (Danger)</span>
+            <span class="dim">1280 x 720 px</span>
+            <img src="./screenshot-2-lean.svg" alt="Danger">
+            <br>
+            <a href="./screenshot-2-lean.svg" download="screenshot-2.svg" class="btn">View SVG</a>
+        </div>
+
+        <div class="card">
+            <span class="label">Screenshot 3 (Game Over)</span>
+            <span class="dim">1280 x 720 px</span>
+            <img src="./screenshot-3-score.svg" alt="Game Over">
+            <br>
+            <a href="./screenshot-3-score.svg" download="screenshot-3.svg" class="btn">View SVG</a>
+        </div>
+    </div>
+
+</body>
+</html>

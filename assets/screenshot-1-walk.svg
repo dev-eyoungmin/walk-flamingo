@@ -1,0 +1,56 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sky -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#87CEEB"/>
+      <stop offset="100%" stop-color="#E0F7FA"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#sky)"/>
+
+  <!-- Sun & Clouds -->
+  <circle cx="1100" cy="100" r="60" fill="#FFD700" opacity="0.8"/>
+  <path d="M200 150 Q 250 120, 300 150 T 400 150" stroke="white" stroke-width="40" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Hills -->
+  <path d="M0 500 Q 300 400, 600 500 T 1280 450 V 720 H 0 Z" fill="#A2D149"/>
+  <path d="M0 600 Q 400 550, 800 600 T 1280 580 V 720 H 0 Z" fill="#6E9E3B"/>
+
+  <!-- Ground -->
+  <rect x="0" y="650" width="1280" height="70" fill="#5D4037"/>
+  <line x1="0" y1="650" x2="1280" y2="650" stroke="#3E2723" stroke-width="5"/>
+
+  <!-- Character (Flamingo) - Upright -->
+  <g transform="translate(640, 500)">
+      <!-- Legs -->
+      <line x1="-20" y1="0" x2="-20" y2="150" stroke="#E86A6A" stroke-width="12" stroke-linecap="round"/>
+      <line x1="20" y1="0" x2="40" y2="150" stroke="#E86A6A" stroke-width="12" stroke-linecap="round"/>
+      
+      <!-- Body -->
+      <ellipse cx="0" cy="-40" rx="80" ry="60" fill="#FF7A9A"/>
+      <path d="M-60 -20 Q -90 -50, -80 -80" stroke="#FF6585" stroke-width="8" fill="none"/>
+      
+      <!-- Wing -->
+      <path d="M-20 -40 Q 40 -30, 0 10" fill="#E8658A"/>
+
+      <!-- Neck & Head -->
+      <path d="M50 -60 Q 90 -100, 70 -160 Q 60 -200, 100 -210" stroke="#FF7A9A" stroke-width="20" fill="none" stroke-linecap="round"/>
+      <circle cx="100" cy="-210" r="28" fill="#FF7A9A"/>
+      
+      <!-- Beak (Long) -->
+      <path d="M120 -205 L 180 -195 L 120 -185 Z" fill="#FF8845"/>
+      <path d="M160 -198 L 180 -195 L 170 -190 Z" fill="#2A2A2A"/>
+
+      <!-- Eye -->
+      <circle cx="105" cy="-215" r="6" fill="white"/>
+      <circle cx="107" cy="-215" r="2" fill="black"/>
+  </g>
+
+  <!-- UI: Score -->
+  <text x="50" y="80" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" stroke="#333" stroke-width="2">SCORE: 1250</text>
+  <text x="1000" y="80" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" stroke="#333" stroke-width="2">DIST: 45m</text>
+
+  <!-- Wind Indicator (Calm) -->
+  <path d="M1150 150 L 1200 150 M 1180 140 L 1200 150 L 1180 160" stroke="#FFF" stroke-width="4" stroke-opacity="0.5"/>
+
+</svg>

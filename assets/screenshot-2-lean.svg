@@ -1,0 +1,67 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sky (Stormy) -->
+  <defs>
+    <linearGradient id="skyStorm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#778899"/>
+      <stop offset="100%" stop-color="#C0C0C0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#skyStorm)"/>
+
+  <!-- Clouds (Darker) -->
+  <path d="M100 200 Q 150 160, 200 200 T 300 200" stroke="#555" stroke-width="40" stroke-linecap="round" opacity="0.8"/>
+  <path d="M800 150 Q 850 110, 900 150 T 1000 150" stroke="#666" stroke-width="50" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- Hills -->
+  <path d="M0 500 Q 300 400, 600 500 T 1280 450 V 720 H 0 Z" fill="#556B2F"/>
+  <path d="M0 600 Q 400 550, 800 600 T 1280 580 V 720 H 0 Z" fill="#3E5225"/>
+
+  <!-- Ground -->
+  <rect x="0" y="650" width="1280" height="70" fill="#4E342E"/>
+  <line x1="0" y1="650" x2="1280" y2="650" stroke="#2E1C18" stroke-width="5"/>
+
+  <!-- Wind Effects (Lines) -->
+  <g stroke="white" stroke-width="2" opacity="0.5">
+    <line x1="200" y1="300" x2="400" y2="350"/>
+    <line x1="150" y1="400" x2="300" y2="420"/>
+    <line x1="250" y1="200" x2="450" y2="230"/>
+    <line x1="900" y1="500" x2="1100" y2="520"/>
+  </g>
+
+  <!-- Character (Flamingo) - Leaning Dangerously -->
+  <g transform="translate(640, 500) rotate(35)">
+      <!-- Legs (Swinging back for balance) -->
+      <line x1="-20" y1="0" x2="-60" y2="150" stroke="#E86A6A" stroke-width="12" stroke-linecap="round"/>
+      <line x1="20" y1="0" x2="0" y2="150" stroke="#E86A6A" stroke-width="12" stroke-linecap="round"/>
+      
+      <!-- Body -->
+      <ellipse cx="0" cy="-40" rx="80" ry="60" fill="#FF7A9A"/>
+      <path d="M-60 -20 Q -90 -50, -80 -80" stroke="#FF6585" stroke-width="8" fill="none"/>
+      
+      <!-- Wing (Flapping up!) -->
+      <path d="M-20 -40 Q 40 -80, 0 -30" fill="#E8658A" transform="rotate(-20)"/>
+
+      <!-- Neck & Head (Trying to correct) -->
+      <path d="M50 -60 Q 90 -100, 70 -160 Q 60 -200, 100 -210" stroke="#FF7A9A" stroke-width="20" fill="none" stroke-linecap="round" transform="rotate(-15)"/>
+      <circle cx="100" cy="-210" r="28" fill="#FF7A9A" transform="rotate(-15)"/>
+      
+      <!-- Beak (Long) -->
+      <g transform="rotate(-15)">
+        <path d="M120 -205 L 180 -195 L 120 -185 Z" fill="#FF8845"/>
+        <path d="M160 -198 L 180 -195 L 170 -190 Z" fill="#2A2A2A"/>
+      </g>
+
+      <!-- Eye (Wide with panic!) -->
+      <circle cx="105" cy="-215" r="8" fill="white" transform="rotate(-15)"/> <!-- Bigger eye -->
+      <circle cx="107" cy="-215" r="2" fill="black" transform="rotate(-15)"/>
+  </g>
+
+  <!-- UI: Score & Warning -->
+  <text x="50" y="80" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#FF4500" stroke="#333" stroke-width="2">WIND GUST!</text>
+  <text x="1000" y="80" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="white" stroke="#333" stroke-width="2">DIST: 82m</text>
+
+  <!-- Wind Indicator (Strong) -->
+  <path d="M1100 150 L 1220 150 M 1190 130 L 1220 150 L 1190 170" stroke="#FF4500" stroke-width="8"/>
+  <text x="1100" y="200" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#FF4500">STRONG!</text>
+
+</svg>

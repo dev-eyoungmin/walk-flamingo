@@ -1,0 +1,41 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background: Soft Pink Gradient -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFC1CC"/>
+      <stop offset="100%" stop-color="#FF9EAA"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bgGrad)" rx="200" ry="200"/>
+
+  <!-- Flamingo Neck & Head -->
+  <g filter="url(#shadow)">
+    <!-- Neck -->
+    <path d="M512 850 C 400 850, 350 700, 350 550 C 350 350, 450 200, 600 200" 
+          stroke="#FF7A9A" stroke-width="120" stroke-linecap="round" fill="none"/>
+    
+    <!-- Head Circle -->
+    <circle cx="600" cy="200" r="140" fill="#FF7A9A"/>
+    
+    <!-- Cheek -->
+    <circle cx="640" cy="230" r="35" fill="#FFB6C1" opacity="0.8"/>
+  </g>
+
+  <!-- Beak -->
+  <g transform="rotate(15, 600, 200)">
+    <!-- Main Beak (White/Pinkish part) -->
+    <path d="M720 200 Q 850 220, 850 320 Q 750 300, 700 270 Z" fill="#FFFFFF"/>
+    <!-- Beak Tip (Black) -->
+    <path d="M850 320 Q 800 350, 780 320 L 850 320 Z" fill="#1A1A1A"/>
+    <!-- Orange middle part -->
+    <path d="M710 210 Q 820 230, 820 290 L 710 250 Z" fill="#FF8845"/>
+  </g>
+
+  <!-- Eye -->
+  <circle cx="620" cy="180" r="25" fill="#FFFFFF"/>
+  <circle cx="625" cy="180" r="10" fill="#1A1A1A"/>
+
+</svg>
