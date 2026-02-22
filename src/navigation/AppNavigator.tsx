@@ -14,6 +14,7 @@ import type { GameScreen as GameScreenType } from '../game/types';
 export const AppNavigator: React.FC = () => {
   const [screen, setScreen] = useState<GameScreenType>('start');
   const [lastScore, setLastScore] = useState(0);
+  const [lastDistance, setLastDistance] = useState(0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const { width, height } = useScreenDimensions();
   const { highScore, submitScore, loaded } = useHighScore();
@@ -48,14 +49,16 @@ export const AppNavigator: React.FC = () => {
   }, [startGame]);
 
   const handleGameOver = useCallback(
-    async (score: number) => {
+    async (data: { score: number; distance: number }) => {
+      stopMusic();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setLastScore(score);
-      const isNew = await submitScore(score);
+      setLastScore(data.score);
+      setLastDistance(data.distance);
+      const isNew = await submitScore(data.distance);
       setIsNewHighScore(isNew);
       setScreen('gameover');
     },
-    [submitScore],
+    [submitScore, stopMusic],
   );
 
   const handleRetry = useCallback(() => {
@@ -89,10 +92,10 @@ export const AppNavigator: React.FC = () => {
       {screen === 'gameover' && (
         <GameOverScreen
           score={lastScore}
+          distance={lastDistance}
           highScore={highScore}
           isNewHighScore={isNewHighScore}
           onRetry={handleRetry}
-          onHome={handleHome}
         />
       )}
     </View>

@@ -9,18 +9,18 @@ import {
 
 interface GameOverScreenProps {
   score: number;
+  distance: number;
   highScore: number;
   isNewHighScore: boolean;
   onRetry: () => void;
-  onHome: () => void;
 }
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   score,
+  distance,
   highScore,
   isNewHighScore,
   onRetry,
-  onHome,
 }) => {
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(50)).current;
@@ -57,27 +57,38 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           { transform: [{ translateY: slideUp }] },
         ]}
       >
+        {/* Star Badge (top-right, conditional) */}
+        {isNewHighScore && (
+          <View style={styles.starBadge}>
+            <Text style={styles.starText}>★</Text>
+          </View>
+        )}
+
         {/* Game Over Title */}
         <Text style={styles.gameOverText}>GAME OVER</Text>
 
-        {/* Score Display */}
+        {/* Distance Display (Primary) */}
         <Animated.View
-          style={[styles.scoreContainer, { transform: [{ scale: scoreScale }] }]}
+          style={[styles.distanceContainer, { transform: [{ scale: scoreScale }] }]}
         >
-          <Text style={styles.scoreLabel}>SCORE</Text>
-          <Text style={styles.scoreValue}>{score}</Text>
-          {isNewHighScore && (
-            <Text style={styles.newHighScore}>★ NEW BEST! ★</Text>
-          )}
+          <Text style={styles.distanceLabel}>DISTANCE</Text>
+          <Text style={styles.distanceValue}>{distance}m</Text>
         </Animated.View>
 
-        {/* High Score */}
-        <View style={styles.highScoreRow}>
-          <Text style={styles.highScoreLabel}>BEST: </Text>
-          <Text style={styles.highScoreValue}>{highScore}</Text>
+        {/* Gold divider line */}
+        <View style={styles.divider} />
+
+        {/* Best Score */}
+        <View style={styles.bestRow}>
+          <Text style={styles.bestLabel}>BEST: </Text>
+          <Text style={styles.bestValue}>{highScore}m</Text>
         </View>
 
-        {/* Buttons */}
+        {isNewHighScore && (
+          <Text style={styles.newBestText}>NEW RECORD!</Text>
+        )}
+
+        {/* Retry Button */}
         <View style={styles.buttons}>
           <Pressable
             style={({ pressed }) => [
@@ -87,18 +98,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
             ]}
             onPress={onRetry}
           >
-            <Text style={styles.buttonText}>↻ RETRY</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              styles.homeButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={onHome}
-          >
-            <Text style={styles.buttonText}>⌂ HOME</Text>
+            <Text style={styles.retryButtonText}>RETRY</Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -109,97 +109,120 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
-    backgroundColor: 'rgba(20,20,40,0.95)',
-    borderRadius: 20,
+    backgroundColor: '#FFF8F0',
+    borderRadius: 24,
     paddingHorizontal: 48,
-    paddingVertical: 32,
+    paddingVertical: 36,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.15)',
-    minWidth: 300,
+    borderWidth: 4,
+    borderColor: '#FF7A9A',
+    minWidth: 280,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  starBadge: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '15deg' }],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  starText: {
+    fontSize: 24,
+    color: '#FFFFFF',
   },
   gameOverText: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '900',
-    color: '#FF4444',
+    color: '#FF7A9A',
     letterSpacing: 4,
-    marginBottom: 20,
-    textShadowColor: '#000',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
+    marginBottom: 24,
   },
-  scoreContainer: {
+  distanceContainer: {
     alignItems: 'center',
+    marginBottom: 16,
+  },
+  distanceLabel: {
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '700',
+    letterSpacing: 3,
+    marginBottom: 4,
+  },
+  distanceValue: {
+    fontSize: 52,
+    fontWeight: '900',
+    color: '#333',
+  },
+  divider: {
+    width: 120,
+    height: 2,
+    backgroundColor: '#DAA520',
     marginBottom: 12,
   },
-  scoreLabel: {
-    fontSize: 14,
-    color: '#AAAAAA',
-    fontWeight: '600',
-    letterSpacing: 2,
-  },
-  scoreValue: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginVertical: 4,
-  },
-  newHighScore: {
-    fontSize: 16,
-    color: '#FFD700',
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  highScoreRow: {
+  bestRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    opacity: 0.7,
+    marginBottom: 4,
   },
-  highScoreLabel: {
-    fontSize: 14,
-    color: '#AAAAAA',
-    fontWeight: '600',
-  },
-  highScoreValue: {
-    fontSize: 18,
-    color: '#FFFFFF',
+  bestLabel: {
+    fontSize: 16,
+    color: '#888',
     fontWeight: '700',
   },
+  bestValue: {
+    fontSize: 20,
+    color: '#333',
+    fontWeight: '900',
+  },
+  newBestText: {
+    fontSize: 14,
+    color: '#DAA520',
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
   buttons: {
-    flexDirection: 'row',
-    gap: 16,
+    marginTop: 20,
+    alignSelf: 'stretch',
   },
   button: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 25,
+    paddingHorizontal: 60,
+    paddingVertical: 18,
+    borderRadius: 40,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 3,
+    alignItems: 'center',
   },
   retryButton: {
-    backgroundColor: '#FF6B35',
-    borderWidth: 2,
-    borderColor: '#FF8C5A',
-  },
-  homeButton: {
-    backgroundColor: '#4A90D9',
-    borderWidth: 2,
-    borderColor: '#6AADE9',
+    backgroundColor: '#FF7A9A',
   },
   buttonPressed: {
     transform: [{ scale: 0.95 }],
     opacity: 0.9,
   },
-  buttonText: {
+  retryButtonText: {
     fontSize: 18,
     color: '#FFFFFF',
     fontWeight: '800',

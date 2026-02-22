@@ -60,7 +60,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         {highScore > 0 && (
           <View style={styles.highScoreContainer}>
             <Text style={styles.highScoreLabel}>BEST</Text>
-            <Text style={styles.highScoreValue}>{highScore}</Text>
+            <Text style={styles.highScoreValue}>{highScore}m</Text>
           </View>
         )}
 

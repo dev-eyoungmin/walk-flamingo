@@ -20,7 +20,7 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
   height,
   distance,
 }) => {
-  const groundY = height * 0.65;
+  const groundY = height * 0.75;
   const groundHeight = height - groundY;
 
   // Ground scroll offset for texture lines

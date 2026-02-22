@@ -106,11 +106,14 @@ function getWavUri(): string {
 
 export function useBackgroundMusic() {
   const soundRef = useRef<Audio.Sound | null>(null);
+  const loadingRef = useRef(false);
 
   const startMusic = useCallback(async () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     try {
-      // Stop any existing playback
       if (soundRef.current) {
+        await soundRef.current.stopAsync();
         await soundRef.current.unloadAsync();
         soundRef.current = null;
       }
@@ -122,10 +125,13 @@ export function useBackgroundMusic() {
       soundRef.current = sound;
     } catch {
       // Music is non-critical; fail silently
+    } finally {
+      loadingRef.current = false;
     }
   }, []);
 
   const stopMusic = useCallback(async () => {
+    loadingRef.current = false;
     try {
       if (soundRef.current) {
         await soundRef.current.stopAsync();

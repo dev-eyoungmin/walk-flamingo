@@ -20,7 +20,7 @@ interface GameScreenProps {
   width: number;
   height: number;
   isPlaying: boolean;
-  onGameOver: (score: number) => void;
+  onGameOver: (data: { score: number; distance: number }) => void;
 }
 
 export const GameScreen: React.FC<GameScreenProps> = ({

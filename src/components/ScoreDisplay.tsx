@@ -1,52 +1,49 @@
 import React from 'react';
-import { Text, Group, Skia, Font } from '@shopify/react-native-skia';
+import { Text, Group, matchFont, SkFont } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
-import { Platform } from 'react-native';
 
 interface ScoreDisplayProps {
   score: SharedValue<number>;
+  distance: SharedValue<number>;
   x: number;
   y: number;
-  fontSize?: number;
+  width: number;
+  font?: SkFont | null;
 }
 
 export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   score,
+  distance,
   x,
   y,
-  fontSize = 30,
+  width,
+  font,
 }) => {
-  // Load system font (bold)
-  const font = Skia.Font(undefined, fontSize); // Default system font
-  
-  // Format score text: "SCORE: 1234"
-  const text = useDerivedValue(() => {
-    return `SCORE: ${Math.floor(score.value)}`;
+  const fallbackFont = matchFont({ fontSize: 28 });
+  const distFont = matchFont({ fontSize: 24 });
+  const displayFont = font || fallbackFont;
+
+  const scoreText = useDerivedValue(() => {
+    return `SCORE: ${Math.floor(score?.value ?? 0)}`;
   }, [score]);
 
-  if (!font) {
-    return null;
-  }
+  const distText = useDerivedValue(() => {
+    return `${Math.floor(distance?.value ?? 0)}m`;
+  }, [distance]);
+
+  if (!displayFont) return null;
+
+  const distY = y + 32;
 
   return (
     <Group>
-      {/* Shadow / Outline effect for readability */}
-      <Text
-        x={x + 1}
-        y={y + fontSize + 1}
-        text={text}
-        font={font}
-        color="rgba(0,0,0,0.5)"
-      />
-      {/* Main Text */}
-      <Text
-        x={x}
-        y={y + fontSize}
-        text={text}
-        font={font}
-        color="white"
-        style="fill"
-      />
+      {/* Score (Left, white) */}
+      <Text x={x + 1} y={y + 1} text={scoreText} font={displayFont} color="rgba(0,0,0,0.5)" />
+      <Text x={x} y={y} text={scoreText} font={displayFont} color="white" />
+
+      {/* Distance (Left, below score, gold) */}
+      <Text x={x + 1} y={distY + 1} text={distText} font={distFont} color="rgba(0,0,0,0.5)" />
+      <Text x={x} y={distY} text={distText} font={distFont} color="#FFD700" />
     </Group>
   );
 };
