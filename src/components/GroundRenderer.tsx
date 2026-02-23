@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Rect,
   Line,
@@ -7,7 +7,6 @@ import {
   LinearGradient,
 } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
-import { COLORS, PARALLAX } from '../game/constants';
 
 interface GroundRendererProps {
   width: number;
@@ -20,26 +19,23 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
   height,
   distance,
 }) => {
-  const groundY = height * 0.75;
+  const groundY = height * 0.65;
   const groundHeight = height - groundY;
 
-  // Ground scroll offset for texture lines
+  // Ground scroll speed multiplier
+  const P_GROUND = 2.5; 
+
+  // Infinite texture lines scroll
   const groundOffset = useDerivedValue(() => {
-    return -(distance.value * PARALLAX.ground) % 40;
+    return -(distance.value * P_GROUND) % 100;
   });
 
-  // Ground texture lines (road markings)
-  const linePositions = React.useMemo(() => {
-    const lines: number[] = [];
-    for (let x = -40; x < width + 80; x += 40) {
-      lines.push(x);
-    }
-    return lines;
-  }, [width]);
+  // Generate line positions once
+  const lineInterval = 100;
+  const lineCount = Math.ceil(width / lineInterval) + 2;
+  const lineIndices = Array.from({ length: lineCount }, (_, i) => i);
 
-  const lineTransform = useDerivedValue(() => {
-    return [{ translateX: groundOffset.value }];
-  });
+  const lineTr = useDerivedValue(() => [{ translateX: groundOffset.value }]);
 
   return (
     <Group>
@@ -48,29 +44,29 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
         <LinearGradient
           start={vec(0, groundY)}
           end={vec(0, groundY + groundHeight)}
-          colors={[COLORS.ground, COLORS.groundDark]}
+          colors={['#5D4037', '#3E2723']} // Deep brown
         />
       </Rect>
 
-      {/* Ground surface line */}
+      {/* Surface line */}
       <Line
         p1={vec(0, groundY)}
         p2={vec(width, groundY)}
-        color={COLORS.groundLine}
-        strokeWidth={3}
+        color="#2E1C18"
+        strokeWidth={4}
       />
 
-      {/* Scrolling texture lines */}
-      <Group transform={lineTransform}>
-        {linePositions.map((x, i) => (
-          <Line
-            key={i}
-            p1={vec(x, groundY + 8)}
-            p2={vec(x + 20, groundY + 8)}
-            color={COLORS.groundLine}
-            strokeWidth={1}
-            opacity={0.4}
-          />
+      {/* Scrolling texture details (Small stones/lines) */}
+      <Group transform={lineTr}>
+        {lineIndices.map((i) => (
+          <Group key={i} transform={[{ translateX: i * lineInterval }]}>
+            {/* Horizontal texture line */}
+            <Rect x={10} y={groundY + 15} width={40} height={2} color="rgba(255,255,255,0.1)" rx={1} />
+            {/* Small stone */}
+            <Rect x={60} y={groundY + 40} width={6} height={4} color="rgba(0,0,0,0.2)" rx={2} />
+            {/* Lower texture line */}
+            <Rect x={-20} y={groundY + 60} width={30} height={2} color="rgba(255,255,255,0.05)" rx={1} />
+          </Group>
         ))}
       </Group>
     </Group>

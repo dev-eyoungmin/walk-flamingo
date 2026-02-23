@@ -85,8 +85,8 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   const neckBaseX = U * 1.5;
   const neckBaseY = bodyYOffset - bodyRy * 0.7;
   const neckSwayTr = useDerivedValue(() => {
-    const wobble = Math.sin(elapsedTime.value * 4) * angle.value * 0.12;
-    const neckTilt = angle.value * 0.3 + wobble;  // exaggerated sway + oscillation
+    const wobble = Math.sin(elapsedTime.value * 5) * angle.value * 0.2;
+    const neckTilt = angle.value * 0.6 + wobble;
     return [
       { translateX: neckBaseX },
       { translateY: neckBaseY },

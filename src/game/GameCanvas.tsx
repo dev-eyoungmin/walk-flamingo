@@ -15,10 +15,10 @@ import { TouchControls } from '../components/TouchControls';
 
 const SAFE_INSET = Platform.OS === 'ios' ? 44 : 0;
 
-const GRAVITY_TORQUE = 2.5;
-const PLAYER_TORQUE = 6.0;
-const GAME_OVER_ANGLE = (60 * Math.PI) / 180;
-const BASE_WALK_SPEED = 15;
+const GRAVITY_TORQUE = 3.5;
+const PLAYER_TORQUE = 9.0;
+const GAME_OVER_ANGLE = (50 * Math.PI) / 180;
+const BASE_WALK_SPEED = 8;
 const SPRITE_FRAME_RATE = 8;
 const WALK_FRAMES = 4;
 const POINTS_PER_SECOND = 10;
@@ -84,12 +84,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const dt = frameInfo.timeSincePreviousFrame ? Math.min(frameInfo.timeSincePreviousFrame / 1000, 0.05) : 1 / 60;
     const t = elapsedTime.value;
 
-    const wave = (Math.sin(t * 1.6) + 1) * 0.5;
-    const surge = 1.0 + wave * 0.3;
-    const gravityMult = (1.8 + t * 0.055) * surge;
-    const damping = Math.max(0.74, 0.86 - t * 0.0025) - wave * 0.04;
-    const windStr = Math.min((1.5 + t * 0.08) * surge, 5.0);
-    const windChangeInt = Math.max(0.6, 3.5 - t * 0.25);
+    const wave = (Math.sin(t * 2.0) + 1) * 0.5;
+    const surge = 1.0 + wave * 0.4;
+    const gravityMult = (2.2 + t * 0.09) * surge;
+    const damping = Math.max(0.70, 0.82 - t * 0.004) - wave * 0.05;
+    const windStr = Math.min((2.0 + t * 0.12) * surge, 7.0);
+    const windChangeInt = Math.max(0.4, 2.5 - t * 0.3);
 
     // Wind Logic
     const windPhase = Math.floor(t / windChangeInt);
@@ -119,7 +119,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
 
     elapsedTime.value += dt;
-    walkSpeed.value = BASE_WALK_SPEED * (1 + elapsedTime.value * 0.005);
+    walkSpeed.value = BASE_WALK_SPEED * (1 + elapsedTime.value * 0.002);
     distance.value += walkSpeed.value * dt;
     score.value += POINTS_PER_SECOND * dt;
   }, isPlaying);
