@@ -1,91 +1,45 @@
 <svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
-  <!-- Sky Gradient -->
+  <!-- EXACT SYNC WITH GAME CODE: groundY=468, U=14.4 -->
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#87CEEB"/>
-      <stop offset="100%" stop-color="#E0F7FA"/>
+      <stop offset="0%" stop-color="#87CEEB"/><stop offset="100%" stop-color="#E0F7FA"/>
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#sky)"/>
-
-  <!-- Sun with Glow -->
-  <circle cx="1088" cy="108" r="75" fill="#FFD700" opacity="0.3"/>
+  <circle cx="1088" cy="108" r="75" fill="#FFD700" opacity="0.2"/>
   <circle cx="1088" cy="108" r="57.6" fill="#FFD700" opacity="0.9"/>
-
   <!-- Clouds -->
   <g fill="white" opacity="0.7">
     <path d="M200 150 Q 260 150, 250 120 Q 220 90, 180 100 Q 140 80, 110 110 Q 100 150, 150 150 Z" />
     <path d="M800 200 Q 860 200, 850 170 Q 820 140, 780 150 Q 740 130, 710 160 Q 700 200, 750 200 Z" transform="scale(0.8) translate(200, 50)" />
-    <path d="M500 100 Q 560 100, 550 70 Q 520 40, 480 50 Q 440 30, 410 60 Q 400 100, 450 100 Z" opacity="0.5" />
   </g>
-
   <!-- Hills -->
   <path d="M-100 468 Q 213 374, 533 468 T 1380 468 V 720 H -100 Z" fill="#A2D149"/>
   <path d="M-100 520 Q 256 462, 612 520 T 1380 520 V 720 H -100 Z" fill="#558B2F"/>
-
   <!-- Ground -->
-  <rect x="0" y="580" width="1280" height="140" fill="#5D4037"/>
-
-  <!-- Character (Flamingo) -->
-  <!-- Hip Position: (640, 468) -->
+  <rect x="0" y="468" width="1280" height="252" fill="#5D4037"/>
+  <line x1="0" y1="468" x2="1280" y2="468" stroke="#2E1C18" stroke-width="4"/>
+  <rect x="100" y="550" width="40" height="2" fill="white" opacity="0.1"/>
+  <rect x="150" y="600" width="6" height="4" fill="black" opacity="0.2" rx="2"/>
+  <!-- CHARACTER: Hierarchical Sync -->
   <g transform="translate(640, 468)">
-      <g transform="scale(1.0)"> 
-        
-        <!-- LEG (Back) -->
-        <g transform="rotate(-10)">
-            <!-- Thigh -->
-            <rect x="-8" y="0" width="16" height="94" rx="8" fill="#D05A5A"/>
-            <!-- Lower Leg -->
-            <g transform="translate(0, 94) rotate(20)">
-                <rect x="-6" y="0" width="12" height="94" rx="6" fill="#D05A5A"/>
-                <path d="M-10 94 L30 94 L15 106 L-10 94 Z" fill="#D05A5A"/>
-            </g>
-        </g>
-
-        <!-- LEG (Front) -->
-        <g transform="rotate(15)">
-            <rect x="-8" y="0" width="16" height="94" rx="8" fill="#E86A6A"/>
-            <g transform="translate(0, 94) rotate(-10)">
-                <rect x="-6" y="0" width="12" height="94" rx="6" fill="#E86A6A"/>
-                <path d="M-10 94 L30 94 L15 106 L-10 94 Z" fill="#E86A6A"/>
-            </g>
-        </g>
-
-        <!-- BODY GROUP (Attached to Hip) -->
-        <!-- Removed incorrect translation. Now (0,0) is the hip. -->
-        <g transform="translate(0, -10)">
-            <!-- Neck & Head (Moved up relatively) -->
-            <path d="M10 -40 C 50 -100, 30 -140, 60 -180" stroke="#FF7A9A" stroke-width="20" fill="none" stroke-linecap="round"/>
-            
-            <!-- Head Circle -->
-            <circle cx="65" cy="-180" r="40" fill="#FF7A9A"/>
-            <circle cx="55" cy="-190" r="14" fill="#FFA0B8"/>
-            <circle cx="75" cy="-170" r="11" fill="#FF5070"/>
-
-            <!-- Beak -->
-            <path d="M85 -178 Q 165 -178, 155 -158 Q 120 -165, 85 -168 Z" fill="#FF8845"/>
-            <path d="M140 -162 L 155 -158 L 148 -155 Z" fill="#2A2A2A"/>
-
-            <!-- Eye -->
-            <circle cx="72" cy="-184" r="13" fill="white"/>
-            <circle cx="72" cy="-184" r="7" fill="#1A1A1A"/>
-            <circle cx="75" cy="-186" r="2" fill="white"/>
-
-            <!-- Main Body (Centered near 0,0) -->
-            <ellipse cx="-20" cy="-40" rx="72" ry="65" fill="#FF7A9A"/>
-            <circle cx="-30" cy="-50" r="25" fill="#FFA0B8"/>
-            
-            <!-- Wing -->
-            <ellipse cx="-10" cy="-40" rx="40" ry="30" fill="#E8658A"/>
-
-            <!-- Tail -->
-            <path d="M-60 -40 Q -90 -70, -80 -100" stroke="#FF6585" stroke-width="14" fill="none" stroke-linecap="round"/>
-        </g>
+      <g transform="translate(0, -100.8)"> <!-- Hip position at -7U -->
+          <!-- Legs -->
+          <g transform="rotate(-10)"><rect x="-8" y="0" width="16" height="50.4" rx="8" fill="#D05A5A"/><g transform="translate(0, 50.4) rotate(30)"><circle cx="0" cy="0" r="9" fill="#D05A5A"/><rect x="-6" y="0" width="12" height="50.4" rx="6" fill="#D05A5A"/><path d="M-6 50.4 L20 50.4 L10 60 L-6 50.4 Z" fill="#D05A5A"/></g></g>
+          <g transform="rotate(15)"><rect x="-8" y="0" width="16" height="50.4" rx="8" fill="#E86A6A"/><g transform="translate(0, 50.4) rotate(-10)"><circle cx="0" cy="0" r="9" fill="#E86A6A"/><rect x="-6" y="0" width="12" height="50.4" rx="6" fill="#E86A6A"/><path d="M-6 50.4 L20 50.4 L10 60 L-6 50.4 Z" fill="#E86A6A"/></g></g>
+          <!-- Body -->
+          <g transform="translate(0, -10)">
+              <path d="M10 -40 C 40 -90, 20 -130, 50 -170" stroke="#FF7A9A" stroke-width="20" fill="none" stroke-linecap="round"/>
+              <circle cx="50" cy="-170" r="40" fill="#FF7A9A"/>
+              <path d="M70 -168 Q 150 -168, 140 -148 Q 105 -155, 70 -158 Z" fill="#FF8845"/>
+              <circle cx="57" cy="-174" r="13" fill="white"/><circle cx="57" cy="-174" r="7" fill="black"/>
+              <ellipse cx="-20" cy="-40" rx="72" ry="65" fill="#FF7A9A"/>
+              <ellipse cx="-10" cy="-40" rx="40" ry="30" fill="#E8658A"/>
+          </g>
       </g>
   </g>
-
-  <!-- UI Mockup -->
-  <text x="40" y="60" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" stroke="#000" stroke-width="0.5">SCORE: 850</text>
-  <text x="1100" y="60" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" stroke="#000" stroke-width="0.5">WIND: ➜</text>
-
+  <!-- UI -->
+  <text x="40" y="60" font-family="monospace" font-size="32" font-weight="bold" fill="white" stroke="#000" stroke-width="1">SCORE: 1250</text>
+  <text x="980" y="60" font-family="monospace" font-size="32" font-weight="bold" fill="white" stroke="#000" stroke-width="1">DIST: 45m</text>
+  <text x="980" y="100" font-family="monospace" font-size="24" font-weight="bold" fill="white" stroke="#000" stroke-width="1">WIND: ➜</text>
 </svg>
