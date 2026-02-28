@@ -22,6 +22,7 @@ const BASE_WALK_SPEED = 8;
 const SPRITE_FRAME_RATE = 8;
 const WALK_FRAMES = 4;
 const POINTS_PER_SECOND = 10;
+const PIXELS_TO_METERS = 0.1;
 
 interface GameCanvasProps {
   width: number;
@@ -114,7 +115,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     if (Math.abs(angle.value) >= GAME_OVER_ANGLE) {
       isGameOver.value = true;
-      runOnJS(handleGameOver)(Math.floor(score.value), Math.floor(distance.value));
+      runOnJS(handleGameOver)(Math.floor(score.value), Math.floor(distance.value * PIXELS_TO_METERS));
       return;
     }
 
@@ -132,7 +133,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setDisplayScore(Math.floor(score.value));
-      setDisplayDist(Math.floor(distance.value));
+      setDisplayDist(Math.floor(distance.value * PIXELS_TO_METERS));
     }, 200);
     return () => clearInterval(interval);
   }, [isPlaying, score, distance]);
