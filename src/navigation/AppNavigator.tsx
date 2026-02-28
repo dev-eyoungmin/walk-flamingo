@@ -6,7 +6,7 @@ import { GameScreen } from '../screens/GameScreen';
 import { GameOverScreen } from '../screens/GameOverScreen';
 import { useHighScore } from '../hooks/useHighScore';
 import { useScreenDimensions } from '../hooks/useScreenDimensions';
-import { useInterstitialAd } from '../hooks/useInterstitialAd';
+import { useRewardedAd } from '../hooks/useRewardedAd';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { useDailyFreePlay } from '../hooks/useDailyFreePlay';
 import type { GameScreen as GameScreenType } from '../game/types';
@@ -18,7 +18,7 @@ export const AppNavigator: React.FC = () => {
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const { width, height } = useScreenDimensions();
   const { highScore, submitScore, loaded } = useHighScore();
-  const { showAd } = useInterstitialAd();
+  const { showAd } = useRewardedAd();
   const { startMusic, stopMusic } = useBackgroundMusic();
   const { isFreePlay, consumeFreePlay, loaded: freePlayLoaded } = useDailyFreePlay();
   const prevScreen = useRef<GameScreenType>(screen);

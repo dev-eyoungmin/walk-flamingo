@@ -8,7 +8,7 @@ const IS_TEST = __DEV__;
 
 // Only import ad IDs when not in Expo Go
 let BANNER_ID = '';
-let INTERSTITIAL_ID = '';
+let REWARDED_ID = '';
 
 if (!IS_EXPO_GO) {
   try {
@@ -16,20 +16,20 @@ if (!IS_EXPO_GO) {
     BANNER_ID = IS_TEST
       ? TestIds.ADAPTIVE_BANNER
       : Platform.select({
-          ios: 'ca-app-pub-xxxxxxxxxxxxxxxx/bbbbbbbbbb',
+          ios: 'ca-app-pub-7783064858826225/4010246083',
           android: 'ca-app-pub-xxxxxxxxxxxxxxxx/bbbbbbbbbb',
         }) ?? TestIds.ADAPTIVE_BANNER;
 
-    INTERSTITIAL_ID = IS_TEST
-      ? TestIds.INTERSTITIAL
+    REWARDED_ID = IS_TEST
+      ? TestIds.REWARDED
       : Platform.select({
-          ios: 'ca-app-pub-xxxxxxxxxxxxxxxx/iiiiiiiiii',
-          android: 'ca-app-pub-xxxxxxxxxxxxxxxx/iiiiiiiiii',
-        }) ?? TestIds.INTERSTITIAL;
+          ios: 'ca-app-pub-7783064858826225/8245004569',
+          android: 'ca-app-pub-xxxxxxxxxxxxxxxx/rrrrrrrrrr',
+        }) ?? TestIds.REWARDED;
   } catch {
     // Ads module not available
   }
 }
 
 export const BANNER_AD_UNIT_ID = BANNER_ID;
-export const INTERSTITIAL_AD_UNIT_ID = INTERSTITIAL_ID;
+export const REWARDED_AD_UNIT_ID = REWARDED_ID;
