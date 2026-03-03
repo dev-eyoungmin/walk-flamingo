@@ -2,6 +2,7 @@
   "name": "walk-the-stork",
   "version": "1.0.0",
   "main": "index.ts",
+  "homepage": "https://dev-eyoungmin.github.io/walk-flamingo/",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -9,6 +10,8 @@
     "web": "expo start --web",
     "test": "jest",
     "test:watch": "jest --watch",
+    "predeploy": "npx expo export",
+    "deploy": "gh-pages -d dist",
     "release": "node scripts/release.js"
   },
   "dependencies": {
@@ -32,6 +35,7 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "babel-preset-expo": "^54.0.10",
+    "gh-pages": "^6.3.0",
     "typescript": "~5.9.2"
   },
   "private": true
