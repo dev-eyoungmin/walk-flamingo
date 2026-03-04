@@ -49,12 +49,19 @@ function generateWavBase64(): string {
 
   // Generate samples
   const samplesPerBeat = Math.floor(BEAT_DURATION * SAMPLE_RATE);
+  // Ensure total duration is an exact multiple of the lowest frequency period
+  // for seamless phase alignment at loop boundary
+  const totalDuration = TOTAL_BEATS * BEAT_DURATION;
+  // Fade region: ~50ms at start and end for click-free looping
+  const FADE_SAMPLES = Math.floor(0.05 * SAMPLE_RATE);
 
   for (let i = 0; i < TOTAL_SAMPLES; i++) {
     const beat = Math.floor(i / samplesPerBeat);
     const bar = Math.floor(beat / BEATS_PER_BAR);
-    const t = i / SAMPLE_RATE;
     const beatT = (i % samplesPerBeat) / SAMPLE_RATE; // time within beat
+    // Use phase based on position within loop for seamless wrapping
+    const phase = i / TOTAL_SAMPLES; // 0..1 normalized position
+    const t = phase * totalDuration;
 
     // Melody: sine with soft envelope
     const melodyIdx = MELODY_PATTERN[beat % MELODY_PATTERN.length];
@@ -71,8 +78,19 @@ function generateWavBase64(): string {
     const bassEnv = Math.exp(-beatT * 2);
     const bass = Math.sin(2 * Math.PI * bassFreq * t) * bassEnv * 0.25;
 
-    // Mix and soft-clip
+    // Mix
     let sample = melody + overtone + bass;
+
+    // Crossfade envelope at loop boundaries to prevent click
+    let envelope = 1.0;
+    if (i < FADE_SAMPLES) {
+      envelope = i / FADE_SAMPLES; // fade in
+    } else if (i > TOTAL_SAMPLES - FADE_SAMPLES) {
+      envelope = (TOTAL_SAMPLES - i) / FADE_SAMPLES; // fade out
+    }
+    sample *= envelope;
+
+    // Soft-clip
     sample = Math.max(-0.9, Math.min(0.9, sample));
 
     // Convert to 16-bit PCM

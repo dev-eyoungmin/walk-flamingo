@@ -3,6 +3,7 @@ import { View, StyleSheet, StatusBar } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Font from 'expo-font';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { IS_EXPO_GO } from './src/lib/adConfig';
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -17,6 +18,16 @@ export default function App() {
     await Font.loadAsync({
       'pixel': require('./assets/fonts/pixel.ttf'),
     });
+
+    // Initialize AdMob SDK (required for production builds)
+    if (!IS_EXPO_GO) {
+      try {
+        const { default: mobileAds } = require('react-native-google-mobile-ads');
+        await mobileAds().initialize();
+      } catch {
+        // Ads initialization failed; non-critical
+      }
+    }
 
     setReady(true);
   }, []);

@@ -45,6 +45,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           <BannerAd
             unitId={BANNER_AD_UNIT_ID}
             size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+            onAdFailedToLoad={(error: any) => console.warn('Banner ad failed:', error)}
           />
         </View>
       ) : (

@@ -15,9 +15,9 @@ import { TouchControls } from '../components/TouchControls';
 
 const SAFE_INSET = Platform.OS === 'ios' ? 44 : 0;
 
-const GRAVITY_TORQUE = 3.5;
+const GRAVITY_TORQUE = 4.2;
 const PLAYER_TORQUE = 9.0;
-const GAME_OVER_ANGLE = (50 * Math.PI) / 180;
+const GAME_OVER_ANGLE = (42 * Math.PI) / 180;
 const BASE_WALK_SPEED = 8;
 const SPRITE_FRAME_RATE = 8;
 const WALK_FRAMES = 4;
@@ -85,12 +85,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const dt = frameInfo.timeSincePreviousFrame ? Math.min(frameInfo.timeSincePreviousFrame / 1000, 0.05) : 1 / 60;
     const t = elapsedTime.value;
 
-    const wave = (Math.sin(t * 2.0) + 1) * 0.5;
-    const surge = 1.0 + wave * 0.4;
-    const gravityMult = (2.2 + t * 0.09) * surge;
-    const damping = Math.max(0.70, 0.82 - t * 0.004) - wave * 0.05;
-    const windStr = Math.min((2.0 + t * 0.12) * surge, 7.0);
-    const windChangeInt = Math.max(0.4, 2.5 - t * 0.3);
+    const wave = (Math.sin(t * 2.2) + 1) * 0.5;
+    const surge = 1.0 + wave * 0.45;
+    const gravityMult = (2.6 + t * 0.12) * surge;
+    const damping = Math.max(0.65, 0.80 - t * 0.006) - wave * 0.06;
+    const windStr = Math.min((2.5 + t * 0.15) * surge, 8.0);
+    const windChangeInt = Math.max(0.35, 2.0 - t * 0.35);
 
     // Wind Logic
     const windPhase = Math.floor(t / windChangeInt);
