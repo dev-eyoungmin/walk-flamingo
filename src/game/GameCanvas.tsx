@@ -53,6 +53,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const inputLeft = useSharedValue(false);
   const inputRight = useSharedValue(false);
+  const prevInputLeft = useSharedValue(false);
+  const prevInputRight = useSharedValue(false);
+  const tapBoost = useSharedValue(0);
 
   const resetGame = useCallback(() => {
     angle.value = 0;
@@ -67,7 +70,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     isGameOver.value = false;
     inputLeft.value = false;
     inputRight.value = false;
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight]);
+    prevInputLeft.value = false;
+    prevInputRight.value = false;
+    tapBoost.value = 0;
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost]);
 
   React.useEffect(() => {
     if (isPlaying) resetGame();
@@ -105,10 +111,27 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const targetWind = dir * currentStrength;
     windForceVal.value += (targetWind - windForceVal.value) * 0.02;
 
-    const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * gravityMult;
+    // Tap boost: rapid tapping increases recovery force (capped)
+    const TAP_BOOST_PER_TAP = 0.25;  // boost gained per tap
+    const TAP_BOOST_MAX = 0.8;       // max boost (1.0x → 1.8x torque)
+    const TAP_BOOST_DECAY = 2.0;     // decay per second
+
+    const leftJustPressed = inputLeft.value && !prevInputLeft.value;
+    const rightJustPressed = inputRight.value && !prevInputRight.value;
+    prevInputLeft.value = inputLeft.value;
+    prevInputRight.value = inputRight.value;
+
+    if (leftJustPressed || rightJustPressed) {
+      tapBoost.value = Math.min(tapBoost.value + TAP_BOOST_PER_TAP, TAP_BOOST_MAX);
+    }
+    tapBoost.value = Math.max(0, tapBoost.value - TAP_BOOST_DECAY * dt);
+
+    const clampedGravityMult = Math.min(gravityMult, 4.0);
+    const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * clampedGravityMult;
+    const scaledPlayerTorque = PLAYER_TORQUE * (1.0 + tapBoost.value);
     let playerAccel = 0;
-    if (inputLeft.value) playerAccel -= PLAYER_TORQUE;
-    if (inputRight.value) playerAccel += PLAYER_TORQUE;
+    if (inputLeft.value) playerAccel -= scaledPlayerTorque;
+    if (inputRight.value) playerAccel += scaledPlayerTorque;
 
     angularVelocity.value = (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value) * dt) * damping;
     angle.value += angularVelocity.value * dt;

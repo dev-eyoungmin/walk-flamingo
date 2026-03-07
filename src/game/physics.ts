@@ -48,10 +48,13 @@ export function updatePhysics(
   const diff = getDifficulty(state.elapsedTime);
 
   // 1. Gravity acceleration (inverted pendulum: sin(angle) pulls further from center)
+  const clampedGravityMult = Math.min(diff.gravityMultiplier, 4.0);
   const gravityAccel =
-    PHYSICS.gravityTorque * Math.sin(state.angle) * diff.gravityMultiplier;
+    PHYSICS.gravityTorque * Math.sin(state.angle) * clampedGravityMult;
 
   // 2. Player input torque
+  // Note: In GameCanvas worklet, tap-boost mechanic scales torque up to 1.8x via rapid tapping.
+  // This reference implementation uses base torque only.
   let playerAccel = 0;
   if (input.left) playerAccel -= PHYSICS.playerTorque;
   if (input.right) playerAccel += PHYSICS.playerTorque;
