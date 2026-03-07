@@ -35,6 +35,8 @@ export function useRewardedAd() {
         setLoaded(false);
         onRewardRef.current?.();
         onRewardRef.current = null;
+        // Retry loading after a delay
+        setTimeout(() => loadAd(), 5000);
       });
 
       ad.load();

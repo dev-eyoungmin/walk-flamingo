@@ -9,6 +9,7 @@ const IS_TEST = __DEV__;
 // Only import ad IDs when not in Expo Go
 let BANNER_ID = '';
 let REWARDED_ID = '';
+let INTERSTITIAL_ID = '';
 
 if (!IS_EXPO_GO) {
   try {
@@ -26,6 +27,13 @@ if (!IS_EXPO_GO) {
           ios: 'ca-app-pub-7783064858826225/8245004569',
           android: 'ca-app-pub-xxxxxxxxxxxxxxxx/rrrrrrrrrr',
         }) ?? TestIds.REWARDED;
+
+    INTERSTITIAL_ID = IS_TEST
+      ? TestIds.INTERSTITIAL
+      : Platform.select({
+          ios: 'ca-app-pub-7783064858826225/INTERSTITIAL_ID',
+          android: 'ca-app-pub-xxxxxxxxxxxxxxxx/iiiiiiiiii',
+        }) ?? TestIds.INTERSTITIAL;
   } catch {
     // Ads module not available
   }
@@ -33,3 +41,4 @@ if (!IS_EXPO_GO) {
 
 export const BANNER_AD_UNIT_ID = BANNER_ID;
 export const REWARDED_AD_UNIT_ID = REWARDED_ID;
+export const INTERSTITIAL_AD_UNIT_ID = INTERSTITIAL_ID;
