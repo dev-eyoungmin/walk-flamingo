@@ -98,6 +98,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const milestoneIndex = useSharedValue(0);
   const particleData = useSharedValue<number[]>([]); // [x,y,life, x,y,life, ...] × 32
 
+  // === Hill system ===
+  const hillPhase = useSharedValue(0); // 0=flat, 0~1=uphill, 1~2=downhill
+
   // === Environment ===
   const skyPhase = useSharedValue(0);
   const weatherType = useSharedValue(0); // 0=none, 1=rain, 2=snow
@@ -138,10 +141,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     lastMilestoneDist.value = 0;
     milestoneIndex.value = 0;
     particleData.value = [];
+    hillPhase.value = 0;
     skyPhase.value = 0;
     weatherType.value = 0;
     weatherParticles.value = [];
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, coinX, coinY, coinVisible, coinSpinAngle, coinCollectAnim, lastCoinSpawnDist, coinTotalCollected, milestoneAnim, milestoneFlash, milestoneStabilize, lastMilestoneDist, milestoneIndex, particleData, skyPhase, weatherType, weatherParticles]);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, coinX, coinY, coinVisible, coinSpinAngle, coinCollectAnim, lastCoinSpawnDist, coinTotalCollected, milestoneAnim, milestoneFlash, milestoneStabilize, lastMilestoneDist, milestoneIndex, particleData, hillPhase, skyPhase, weatherType, weatherParticles]);
 
   React.useEffect(() => {
     if (isPlaying) resetGame();
@@ -218,8 +222,34 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // ──── Time & Distance ────
     elapsedTime.value += dt;
-    walkSpeed.value = BASE_WALK_SPEED * (1 + elapsedTime.value * 0.002);
+
+    // Speed surge: ~8s cycle, 1.0x to 1.6x
+    const speedWave = (Math.sin(elapsedTime.value * 0.8) + 1) * 0.5;
+    const speedBurst = 1.0 + speedWave * 0.6;
+
+    // Hill system: hills appear every 300-600px based on seeded distance
+    const HILL_PERIOD = 400; // base period
+    const hillProgress = (distance.value % HILL_PERIOD) / HILL_PERIOD; // 0→1 cycle
+    const isOnHill = hillProgress > 0.6 && hillProgress < 0.95; // 35% of cycle is hill
+    if (isOnHill) {
+      const hillLocal = (hillProgress - 0.6) / 0.35; // 0→1 within hill
+      hillPhase.value = hillLocal < 0.5 ? hillLocal * 2 : 2 - hillLocal * 2; // 0→1→0 (peak at middle)
+    } else {
+      hillPhase.value = 0;
+    }
+
+    // Hill modifies walk speed and adds jitter
+    const hillSpeedMod = isOnHill
+      ? (hillPhase.value > 0.5 ? 0.7 : 1.3) // uphill slower, downhill faster
+      : 1.0;
+    walkSpeed.value = BASE_WALK_SPEED * (1 + elapsedTime.value * 0.003) * speedBurst * hillSpeedMod;
     distance.value += walkSpeed.value * dt;
+
+    // Hill adds extra gravity destabilization
+    if (isOnHill) {
+      const hillJitter = Math.sin(elapsedTime.value * 15) * 0.3 * hillPhase.value;
+      angularVelocity.value += hillJitter * dt;
+    }
 
     // ──── Combo System ────
     const inCenter = Math.abs(angle.value) < CENTER_THRESHOLD;
@@ -432,7 +462,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             distance={distance}
             skyPhase={skyPhase}
           />
-          <GroundRenderer width={width} height={canvasHeight} distance={distance} />
+          <GroundRenderer width={width} height={canvasHeight} distance={distance} hillPhase={hillPhase} />
           <CoinRenderer
             coinX={coinX}
             coinY={coinY}

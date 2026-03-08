@@ -7,6 +7,7 @@ import {
   Animated,
   useWindowDimensions,
 } from 'react-native';
+import { getRank } from '../lib/ranks';
 
 interface GameOverScreenProps {
   score: number;
@@ -24,6 +25,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   onRetry,
 }) => {
   const { height } = useWindowDimensions();
+  const rank = useMemo(() => getRank(distance), [distance]);
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(50)).current;
   const scoreScale = useRef(new Animated.Value(0.5)).current;
@@ -115,6 +117,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           </Text>
           <Text style={[styles.distanceValue, { fontSize: s(40) }]}>
             {distance}m
+          </Text>
+          <Text style={[styles.rankText, { fontSize: s(14), marginTop: s(4) }]}>
+            {rank.emoji} {rank.nameKo}
           </Text>
         </Animated.View>
 
@@ -233,6 +238,11 @@ const styles = StyleSheet.create({
   bestValue: {
     color: '#333',
     fontWeight: '900',
+  },
+  rankText: {
+    color: '#FF7A9A',
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   newBestText: {
     color: '#DAA520',

@@ -96,6 +96,21 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     ];
   });
 
+  // 3c. Face zoom/shake: periodic cycle (~10s), stronger shake when zoomed
+  const faceZoomTr = useDerivedValue(() => {
+    const t = elapsedTime.value;
+    const cycle = (Math.sin(t * 0.63) + 1) * 0.5; // 0~1, ~10s period
+    const faceScale = 1.0 + cycle * 0.35;           // 1.0x ~ 1.35x
+    const faceShake = Math.sin(t * 8) * cycle * U * 1.2;
+    return [
+      { translateX: headX + faceShake },
+      { translateY: headY },
+      { scale: faceScale },
+      { translateX: -headX },
+      { translateY: -headY },
+    ];
+  });
+
   // 4. Legs: Rotate relative to Hip (0,0)
   const backLegTr = useDerivedValue(() => {
     const t = elapsedTime.value * WALK_HZ * TAU;
@@ -250,19 +265,21 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
                     {/* Neck */}
                     <Path path={neckPath} color={C_NECK} style="stroke" strokeWidth={U * 1.2} strokeCap="round" />
 
-                    {/* Head */}
-                    <Circle cx={headX} cy={headY} r={headR} color={C_BODY} />
-                    <Circle cx={headX - U*0.7} cy={headY - U*0.7} r={U} color={C_BODY_LIGHT} />
-                    <Circle cx={headX + U*0.5} cy={headY + U*0.7} r={U*0.8} color={C_CHEEK} />
+                    {/* Head (with periodic zoom/shake) */}
+                    <Group transform={faceZoomTr}>
+                        <Circle cx={headX} cy={headY} r={headR} color={C_BODY} />
+                        <Circle cx={headX - U*0.7} cy={headY - U*0.7} r={U} color={C_BODY_LIGHT} />
+                        <Circle cx={headX + U*0.5} cy={headY + U*0.7} r={U*0.8} color={C_CHEEK} />
 
-                    {/* Beak */}
-                    <Path path={beakPath} color={C_BEAK} />
-                    <Path path={beakTipPath} color={C_BEAK_TIP} />
+                        {/* Beak */}
+                        <Path path={beakPath} color={C_BEAK} />
+                        <Path path={beakTipPath} color={C_BEAK_TIP} />
 
-                    {/* Eye */}
-                    <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.9} color={C_EYE_W} />
-                    <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.5} color={C_EYE_B} />
-                    <Circle cx={headX + U*0.7} cy={headY - U*0.4} r={U*0.15} color={C_EYE_W} />
+                        {/* Eye */}
+                        <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.9} color={C_EYE_W} />
+                        <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.5} color={C_EYE_B} />
+                        <Circle cx={headX + U*0.7} cy={headY - U*0.4} r={U*0.15} color={C_EYE_W} />
+                    </Group>
                 </Group>
             </Group>
 
