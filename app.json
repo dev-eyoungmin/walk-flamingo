@@ -13,7 +13,7 @@
       "backgroundColor": "#E0F7FA"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.wobbly.flamingo.game",
       "buildNumber": "1.0.0",
       "infoPlist": {
