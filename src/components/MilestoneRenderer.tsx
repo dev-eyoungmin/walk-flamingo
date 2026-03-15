@@ -62,8 +62,8 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
   width,
   height,
 }) => {
-  const bigFont = matchFont({ fontSize: 36, fontWeight: 'bold' });
-  const smallFont = matchFont({ fontSize: 18, fontWeight: 'bold' });
+  const bigFont = matchFont({ fontSize: 36 });
+  const smallFont = matchFont({ fontSize: 18 });
 
   const cx = width / 2;
   const cy = height / 2 - 20;

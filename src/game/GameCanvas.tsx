@@ -30,7 +30,10 @@ const GRACE_PERIOD = 1.5; // seconds before full physics/scoring kicks in
 const P_HILLS_NEAR = 1.2;
 
 // Combo thresholds (seconds to reach next level)
-const COMBO_THRESHOLDS = [3.0, 5.0, 8.0];
+// Inline in worklet: level 1→2: 3s, 2→3: 5s, 3→4: 8s
+const COMBO_T1 = 3.0;
+const COMBO_T2 = 5.0;
+const COMBO_T3 = 8.0;
 
 interface GameCanvasProps {
   width: number;
@@ -324,7 +327,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       comboTimer.value += dt;
       const level = comboMultiplier.value;
       if (level < 4) {
-        const required = COMBO_THRESHOLDS[level - 1];
+        const required = level === 1 ? COMBO_T1 : level === 2 ? COMBO_T2 : COMBO_T3;
         if (comboTimer.value >= required) {
           comboMultiplier.value = level + 1;
           comboTimer.value = 0;
