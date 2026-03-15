@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     // paddingLeft/paddingRight set dynamically via safeLeft/safeRight props
   },
   button: {
-    width: 100,
+    width: 140,
     height: 70,
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 12,

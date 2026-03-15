@@ -5,7 +5,9 @@ import {
   Group,
 } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
-import { COLORS, PHYSICS } from '../game/constants';
+import { COLORS } from '../game/constants';
+
+const GAME_OVER_ANGLE = (42 * Math.PI) / 180;
 
 interface BalanceIndicatorProps {
   angle: SharedValue<number>;
@@ -26,14 +28,14 @@ export const BalanceIndicator: React.FC<BalanceIndicatorProps> = ({
 
   // Indicator position (maps angle to bar position)
   const indicatorX = useDerivedValue(() => {
-    const ratio = angle.value / PHYSICS.gameOverAngle;
+    const ratio = angle.value / GAME_OVER_ANGLE;
     const clamped = Math.max(-1, Math.min(1, ratio));
     return centerX + clamped * (barWidth / 2 - 6);
   });
 
   // Color based on angle
   const indicatorColor = useDerivedValue(() => {
-    const absRatio = Math.abs(angle.value) / PHYSICS.gameOverAngle;
+    const absRatio = Math.abs(angle.value) / GAME_OVER_ANGLE;
     if (absRatio > 0.75) return COLORS.gaugeRed;
     if (absRatio > 0.5) return COLORS.gaugeYellow;
     return COLORS.gaugeGreen;

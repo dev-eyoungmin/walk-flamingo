@@ -23,9 +23,10 @@ export default function App() {
     // Request ATT permission (iOS 14.5+) before initializing ads
     if (Platform.OS === 'ios') {
       try {
-        await requestTrackingPermissionsAsync();
-      } catch {
-        // ATT not available on this iOS version; continue
+        const result = await requestTrackingPermissionsAsync();
+        console.log('[ATT] Tracking permission status:', result.status);
+      } catch (e) {
+        console.log('[ATT] Not available on this iOS version:', e);
       }
     }
 
@@ -33,9 +34,10 @@ export default function App() {
     if (!IS_EXPO_GO) {
       try {
         const { default: mobileAds } = require('react-native-google-mobile-ads');
-        await mobileAds().initialize();
-      } catch {
-        // Ads initialization failed; non-critical
+        const adapterStatuses = await mobileAds().initialize();
+        console.log('[AdMob] Initialized:', JSON.stringify(adapterStatuses));
+      } catch (e) {
+        console.warn('[AdMob] Initialization failed:', e);
       }
     }
 

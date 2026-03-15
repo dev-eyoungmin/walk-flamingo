@@ -15,6 +15,7 @@ export function useRewardedAd() {
       const ad = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID);
 
       const unsubLoaded = ad.addAdEventListener(RewardedAdEventType.LOADED, () => {
+        console.log('[RewardedAd] Ad loaded successfully');
         setLoaded(true);
       });
 
@@ -31,7 +32,8 @@ export function useRewardedAd() {
         loadAd();
       });
 
-      const unsubError = ad.addAdEventListener(AdEventType.ERROR, () => {
+      const unsubError = ad.addAdEventListener(AdEventType.ERROR, (error: any) => {
+        console.warn('[RewardedAd] Error:', error?.message, error?.code);
         setLoaded(false);
         onRewardRef.current?.();
         onRewardRef.current = null;
@@ -48,7 +50,8 @@ export function useRewardedAd() {
         unsubClosed();
         unsubError();
       };
-    } catch {
+    } catch (e) {
+      console.warn('[RewardedAd] Setup failed:', e);
       return () => {};
     }
   }, []);

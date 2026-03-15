@@ -23,12 +23,11 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
   distance,
   skyPhase,
 }) => {
-  const groundY = height * 0.65;
+  const groundY = height * 0.75;
 
   // Parallax factors
   const P_CLOUD = 0.15;
   const P_HILLS_FAR = 0.4;
-  const P_HILLS_NEAR = 1.2;
 
   // Sun/Moon
   const sunX = width * 0.85;
@@ -119,32 +118,14 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
   const farHillsTr = useDerivedValue(() => [
     { translateX: -(distance.value * P_HILLS_FAR) % width },
   ]);
-  const nearHillsTr = useDerivedValue(() => [
-    { translateX: -(distance.value * P_HILLS_NEAR) % width },
-  ]);
 
   const farHillPath = useMemo(() => {
     const p = Skia.Path.Make();
     const hillW = width / 2;
-    const hillH = height * 0.15;
+    const hillH = height * 0.40;
     p.moveTo(0, groundY);
     for (let i = 0; i < 3; i++) {
       p.quadTo((i + 0.5) * hillW, groundY - hillH, (i + 1) * hillW, groundY);
-    }
-    p.lineTo(width * 2, height);
-    p.lineTo(0, height);
-    p.close();
-    return p;
-  }, [width, height, groundY]);
-
-  const nearHillPath = useMemo(() => {
-    const p = Skia.Path.Make();
-    const hillW = width / 1.5;
-    const hillH = height * 0.1;
-    const baseY = groundY + height * 0.02;
-    p.moveTo(0, baseY);
-    for (let i = 0; i < 3; i++) {
-      p.quadTo((i + 0.5) * hillW, baseY - hillH, (i + 1) * hillW, baseY);
     }
     p.lineTo(width * 2, height);
     p.lineTo(0, height);
@@ -163,18 +144,12 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
     const b = Math.round(73 - t * 30);
     return `rgb(${r},${g},${b})`;
   });
-  const nearHillColor = useDerivedValue(() => {
-    const phase = skyPhase?.value ?? 0;
-    if (phase < 1) return '#558B2F';
-    const t = phase - 1;
-    const r = Math.round(85 - t * 50);
-    const g = Math.round(139 - t * 80);
-    const b = Math.round(47 - t * 20);
-    return `rgb(${r},${g},${b})`;
-  });
 
   return (
     <Group>
+      {/* Solid base (prevents black bleed-through during sky transitions) */}
+      <Rect x={0} y={0} width={width} height={groundY + 20} color="#87CEEB" />
+
       {/* Day sky */}
       <Rect x={0} y={0} width={width} height={groundY + 20} opacity={dayOpacity}>
         <LinearGradient
@@ -237,11 +212,6 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
         <Path path={farHillPath} color={farHillColor} transform={[{ translateX: width }]} />
       </Group>
 
-      {/* Near hills */}
-      <Group transform={nearHillsTr}>
-        <Path path={nearHillPath} color={nearHillColor} />
-        <Path path={nearHillPath} color={nearHillColor} transform={[{ translateX: width }]} />
-      </Group>
     </Group>
   );
 };

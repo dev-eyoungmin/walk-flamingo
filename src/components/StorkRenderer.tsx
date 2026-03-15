@@ -8,6 +8,9 @@ interface StorkRendererProps {
   angle: SharedValue<number>;
   animFrame: SharedValue<number>;
   elapsedTime: SharedValue<number>;
+  hillY?: SharedValue<number>;
+  hillSlope?: SharedValue<number>; // -1=uphill, +1=downhill, 0=flat
+  walkSpeed?: SharedValue<number>;
 }
 
 export const StorkRenderer: React.FC<StorkRendererProps> = ({
@@ -16,6 +19,9 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   angle,
   animFrame,
   elapsedTime,
+  hillY,
+  hillSlope,
+  walkSpeed,
 }) => {
   const cx = width / 2;
   const groundY = height * 0.75;
@@ -56,11 +62,17 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
 
   // ════════════ TRANSFORMS (Hierarchical) ════════════
 
-  // 1. Root: Moves to Ground Pivot (cx, groundY) and rotates the whole bird
+  // Shadow: follows hill Y but no rotation
+  const shadowTr = useDerivedValue(() => [
+    { translateX: cx },
+    { translateY: groundY + (hillY?.value ?? 0) },
+  ]);
+
+  // 1. Root: Moves to Ground Pivot (cx, groundY + hillY), then applies tilt rotation
   const rootTr = useDerivedValue(() => [
     { translateX: cx },
-    { translateY: groundY },
-    { rotate: angle.value }
+    { translateY: groundY + (hillY?.value ?? 0) },
+    { rotate: angle.value },
   ]);
 
   // 2. Hip: Moves UP from Ground to Hip height.
@@ -69,74 +81,78 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     { translateY: -totalLegLen }
   ]);
 
-  // 3. Body: Bobs + sways with tilt (inertia)
+  // 3. Body: Bobs + hill lean (no tilt sway)
   const bodyBobTr = useDerivedValue(() => {
     const t = elapsedTime.value * WALK_HZ * TAU;
     const bob = Math.sin(t * 2) * U * 0.2;
-    const sway = angle.value * U * 0.8;          // horizontal drift when tilting
+    const slope = hillSlope?.value ?? 0;
+    const climbLean = slope * 0.25;
     return [
-      { translateX: sway },
       { translateY: bob },
-      { rotate: angle.value * 0.35 },            // increased body inertia tilt
+      { rotate: climbLean },
     ];
   });
 
-  // 3b. Neck+Head: Extra whiplash sway (rotates around neck base)
+  // 3b. Neck+Head: Natural bobbing (no tilt-based sway)
   const neckBaseX = U * 1.5;
   const neckBaseY = bodyYOffset - bodyRy * 0.7;
   const neckSwayTr = useDerivedValue(() => {
-    const wobble = Math.sin(elapsedTime.value * 5) * angle.value * 0.2;
-    const neckTilt = angle.value * 0.6 + wobble;
+    const slope = hillSlope?.value ?? 0;
+    const climbNeckLean = slope * 0.15;
     return [
       { translateX: neckBaseX },
       { translateY: neckBaseY },
-      { rotate: neckTilt },
+      { rotate: climbNeckLean },
       { translateX: -neckBaseX },
       { translateY: -neckBaseY },
     ];
   });
 
-  // 3c. Face zoom/shake: periodic cycle (~10s), stronger shake when zoomed
-  const faceZoomTr = useDerivedValue(() => {
-    const t = elapsedTime.value;
-    const cycle = (Math.sin(t * 0.63) + 1) * 0.5; // 0~1, ~10s period
-    const faceScale = 1.0 + cycle * 0.35;           // 1.0x ~ 1.35x
-    const faceShake = Math.sin(t * 8) * cycle * U * 1.2;
-    return [
-      { translateX: headX + faceShake },
-      { translateY: headY },
-      { scale: faceScale },
-      { translateX: -headX },
-      { translateY: -headY },
-    ];
-  });
 
-  // 4. Legs: Rotate relative to Hip (0,0)
+  // 4. Legs: Rotate relative to Hip (0,0) — slope & walkSpeed affect cadence & swing
+  const BASE_SPEED = 8; // must match BASE_WALK_SPEED in GameCanvas
   const backLegTr = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
-    const swing = Math.sin(t) * LEG_SWING;
-    return [{ rotate: swing - angle.value * 0.3 }];
+    const slope = hillSlope?.value ?? 0;
+    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
+    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
+    const swingMult = 1.0 + slope * 0.35;
+    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
+    const swing = Math.sin(t) * LEG_SWING * swingMult;
+    return [{ rotate: swing }];
   });
 
   const frontLegTr = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
-    const swing = Math.sin(t + Math.PI) * LEG_SWING;
-    return [{ rotate: swing - angle.value * 0.3 }];
+    const slope = hillSlope?.value ?? 0;
+    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
+    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
+    const swingMult = 1.0 + slope * 0.35;
+    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
+    const swing = Math.sin(t + Math.PI) * LEG_SWING * swingMult;
+    return [{ rotate: swing }];
   });
 
-  // 5. Knees: Move down to end of thigh, then rotate
+  // 5. Knees: Move down to end of thigh, then rotate — higher lift uphill
   const kneeBendBack = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
+    const slope = hillSlope?.value ?? 0;
+    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
+    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
+    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
     const sinT = Math.sin(t);
-    // Bend logic: Only bend when lifting
-    const bend = 20 * (Math.PI/180) + Math.max(0, sinT) * 0.8;
+    const liftMult = 1.0 - slope * 0.4;
+    const baseBend = 20 + (slope < 0 ? Math.abs(slope) * 10 : 0);
+    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8 * liftMult;
     return [{ translateY: thighLen }, { rotate: bend }];
   });
 
   const kneeBendFront = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
+    const slope = hillSlope?.value ?? 0;
+    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
+    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
+    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
     const sinT = Math.sin(t + Math.PI);
-    const bend = 20 * (Math.PI/180) + Math.max(0, sinT) * 0.8;
+    const liftMult = 1.0 - slope * 0.4;
+    const baseBend = 20 + (slope < 0 ? Math.abs(slope) * 10 : 0);
+    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8 * liftMult;
     return [{ translateY: thighLen }, { rotate: bend }];
   });
 
@@ -214,11 +230,6 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
 
   return (
     <Group>
-      {/* Shadow (On ground) */}
-      <Group transform={[{ translateX: cx }, { translateY: groundY }]}>
-         <RoundedRect x={-U * 4} y={-U * 0.5} width={U * 8} height={U} r={U/2} color={C_SHADOW} />
-      </Group>
-
       {/* Root Pivot (Feet) */}
       <Group transform={rootTr}>
 
@@ -265,8 +276,8 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
                     {/* Neck */}
                     <Path path={neckPath} color={C_NECK} style="stroke" strokeWidth={U * 1.2} strokeCap="round" />
 
-                    {/* Head (with periodic zoom/shake) */}
-                    <Group transform={faceZoomTr}>
+                    {/* Head */}
+                    <Group>
                         <Circle cx={headX} cy={headY} r={headR} color={C_BODY} />
                         <Circle cx={headX - U*0.7} cy={headY - U*0.7} r={U} color={C_BODY_LIGHT} />
                         <Circle cx={headX + U*0.5} cy={headY + U*0.7} r={U*0.8} color={C_CHEEK} />

@@ -16,7 +16,7 @@ interface ComboDisplayProps {
   y: number;
 }
 
-const COMBO_COLORS = ['#888888', '#4CAF50', '#FF9800', '#FF4500'];
+const COMBO_COLORS = ['#888888', '#88BB66', '#CC9944', '#CC7744'];
 
 export const ComboDisplay: React.FC<ComboDisplayProps> = ({
   comboMultiplier,
@@ -26,10 +26,10 @@ export const ComboDisplay: React.FC<ComboDisplayProps> = ({
   x,
   y,
 }) => {
-  const font = matchFont({ fontSize: 22 });
+  const font = matchFont({ fontSize: 16 });
 
-  const pillWidth = 64;
-  const pillHeight = 32;
+  const pillWidth = 50;
+  const pillHeight = 24;
   const pillX = x - pillWidth / 2;
   const pillY = y - pillHeight / 2;
 
@@ -57,7 +57,7 @@ export const ComboDisplay: React.FC<ComboDisplayProps> = ({
 
   const pillOpacity = useDerivedValue(() => {
     if (comboMultiplier.value < 2) return 0;
-    return 1;
+    return 0.7;
   });
 
   const breakOpacity = useDerivedValue(() =>

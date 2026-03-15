@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
-import { Canvas, Group, matchFont } from '@shopify/react-native-skia';
+import { Canvas, Group } from '@shopify/react-native-skia';
 import {
   useSharedValue,
   useFrameCallback,
@@ -10,29 +10,27 @@ import {
 import { BackgroundRenderer } from '../components/BackgroundRenderer';
 import { GroundRenderer } from '../components/GroundRenderer';
 import { StorkRenderer } from '../components/StorkRenderer';
-import { WindIndicator } from '../components/WindIndicator';
 import { TouchControls } from '../components/TouchControls';
-import { ComboDisplay } from '../components/ComboDisplay';
-import { CoinRenderer } from '../components/CoinRenderer';
 import { MilestoneRenderer } from '../components/MilestoneRenderer';
 import { WeatherRenderer } from '../components/WeatherRenderer';
+import { TERRAIN_SEG_W_RATIO, generateTerrain, encodeTerrainForWorklet, type TerrainSegment } from './constants';
 
 const SAFE_INSET = Platform.OS === 'ios' ? 44 : 0;
 
-const GRAVITY_TORQUE = 4.2;
-const PLAYER_TORQUE = 9.0;
+const GRAVITY_TORQUE = 2.8;
+const PLAYER_TORQUE = 7.0;
 const GAME_OVER_ANGLE = (42 * Math.PI) / 180;
 const CENTER_THRESHOLD = (10 * Math.PI) / 180;
 const BASE_WALK_SPEED = 8;
 const POINTS_PER_SECOND = 10;
 const PIXELS_TO_METERS = 0.1;
+const GRACE_PERIOD = 1.5; // seconds before full physics/scoring kicks in
+
+// Near hill parallax must match BackgroundRenderer
+const P_HILLS_NEAR = 1.2;
 
 // Combo thresholds (seconds to reach next level)
 const COMBO_THRESHOLDS = [3.0, 5.0, 8.0];
-
-// Coin constants
-const COIN_HITBOX_R = 44;
-const COIN_SCORE = 25;
 
 // Milestone thresholds (raw pixel distances)
 const MILESTONES = [1000, 5000, 10000]; // 100m, 500m, 1km
@@ -50,9 +48,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onGameOver,
   isPlaying,
 }) => {
-  const smallFont = matchFont({ fontSize: 20 });
   const canvasHeight = height - 60;
   const groundY = canvasHeight * 0.75; // stork feet level
+
+  // Track isPlaying as shared value for worklet access
+  const isPlayingShared = useSharedValue(isPlaying);
+  React.useEffect(() => {
+    isPlayingShared.value = isPlaying;
+  }, [isPlaying, isPlayingShared]);
 
   // === Core physics ===
   const angle = useSharedValue(0);
@@ -81,15 +84,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const shakeX = useSharedValue(0);
   const shakeTimer = useSharedValue(0);
 
-  // === Coin system ===
-  const coinX = useSharedValue(0);
-  const coinY = useSharedValue(0);
-  const coinVisible = useSharedValue(false);
-  const coinSpinAngle = useSharedValue(0);
-  const coinCollectAnim = useSharedValue(0);
-  const lastCoinSpawnDist = useSharedValue(0);
-  const coinTotalCollected = useSharedValue(0);
-
   // === Milestone system ===
   const milestoneAnim = useSharedValue(0);
   const milestoneFlash = useSharedValue(0);
@@ -98,8 +92,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const milestoneIndex = useSharedValue(0);
   const particleData = useSharedValue<number[]>([]); // [x,y,life, x,y,life, ...] × 32
 
-  // === Hill system ===
-  const hillPhase = useSharedValue(0); // 0=flat, 0~1=uphill, 1~2=downhill
+  // === Terrain (random per game) ===
+  const [terrainSegments, setTerrainSegments] = useState<TerrainSegment[]>(() => generateTerrain());
+  const terrainData = useSharedValue<number[]>(encodeTerrainForWorklet(terrainSegments));
+
+  // === Hill system (follows BackgroundRenderer near hills) ===
+  const storkHillY = useSharedValue(0); // vertical offset for stork on hills
+  const hillSlope = useSharedValue(0); // -1=uphill, +1=downhill, 0=flat
 
   // === Environment ===
   const skyPhase = useSharedValue(0);
@@ -128,24 +127,22 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     comboBrokenAnim.value = 0;
     shakeX.value = 0;
     shakeTimer.value = 0;
-    coinX.value = 0;
-    coinY.value = 0;
-    coinVisible.value = false;
-    coinSpinAngle.value = 0;
-    coinCollectAnim.value = 0;
-    lastCoinSpawnDist.value = 0;
-    coinTotalCollected.value = 0;
     milestoneAnim.value = 0;
     milestoneFlash.value = 0;
     milestoneStabilize.value = 0;
     lastMilestoneDist.value = 0;
     milestoneIndex.value = 0;
     particleData.value = [];
-    hillPhase.value = 0;
+    storkHillY.value = 0;
+    hillSlope.value = 0;
     skyPhase.value = 0;
     weatherType.value = 0;
     weatherParticles.value = [];
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, coinX, coinY, coinVisible, coinSpinAngle, coinCollectAnim, lastCoinSpawnDist, coinTotalCollected, milestoneAnim, milestoneFlash, milestoneStabilize, lastMilestoneDist, milestoneIndex, particleData, hillPhase, skyPhase, weatherType, weatherParticles]);
+    // Generate new random terrain
+    const newTerrain = generateTerrain();
+    setTerrainSegments(newTerrain);
+    terrainData.value = encodeTerrainForWorklet(newTerrain);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, milestoneAnim, milestoneFlash, milestoneStabilize, lastMilestoneDist, milestoneIndex, particleData, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, terrainData]);
 
   React.useEffect(() => {
     if (isPlaying) resetGame();
@@ -158,20 +155,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   useFrameCallback((frameInfo) => {
     'worklet';
-    if (!isPlaying || isGameOver.value) return;
+    if (!isPlayingShared.value || isGameOver.value) return;
 
     const dt = frameInfo.timeSincePreviousFrame
       ? Math.min(frameInfo.timeSincePreviousFrame / 1000, 0.05)
       : 1 / 60;
     const t = elapsedTime.value;
 
-    // ──── Difficulty ────
-    const wave = (Math.sin(t * 2.2) + 1) * 0.5;
-    const surge = 1.0 + wave * 0.45;
-    const gravityMult = (2.6 + t * 0.12) * surge;
-    const damping = Math.max(0.65, 0.80 - t * 0.006) - wave * 0.06;
-    const windStr = Math.min((2.5 + t * 0.15) * surge, 8.0);
-    const windChangeInt = Math.max(0.35, 2.0 - t * 0.35);
+    // ──── Grace Period ────
+    const inGrace = t < GRACE_PERIOD;
+    const graceRatio = inGrace ? t / GRACE_PERIOD : 1.0; // 0→1 over grace period
+
+    // ──── Difficulty (balanced ramp) ────
+    const effectiveT = Math.max(0, t - GRACE_PERIOD); // difficulty ramps from 0 after grace
+    const wave = (Math.sin(effectiveT * 1.5) + 1) * 0.5;
+    const surge = 1.0 + wave * 0.25;
+    const gravityMult = (2.0 + effectiveT * 0.18) * surge * graceRatio;
+    const damping = Math.max(0.60, 0.83 - effectiveT * 0.009) - wave * 0.06;
+    const windStr = Math.min((2.8 + effectiveT * 0.22) * surge, 10.0) * graceRatio;
+    const windChangeInt = Math.max(0.28, 1.3 - effectiveT * 0.35);
 
     // ──── Wind ────
     const windPhase = Math.floor(t / windChangeInt);
@@ -191,17 +193,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     prevInputRight.value = inputRight.value;
 
     if (leftJustPressed || rightJustPressed) {
-      tapBoost.value = Math.min(tapBoost.value + 0.25, 0.8);
+      tapBoost.value = Math.min(tapBoost.value + 0.15, 0.5);
     }
-    tapBoost.value = Math.max(0, tapBoost.value - 2.0 * dt);
+    tapBoost.value = Math.max(0, tapBoost.value - 2.5 * dt);
 
     // ──── Physics ────
-    const clampedGravityMult = Math.min(gravityMult, 4.0);
+    const clampedGravityMult = Math.min(gravityMult, 6.0);
     // Milestone stabilization: reduce gravity 75% for 2s
     if (milestoneStabilize.value > 0) milestoneStabilize.value -= dt;
     const stabilizeFactor = milestoneStabilize.value > 0 ? 0.25 : 1.0;
     const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * clampedGravityMult * stabilizeFactor;
-    const scaledPlayerTorque = PLAYER_TORQUE * (1.0 + tapBoost.value);
+    // Recovery assist: the more tilted, the stronger the player push (up to 1.6x at max tilt)
+    const angleRatio = Math.abs(angle.value) / GAME_OVER_ANGLE;
+    const recoveryAssist = 1.0 + angleRatio * 0.4;
+    const scaledPlayerTorque = PLAYER_TORQUE * (1.0 + tapBoost.value) * recoveryAssist;
     let playerAccel = 0;
     if (inputLeft.value) playerAccel -= scaledPlayerTorque;
     if (inputRight.value) playerAccel += scaledPlayerTorque;
@@ -210,8 +215,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value) * dt) * damping;
     angle.value += angularVelocity.value * dt;
 
-    // ──── Game Over Check ────
-    if (Math.abs(angle.value) >= GAME_OVER_ANGLE) {
+    // ──── Game Over Check (skip during grace period) ────
+    if (!inGrace && Math.abs(angle.value) >= GAME_OVER_ANGLE) {
       isGameOver.value = true;
       runOnJS(handleGameOver)(
         Math.floor(score.value),
@@ -223,32 +228,102 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     // ──── Time & Distance ────
     elapsedTime.value += dt;
 
-    // Speed surge: ~8s cycle, 1.0x to 1.6x
-    const speedWave = (Math.sin(elapsedTime.value * 0.8) + 1) * 0.5;
-    const speedBurst = 1.0 + speedWave * 0.6;
+    // Speed surge: ~12.6s cycle, 1.0x to 1.3x
+    const speedWave = (Math.sin(elapsedTime.value * 0.5) + 1) * 0.5;
+    const speedBurst = 1.0 + speedWave * 0.3;
 
-    // Hill system: hills appear every 300-600px based on seeded distance
-    const HILL_PERIOD = 400; // base period
-    const hillProgress = (distance.value % HILL_PERIOD) / HILL_PERIOD; // 0→1 cycle
-    const isOnHill = hillProgress > 0.6 && hillProgress < 0.95; // 35% of cycle is hill
-    if (isOnHill) {
-      const hillLocal = (hillProgress - 0.6) / 0.35; // 0→1 within hill
-      hillPhase.value = hillLocal < 0.5 ? hillLocal * 2 : 2 - hillLocal * 2; // 0→1→0 (peak at middle)
-    } else {
-      hillPhase.value = 0;
+    // Update distance FIRST, then detect hills using the same distance the renderer sees
+    walkSpeed.value = BASE_WALK_SPEED * (1 + effectiveT * 0.005) * speedBurst;
+    if (!inGrace) {
+      distance.value += walkSpeed.value * dt;
     }
 
-    // Hill modifies walk speed and adds jitter
-    const hillSpeedMod = isOnHill
-      ? (hillPhase.value > 0.5 ? 0.7 : 1.3) // uphill slower, downhill faster
-      : 1.0;
-    walkSpeed.value = BASE_WALK_SPEED * (1 + elapsedTime.value * 0.003) * speedBurst * hillSpeedMod;
-    distance.value += walkSpeed.value * dt;
+    // Near-hill terrain following (segment-based, matches GroundRenderer)
+    const nearHillH = canvasHeight * 0.30;
+    const segW = width * TERRAIN_SEG_W_RATIO;
 
-    // Hill adds extra gravity destabilization
-    if (isOnHill) {
-      const hillJitter = Math.sin(elapsedTime.value * 15) * 0.3 * hillPhase.value;
+    // Decode terrain from shared flat array: [type, widthRatio, heightRatio, ...]
+    const td = terrainData.value;
+    const segCount = td.length / 3;
+
+    // Compute total pattern width from segments
+    let totalPatternW = 0;
+    for (let si = 0; si < segCount; si++) {
+      totalPatternW += td[si * 3 + 1] * segW;
+    }
+
+    // Group-local X for the stork (matching GroundRenderer hillScrollTr)
+    const groupScrollX = -(distance.value * P_HILLS_NEAR) % totalPatternW;
+    const groupX = width / 2 - groupScrollX;
+
+    // Find which segment the stork is in
+    const wrappedX = ((groupX % totalPatternW) + totalPatternW) % totalPatternW;
+    let segStart = 0;
+    let segIdx = 0;
+    for (let si = 0; si < segCount; si++) {
+      const sw = td[si * 3 + 1] * segW;
+      if (wrappedX < segStart + sw) {
+        segIdx = si;
+        break;
+      }
+      segStart += sw;
+      if (si === segCount - 1) segIdx = si;
+    }
+
+    const segType = td[segIdx * 3];      // 0=flat, 1=hill, 2=valley
+    const segWidthR = td[segIdx * 3 + 1];
+    const segHeightR = td[segIdx * 3 + 2];
+    const currentSegW = segWidthR * segW;
+    const localT = (wrappedX - segStart) / currentSegW; // 0..1 within segment
+
+    let hillCurveHeight = 0;
+    let rawSlope = 0;
+    let hillPhaseVal = 0;
+
+    if (segType === 1) { // hill
+      const h = nearHillH * (segHeightR || 1.0);
+      hillCurveHeight = 2 * localT * (1 - localT) * h;
+      rawSlope = -(1 - 2 * localT);
+      hillPhaseVal = hillCurveHeight / (0.5 * nearHillH);
+    } else if (segType === 2) { // valley
+      const h = nearHillH * (segHeightR || 0.3);
+      hillCurveHeight = -(2 * localT * (1 - localT) * h);
+      rawSlope = (1 - 2 * localT);
+      hillPhaseVal = Math.abs(hillCurveHeight) / (0.5 * nearHillH);
+    }
+    // flat: hillCurveHeight = 0, rawSlope = 0, hillPhaseVal = 0
+
+    const baseYOffset = canvasHeight * 0.02;
+    if (segType === 0) { // flat
+      storkHillY.value = 0;
+    } else if (segType === 1) { // hill
+      const hillYFromGround = baseYOffset - hillCurveHeight;
+      storkHillY.value = Math.min(0, hillYFromGround);
+    } else { // valley
+      storkHillY.value = -hillCurveHeight;
+    }
+
+    hillSlope.value = rawSlope * hillPhaseVal;
+
+    // Hill difficulty: gentle slope push + jitter when on a hill
+    if (hillPhaseVal > 0.15) {
+      const slopePush = hillSlope.value * 1.5;
+      angularVelocity.value += slopePush * dt;
+
+      const hillJitter = Math.sin(elapsedTime.value * 18) * 0.8 * hillPhaseVal;
       angularVelocity.value += hillJitter * dt;
+
+      // Speed: slower uphill, faster downhill
+      walkSpeed.value *= localT < 0.5 ? 0.98 : 1.03;
+
+      // Peak gust (reduced)
+      if (hillPhaseVal > 0.7) {
+        const gustBurst = Math.sin(elapsedTime.value * 25) * 1.5 * (hillPhaseVal - 0.7) * 3.33;
+        angularVelocity.value += gustBurst * dt;
+        if (shakeTimer.value <= 0) {
+          shakeTimer.value = 0.15;
+        }
+      }
     }
 
     // ──── Combo System ────
@@ -272,51 +347,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
 
     const centerBonus = inCenter ? 1.5 : 1.0;
-    score.value += POINTS_PER_SECOND * centerBonus * comboMultiplier.value * dt;
+    if (!inGrace) {
+      score.value += POINTS_PER_SECOND * centerBonus * comboMultiplier.value * dt;
+    }
 
-    // Shake
+    // Shake: combo level-up + danger zone continuous micro-shake
+    const dangerRatio = Math.abs(angle.value) / GAME_OVER_ANGLE;
     if (shakeTimer.value > 0) {
       shakeTimer.value -= dt;
       const mag = (shakeTimer.value / 0.25) * 4.0;
       shakeX.value = (Math.sin(elapsedTime.value * 80) > 0 ? 1 : -1) * mag;
+    } else if (dangerRatio > 0.7) {
+      // Continuous micro-shake when dangerously tilted
+      const dangerMag = (dangerRatio - 0.7) / 0.3 * 2.5;
+      shakeX.value = Math.sin(elapsedTime.value * 60) * dangerMag;
     } else {
       shakeX.value = 0;
     }
     if (comboLevelUpAnim.value > 0) comboLevelUpAnim.value -= dt;
     if (comboBrokenAnim.value > 0) comboBrokenAnim.value -= dt;
-
-    // ──── Coin System ────
-    const storkCX = width / 2;
-    const storkCY = groundY - 80;
-
-    if (!coinVisible.value) {
-      const hashIdx = Math.floor(lastCoinSpawnDist.value / 100);
-      const rng = Math.abs(Math.sin(hashIdx * 137.508 + 42.0));
-      const interval = 80 + rng * 70;
-      if (distance.value - lastCoinSpawnDist.value > interval) {
-        const heightRng = Math.abs(Math.sin(hashIdx * 9.3));
-        coinX.value = width + 50;
-        coinY.value = groundY - 30 - heightRng * 55;
-        coinVisible.value = true;
-        lastCoinSpawnDist.value = distance.value;
-      }
-    }
-
-    if (coinVisible.value) {
-      coinX.value -= walkSpeed.value * 1.5 * dt;
-      coinSpinAngle.value += 3.0 * dt;
-
-      const dx = coinX.value - storkCX;
-      const dy = coinY.value - storkCY;
-      if (dx * dx + dy * dy < COIN_HITBOX_R * COIN_HITBOX_R) {
-        score.value += COIN_SCORE * comboMultiplier.value;
-        coinTotalCollected.value += 1;
-        coinCollectAnim.value = 0.4;
-        coinVisible.value = false;
-      }
-      if (coinX.value < -50) coinVisible.value = false;
-    }
-    if (coinCollectAnim.value > 0) coinCollectAnim.value -= dt;
 
     // ──── Milestone Events ────
     const d = distance.value;
@@ -432,17 +481,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Bridge shared values to React state for HUD
   const [displayDist, setDisplayDist] = useState(0);
   const [displayCombo, setDisplayCombo] = useState(1);
-  const [displayCoins, setDisplayCoins] = useState(0);
 
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setDisplayDist(Math.floor(distance.value * PIXELS_TO_METERS));
       setDisplayCombo(comboMultiplier.value);
-      setDisplayCoins(coinTotalCollected.value);
     }, 200);
     return () => clearInterval(interval);
-  }, [isPlaying, distance, comboMultiplier, coinTotalCollected]);
+  }, [isPlaying, distance, comboMultiplier]);
 
   const onLeftPress = useCallback(() => { inputLeft.value = true; }, [inputLeft]);
   const onLeftRelease = useCallback(() => { inputLeft.value = false; }, [inputLeft]);
@@ -455,48 +502,29 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   return (
     <View style={styles.container}>
       <Canvas style={{ width, height: canvasHeight }}>
-        <Group transform={shakeTransform}>
+        <Group>
           <BackgroundRenderer
             width={width}
             height={canvasHeight}
             distance={distance}
             skyPhase={skyPhase}
           />
-          <GroundRenderer width={width} height={canvasHeight} distance={distance} hillPhase={hillPhase} />
-          <CoinRenderer
-            coinX={coinX}
-            coinY={coinY}
-            coinVisible={coinVisible}
-            coinSpinAngle={coinSpinAngle}
-            coinCollectAnim={coinCollectAnim}
-            groundY={groundY}
-          />
+          <GroundRenderer width={width} height={canvasHeight} distance={distance} skyPhase={skyPhase} terrainSegments={terrainSegments} />
           <StorkRenderer
             width={width}
             height={canvasHeight}
             angle={angle}
             animFrame={animFrame}
             elapsedTime={elapsedTime}
+            hillY={storkHillY}
+            hillSlope={hillSlope}
+            walkSpeed={walkSpeed}
           />
           <WeatherRenderer
             weatherType={weatherType}
             particles={weatherParticles}
             width={width}
             height={canvasHeight}
-          />
-          <ComboDisplay
-            comboMultiplier={comboMultiplier}
-            comboLevelUpAnim={comboLevelUpAnim}
-            comboBrokenAnim={comboBrokenAnim}
-            elapsedTime={elapsedTime}
-            x={width / 2}
-            y={40}
-          />
-          <WindIndicator
-            windForce={windForceVal}
-            x={width - SAFE_INSET - 200}
-            y={80}
-            font={smallFont}
           />
         </Group>
         <MilestoneRenderer
@@ -515,9 +543,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         <View style={styles.hud} pointerEvents="none">
           <View style={styles.hudLeft}>
             <Text style={styles.hudDist}>{displayDist}m</Text>
-            {displayCoins > 0 && (
-              <Text style={styles.hudCoins}>🪙 {displayCoins}</Text>
-            )}
           </View>
         </View>
       )}
@@ -559,14 +584,5 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     letterSpacing: 1,
-  },
-  hudCoins: {
-    fontFamily: 'pixel',
-    fontSize: 16,
-    color: '#FFD700',
-    marginTop: 4,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
 });

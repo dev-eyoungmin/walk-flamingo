@@ -28,14 +28,10 @@ if (!IS_EXPO_GO) {
           android: 'ca-app-pub-xxxxxxxxxxxxxxxx/rrrrrrrrrr',
         }) ?? TestIds.REWARDED;
 
-    INTERSTITIAL_ID = IS_TEST
-      ? TestIds.INTERSTITIAL
-      : Platform.select({
-          ios: 'ca-app-pub-7783064858826225/INTERSTITIAL_ID',
-          android: 'ca-app-pub-xxxxxxxxxxxxxxxx/iiiiiiiiii',
-        }) ?? TestIds.INTERSTITIAL;
-  } catch {
-    // Ads module not available
+    // Interstitial: use test IDs until real ad unit IDs are created in AdMob console
+    INTERSTITIAL_ID = TestIds.INTERSTITIAL;
+  } catch (e) {
+    console.warn('[AdConfig] Ads module not available:', e);
   }
 }
 

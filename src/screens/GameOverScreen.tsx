@@ -119,7 +119,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
             {distance}m
           </Text>
           <Text style={[styles.rankText, { fontSize: s(14), marginTop: s(4) }]}>
-            {rank.emoji} {rank.nameKo}
+            {rank.emoji} {rank.name}
           </Text>
         </Animated.View>
 
