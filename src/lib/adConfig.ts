@@ -8,7 +8,7 @@ export const IS_EXPO_GO = Constants.appOwnership === 'expo';
  * Use test ads until AdMob app review is complete.
  * Change to false once AdMob dashboard shows app status as "Ready".
  */
-const USE_TEST_ADS = true;
+const USE_TEST_ADS = false;
 
 // Only import ad IDs when not in Expo Go
 let BANNER_ID = '';
