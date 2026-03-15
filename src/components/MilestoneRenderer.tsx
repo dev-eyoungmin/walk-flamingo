@@ -20,6 +20,39 @@ interface MilestoneRendererProps {
 
 const CONFETTI_COLORS = ['#FF4136', '#2ECC40', '#0074D9', '#FFDC00'];
 
+// Individual particle component to avoid hooks-in-map violation
+const ConfettiParticle: React.FC<{
+  particleIdx: number;
+  colorIdx: number;
+  milestoneAnim: SharedValue<number>;
+  particleData: SharedValue<number[]>;
+}> = ({ particleIdx, colorIdx, milestoneAnim, particleData }) => {
+  const particleOpacity = useDerivedValue(() => {
+    if (milestoneAnim.value <= 0) return 0;
+    const baseIdx = particleIdx * 3;
+    const life = particleData.value[baseIdx + 2] ?? 0;
+    return Math.max(0, life);
+  });
+  const particleTransform = useDerivedValue(() => {
+    const baseIdx = particleIdx * 3;
+    const px = particleData.value[baseIdx] ?? -100;
+    const py = particleData.value[baseIdx + 1] ?? -100;
+    return [{ translateX: px - 3 }, { translateY: py - 3 }];
+  });
+
+  return (
+    <Rect
+      x={0}
+      y={0}
+      width={6}
+      height={6}
+      color={CONFETTI_COLORS[colorIdx]}
+      opacity={particleOpacity}
+      transform={particleTransform}
+    />
+  );
+};
+
 export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
   milestoneAnim,
   milestoneFlash,
@@ -60,8 +93,6 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
 
   const labelText = useDerivedValue(() => 'NEW RECORD!');
 
-  // Confetti particles - draw as small rects
-  // particleData layout: [x0, y0, life0, x1, y1, life1, ...] 32 particles × 3 values
   const confettiRects = useMemo(() => {
     const rects: { colorIdx: number; particleIdx: number }[] = [];
     for (let i = 0; i < 32; i++) {
@@ -83,32 +114,15 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
       />
 
       {/* Confetti particles */}
-      {confettiRects.map(({ colorIdx, particleIdx }) => {
-        const particleOpacity = useDerivedValue(() => {
-          if (milestoneAnim.value <= 0) return 0;
-          const baseIdx = particleIdx * 3;
-          const life = particleData.value[baseIdx + 2] ?? 0;
-          return Math.max(0, life);
-        });
-        const particleTransform = useDerivedValue(() => {
-          const baseIdx = particleIdx * 3;
-          const px = particleData.value[baseIdx] ?? -100;
-          const py = particleData.value[baseIdx + 1] ?? -100;
-          return [{ translateX: px - 3 }, { translateY: py - 3 }];
-        });
-        return (
-          <Rect
-            key={particleIdx}
-            x={0}
-            y={0}
-            width={6}
-            height={6}
-            color={CONFETTI_COLORS[colorIdx]}
-            opacity={particleOpacity}
-            transform={particleTransform}
-          />
-        );
-      })}
+      {confettiRects.map(({ colorIdx, particleIdx }) => (
+        <ConfettiParticle
+          key={particleIdx}
+          particleIdx={particleIdx}
+          colorIdx={colorIdx}
+          milestoneAnim={milestoneAnim}
+          particleData={particleData}
+        />
+      ))}
 
       {/* Badge */}
       <Group transform={badgeScale} opacity={badgeOpacity}>
