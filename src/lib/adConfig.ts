@@ -4,7 +4,11 @@ import Constants from 'expo-constants';
 /** Check if running in Expo Go (ads not supported) */
 export const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
-const IS_TEST = __DEV__;
+/**
+ * Use test ads until AdMob app review is complete.
+ * Change to false once AdMob dashboard shows app status as "Ready".
+ */
+const USE_TEST_ADS = true;
 
 // Only import ad IDs when not in Expo Go
 let BANNER_ID = '';
@@ -14,22 +18,26 @@ let INTERSTITIAL_ID = '';
 if (!IS_EXPO_GO) {
   try {
     const { TestIds } = require('react-native-google-mobile-ads');
-    BANNER_ID = IS_TEST
+    BANNER_ID = USE_TEST_ADS
       ? TestIds.ADAPTIVE_BANNER
       : Platform.select({
           ios: 'ca-app-pub-7783064858826225/4010246083',
           android: 'ca-app-pub-xxxxxxxxxxxxxxxx/bbbbbbbbbb',
         }) ?? TestIds.ADAPTIVE_BANNER;
 
-    REWARDED_ID = IS_TEST
+    REWARDED_ID = USE_TEST_ADS
       ? TestIds.REWARDED
       : Platform.select({
           ios: 'ca-app-pub-7783064858826225/8245004569',
           android: 'ca-app-pub-xxxxxxxxxxxxxxxx/rrrrrrrrrr',
         }) ?? TestIds.REWARDED;
 
-    // Interstitial: use test IDs until real ad unit IDs are created in AdMob console
-    INTERSTITIAL_ID = TestIds.INTERSTITIAL;
+    INTERSTITIAL_ID = USE_TEST_ADS
+      ? TestIds.INTERSTITIAL
+      : Platform.select({
+          ios: '', // TODO: create interstitial ad unit in AdMob console
+          android: '',
+        }) ?? TestIds.INTERSTITIAL;
   } catch (e) {
     console.warn('[AdConfig] Ads module not available:', e);
   }
