@@ -15,7 +15,7 @@ let BANNER_ID = '';
 let REWARDED_ID = '';
 let INTERSTITIAL_ID = '';
 
-if (!IS_EXPO_GO) {
+if (!IS_EXPO_GO && !__DEV__) {
   try {
     const { TestIds } = require('react-native-google-mobile-ads');
     BANNER_ID = USE_TEST_ADS

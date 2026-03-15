@@ -79,7 +79,6 @@ export const AppNavigator: React.FC = () => {
           width={width}
           height={height}
           isPlaying={screen === 'playing'}
-          highScore={highScore}
           onGameOver={handleGameOver}
         />
       )}

@@ -7,7 +7,7 @@ export function useRewardedAd() {
   const onRewardRef = useRef<(() => void) | null>(null);
 
   const loadAd = useCallback(() => {
-    if (IS_EXPO_GO || !REWARDED_AD_UNIT_ID) return () => {};
+    if (IS_EXPO_GO || !REWARDED_AD_UNIT_ID || __DEV__) return () => {};
 
     try {
       const { RewardedAd, RewardedAdEventType, AdEventType } =
@@ -64,8 +64,12 @@ export function useRewardedAd() {
   const showAd = useCallback(
     (onReward: () => void) => {
       if (loaded && adRef.current) {
-        onRewardRef.current = onReward;
-        adRef.current.show();
+        try {
+          onRewardRef.current = onReward;
+          adRef.current.show();
+        } catch {
+          onReward();
+        }
       } else {
         onReward();
       }

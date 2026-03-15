@@ -62,36 +62,33 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
   width,
   height,
 }) => {
-  const bigFont = matchFont({ fontSize: 36 });
-  const smallFont = matchFont({ fontSize: 18 });
+  const bigFont = matchFont({ fontSize: 24 });
+  const smallFont = matchFont({ fontSize: 14 });
 
   const cx = width / 2;
   const cy = height / 2 - 20;
-  const badgeW = 220;
-  const badgeH = 72;
+  const badgeW = 200;
+  const badgeH = 56;
 
   // Screen flash
   const flashOpacity = useDerivedValue(() => milestoneFlash.value * 0.7);
 
   // Badge visibility & pulse
-  const badgeOpacity = useDerivedValue(() => {
-    if (milestoneAnim.value <= 0) return 0;
-    return Math.min(1, milestoneAnim.value / 0.5);
-  });
+  // TODO: revert after testing - force always visible
+  const badgeOpacity = useDerivedValue(() => 1);
 
   const badgeScale = useDerivedValue(() => {
-    if (milestoneAnim.value <= 0) return [{ scale: 0 }];
-    const pulse = 1 + Math.sin(elapsedTime.value * 7) * 0.04;
     return [
       { translateX: cx },
       { translateY: cy },
-      { scale: pulse },
+      { scale: 1 },
       { translateX: -cx },
       { translateY: -cy },
     ];
   });
 
   const labelText = useDerivedValue(() => 'NEW RECORD!');
+  const subLabelText = useDerivedValue(() => 'BEST RECORD!');
 
   const confettiRects = useMemo(() => {
     const rects: { colorIdx: number; particleIdx: number }[] = [];
@@ -124,6 +121,15 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
         />
       ))}
 
+      {/* DEBUG: test text outside group */}
+      <Text
+        x={100}
+        y={50}
+        text={labelText}
+        font={bigFont}
+        color="red"
+      />
+
       {/* Badge */}
       <Group transform={badgeScale} opacity={badgeOpacity}>
         {/* Dark backing */}
@@ -146,17 +152,17 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
         />
         {/* Record label */}
         <Text
-          x={cx - 80}
-          y={cy + 8}
+          x={cx - 60}
+          y={cy + 2}
           text={labelText}
           font={bigFont}
           color="#FFD700"
         />
         {/* Sub-label */}
         <Text
-          x={cx - 62}
-          y={cy + 30}
-          text="BEST RECORD!"
+          x={cx - 48}
+          y={cy + 20}
+          text={subLabelText}
           font={smallFont}
           color="#FFFFFF"
         />

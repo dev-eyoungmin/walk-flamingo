@@ -11,7 +11,6 @@ import { BackgroundRenderer } from '../components/BackgroundRenderer';
 import { GroundRenderer } from '../components/GroundRenderer';
 import { StorkRenderer } from '../components/StorkRenderer';
 import { TouchControls } from '../components/TouchControls';
-import { MilestoneRenderer } from '../components/MilestoneRenderer';
 import { WeatherRenderer } from '../components/WeatherRenderer';
 import { TERRAIN_SEG_W_RATIO, generateTerrain, encodeTerrainForWorklet, type TerrainSegment } from './constants';
 
@@ -40,7 +39,6 @@ interface GameCanvasProps {
   height: number;
   onGameOver: (data: { score: number; distance: number }) => void;
   isPlaying: boolean;
-  highScore: number;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -48,7 +46,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   height,
   onGameOver,
   isPlaying,
-  highScore,
 }) => {
   const canvasHeight = height - 60;
   const groundY = canvasHeight * 0.75; // stork feet level
@@ -59,10 +56,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     isPlayingShared.value = isPlaying;
   }, [isPlaying, isPlayingShared]);
 
-  const highScoreShared = useSharedValue(highScore);
-  React.useEffect(() => {
-    highScoreShared.value = highScore;
-  }, [highScore, highScoreShared]);
+
 
   // === Core physics ===
   const angle = useSharedValue(0);
@@ -91,13 +85,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const shakeX = useSharedValue(0);
   const shakeTimer = useSharedValue(0);
 
-  // === New Record celebration ===
-  const milestoneAnim = useSharedValue(0);
-  const milestoneFlash = useSharedValue(0);
-  const milestoneStabilize = useSharedValue(0);
-  const recordBroken = useSharedValue(0); // 0=not yet, 1=already triggered
-  const milestoneIndex = useSharedValue(0);
-  const particleData = useSharedValue<number[]>([]); // [x,y,life, x,y,life, ...] × 32
 
   // === Terrain (random per game) ===
   const [terrainSegments, setTerrainSegments] = useState<TerrainSegment[]>(() => generateTerrain());
@@ -134,12 +121,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     comboBrokenAnim.value = 0;
     shakeX.value = 0;
     shakeTimer.value = 0;
-    milestoneAnim.value = 0;
-    milestoneFlash.value = 0;
-    milestoneStabilize.value = 0;
-    recordBroken.value = 0;
-    milestoneIndex.value = 0;
-    particleData.value = [];
     storkHillY.value = 0;
     hillSlope.value = 0;
     skyPhase.value = 0;
@@ -149,7 +130,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const newTerrain = generateTerrain();
     setTerrainSegments(newTerrain);
     terrainData.value = encodeTerrainForWorklet(newTerrain);
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, milestoneAnim, milestoneFlash, milestoneStabilize, recordBroken, milestoneIndex, particleData, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, terrainData]);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, terrainData]);
 
   React.useEffect(() => {
     if (isPlaying) resetGame();
@@ -206,10 +187,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // ──── Physics ────
     const clampedGravityMult = Math.min(gravityMult, 6.0);
-    // Milestone stabilization: reduce gravity 75% for 2s
-    if (milestoneStabilize.value > 0) milestoneStabilize.value -= dt;
-    const stabilizeFactor = milestoneStabilize.value > 0 ? 0.25 : 1.0;
-    const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * clampedGravityMult * stabilizeFactor;
+    const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * clampedGravityMult;
     // Recovery assist: the more tilted, the stronger the player push (up to 2.2x at max tilt)
     const angleRatio = Math.abs(angle.value) / GAME_OVER_ANGLE;
     const recoveryAssist = 1.0 + angleRatio * 1.2;
@@ -362,47 +340,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (comboLevelUpAnim.value > 0) comboLevelUpAnim.value -= dt;
     if (comboBrokenAnim.value > 0) comboBrokenAnim.value -= dt;
 
-    // ──── New Record Event ────
-    // Only trigger if there is a previous high score (not first game)
-    const distMeters = distance.value * PIXELS_TO_METERS;
-    const hsThreshold = highScoreShared.value; // highScore is in meters
-    if (hsThreshold > 0 && recordBroken.value === 0 && distMeters >= hsThreshold) {
-      recordBroken.value = 1;
-      milestoneAnim.value = 3.0;
-      milestoneFlash.value = 1.0;
-      milestoneStabilize.value = 2.0;
-      milestoneIndex.value = 0;
-
-      // Burst particles: 32 particles × 3 values (x, y, life)
-      const cx = width / 2;
-      const cy = canvasHeight / 2;
-      const pts: number[] = [];
-      for (let p = 0; p < 32; p++) {
-        const a = (p / 32) * Math.PI * 2;
-        pts.push(cx, cy, 1.0);
-      }
-      particleData.value = pts;
-    }
-
-    if (milestoneAnim.value > 0) {
-      milestoneAnim.value -= dt;
-      milestoneFlash.value = Math.max(0, milestoneFlash.value - dt * 4);
-
-      const pts = particleData.value;
-      if (pts.length > 0) {
-        for (let p = 0; p < 32; p++) {
-          const bi = p * 3;
-          if ((pts[bi + 2] ?? 0) > 0) {
-            const a = (p / 32) * Math.PI * 2;
-            const spd = 120 + (p % 7) * 15;
-            pts[bi] += Math.cos(a) * spd * dt;
-            pts[bi + 1] += (Math.sin(a) * spd - 80) * dt + 200 * dt * dt;
-            pts[bi + 2] -= dt * 0.55;
-          }
-        }
-        particleData.value = [...pts];
-      }
-    }
 
     // ──── Environment: Sky Phase ────
     const d = distance.value;
@@ -522,15 +459,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             height={canvasHeight}
           />
         </Group>
-        <MilestoneRenderer
-          milestoneAnim={milestoneAnim}
-          milestoneFlash={milestoneFlash}
-          milestoneIndex={milestoneIndex}
-          particleData={particleData}
-          elapsedTime={elapsedTime}
-          width={width}
-          height={canvasHeight}
-        />
       </Canvas>
 
       {/* HUD Overlay */}
