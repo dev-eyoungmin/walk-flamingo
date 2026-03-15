@@ -50,11 +50,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const canvasHeight = height - 60;
   const groundY = canvasHeight * 0.75; // stork feet level
 
-  // Track isPlaying as shared value for worklet access
+  // Track props as shared values for worklet access
   const isPlayingShared = useSharedValue(isPlaying);
   React.useEffect(() => {
     isPlayingShared.value = isPlaying;
   }, [isPlaying, isPlayingShared]);
+
+  const highScoreShared = useSharedValue(highScore);
+  React.useEffect(() => {
+    highScoreShared.value = highScore;
+  }, [highScore, highScoreShared]);
 
   // === Core physics ===
   const angle = useSharedValue(0);
@@ -357,7 +362,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     // ──── New Record Event ────
     // Only trigger if there is a previous high score (not first game)
     const distMeters = distance.value * PIXELS_TO_METERS;
-    const hsThreshold = highScore; // highScore is in meters
+    const hsThreshold = highScoreShared.value; // highScore is in meters
     if (hsThreshold > 0 && recordBroken.value === 0 && distMeters >= hsThreshold) {
       recordBroken.value = 1;
       milestoneAnim.value = 3.0;
