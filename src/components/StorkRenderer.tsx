@@ -10,7 +10,6 @@ interface StorkRendererProps {
   elapsedTime: SharedValue<number>;
   hillY?: SharedValue<number>;
   hillSlope?: SharedValue<number>; // -1=uphill, +1=downhill, 0=flat
-  walkSpeed?: SharedValue<number>;
 }
 
 export const StorkRenderer: React.FC<StorkRendererProps> = ({
@@ -21,7 +20,6 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   elapsedTime,
   hillY,
   hillSlope,
-  walkSpeed,
 }) => {
   const cx = width / 2;
   const groundY = height * 0.75;
@@ -109,50 +107,33 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   });
 
 
-  // 4. Legs: Rotate relative to Hip (0,0) — slope & walkSpeed affect cadence & swing
-  const BASE_SPEED = 8; // must match BASE_WALK_SPEED in GameCanvas
+  // 4. Legs: Rotate relative to Hip (0,0) — constant cadence
   const backLegTr = useDerivedValue(() => {
-    const slope = hillSlope?.value ?? 0;
-    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
-    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
-    const swingMult = 1.0 + slope * 0.35;
-    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
-    const swing = Math.sin(t) * LEG_SWING * swingMult;
+    const t = elapsedTime.value * WALK_HZ * TAU;
+    const swing = Math.sin(t) * LEG_SWING;
     return [{ rotate: swing }];
   });
 
   const frontLegTr = useDerivedValue(() => {
-    const slope = hillSlope?.value ?? 0;
-    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
-    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
-    const swingMult = 1.0 + slope * 0.35;
-    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
-    const swing = Math.sin(t + Math.PI) * LEG_SWING * swingMult;
+    const t = elapsedTime.value * WALK_HZ * TAU;
+    const swing = Math.sin(t + Math.PI) * LEG_SWING;
     return [{ rotate: swing }];
   });
 
-  // 5. Knees: Move down to end of thigh, then rotate — higher lift uphill
+  // 5. Knees: Move down to end of thigh, then rotate
   const kneeBendBack = useDerivedValue(() => {
-    const slope = hillSlope?.value ?? 0;
-    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
-    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
-    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
+    const t = elapsedTime.value * WALK_HZ * TAU;
     const sinT = Math.sin(t);
-    const liftMult = 1.0 - slope * 0.4;
-    const baseBend = 20 + (slope < 0 ? Math.abs(slope) * 10 : 0);
-    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8 * liftMult;
+    const baseBend = 20;
+    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8;
     return [{ translateY: thighLen }, { rotate: bend }];
   });
 
   const kneeBendFront = useDerivedValue(() => {
-    const slope = hillSlope?.value ?? 0;
-    const speedRatio = (walkSpeed?.value ?? BASE_SPEED) / BASE_SPEED;
-    const cadenceMult = (1.0 - slope * 0.35) * speedRatio;
-    const t = elapsedTime.value * WALK_HZ * cadenceMult * TAU;
+    const t = elapsedTime.value * WALK_HZ * TAU;
     const sinT = Math.sin(t + Math.PI);
-    const liftMult = 1.0 - slope * 0.4;
-    const baseBend = 20 + (slope < 0 ? Math.abs(slope) * 10 : 0);
-    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8 * liftMult;
+    const baseBend = 20;
+    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8;
     return [{ translateY: thighLen }, { rotate: bend }];
   });
 

@@ -16,7 +16,7 @@ interface ComboDisplayProps {
   y: number;
 }
 
-const COMBO_COLORS = ['#888888', '#88BB66', '#CC9944', '#CC7744'];
+const COMBO_COLORS = ['#888888', '#88BB66', '#DAA520', '#E84393'];
 
 export const ComboDisplay: React.FC<ComboDisplayProps> = ({
   comboMultiplier,
@@ -37,10 +37,11 @@ export const ComboDisplay: React.FC<ComboDisplayProps> = ({
 
   const pillScale = useDerivedValue(() => {
     if (comboMultiplier.value < 2) return [{ scale: 0 }];
+    const baseScale = 1.0 + (comboMultiplier.value - 2) * 0.1; // x3=1.1, x4=1.2
     const pulse =
       comboLevelUpAnim.value > 0
-        ? 1 + Math.sin(comboLevelUpAnim.value * Math.PI / 0.6) * 0.3
-        : 1.0;
+        ? baseScale + Math.sin(comboLevelUpAnim.value * Math.PI / 0.6) * 0.4
+        : baseScale;
     return [
       { translateX: x },
       { translateY: y },
@@ -75,8 +76,8 @@ export const ComboDisplay: React.FC<ComboDisplayProps> = ({
         width={pillWidth + 8}
         height={pillHeight + 8}
         r={20}
-        color={COMBO_COLORS[1]}
-        opacity={0.2}
+        color={pillColor}
+        opacity={0.3}
       />
       {/* Pill background */}
       <RoundedRect

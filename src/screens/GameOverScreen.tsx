@@ -123,6 +123,11 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           </Text>
         </Animated.View>
 
+        {/* Score */}
+        <Text style={[styles.scoreText, { fontSize: s(16), marginBottom: s(6) }]}>
+          SCORE: {score}
+        </Text>
+
         {/* Gold divider line */}
         <View style={[styles.divider, { width: s(100), marginBottom: s(8) }]} />
 
@@ -242,6 +247,11 @@ const styles = StyleSheet.create({
   rankText: {
     color: '#FF7A9A',
     fontWeight: '800',
+    letterSpacing: 1,
+  },
+  scoreText: {
+    color: '#666',
+    fontWeight: '700',
     letterSpacing: 1,
   },
   newBestText: {

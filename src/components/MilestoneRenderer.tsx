@@ -18,7 +18,6 @@ interface MilestoneRendererProps {
   height: number;
 }
 
-const MILESTONE_LABELS = ['100m!', '500m!', '1km!'];
 const CONFETTI_COLORS = ['#FF4136', '#2ECC40', '#0074D9', '#FFDC00'];
 
 export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
@@ -30,13 +29,13 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
   width,
   height,
 }) => {
-  const bigFont = matchFont({ fontSize: 28 });
-  const smallFont = matchFont({ fontSize: 16 });
+  const bigFont = matchFont({ fontSize: 36, fontWeight: 'bold' });
+  const smallFont = matchFont({ fontSize: 18, fontWeight: 'bold' });
 
   const cx = width / 2;
   const cy = height / 2 - 20;
-  const badgeW = 180;
-  const badgeH = 56;
+  const badgeW = 220;
+  const badgeH = 72;
 
   // Screen flash
   const flashOpacity = useDerivedValue(() => milestoneFlash.value * 0.7);
@@ -59,10 +58,7 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
     ];
   });
 
-  const labelText = useDerivedValue(() => {
-    const idx = Math.min(milestoneIndex.value, 2);
-    return MILESTONE_LABELS[idx] || '';
-  });
+  const labelText = useDerivedValue(() => 'NEW RECORD!');
 
   // Confetti particles - draw as small rects
   // particleData layout: [x0, y0, life0, x1, y1, life1, ...] 32 particles × 3 values
@@ -134,21 +130,21 @@ export const MilestoneRenderer: React.FC<MilestoneRendererProps> = ({
           r={2}
           color="#FFD700"
         />
-        {/* Milestone label */}
+        {/* Record label */}
         <Text
-          x={cx - 30}
-          y={cy + 4}
+          x={cx - 80}
+          y={cy + 8}
           text={labelText}
           font={bigFont}
-          color="white"
+          color="#FFD700"
         />
         {/* Sub-label */}
         <Text
-          x={cx - 46}
-          y={cy + 22}
-          text="STABILIZED!"
+          x={cx - 62}
+          y={cy + 30}
+          text="BEST RECORD!"
           font={smallFont}
-          color="#FFD700"
+          color="#FFFFFF"
         />
       </Group>
     </Group>

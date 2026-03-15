@@ -17,10 +17,10 @@ import { TERRAIN_SEG_W_RATIO, generateTerrain, encodeTerrainForWorklet, type Ter
 
 const SAFE_INSET = Platform.OS === 'ios' ? 44 : 0;
 
-const GRAVITY_TORQUE = 2.8;
-const PLAYER_TORQUE = 7.0;
-const GAME_OVER_ANGLE = (42 * Math.PI) / 180;
-const CENTER_THRESHOLD = (10 * Math.PI) / 180;
+const GRAVITY_TORQUE = 3.2;
+const PLAYER_TORQUE = 10.0;
+const GAME_OVER_ANGLE = (85 * Math.PI) / 180;
+const CENTER_THRESHOLD = (12 * Math.PI) / 180;
 const BASE_WALK_SPEED = 8;
 const POINTS_PER_SECOND = 10;
 const PIXELS_TO_METERS = 0.1;
@@ -32,14 +32,12 @@ const P_HILLS_NEAR = 1.2;
 // Combo thresholds (seconds to reach next level)
 const COMBO_THRESHOLDS = [3.0, 5.0, 8.0];
 
-// Milestone thresholds (raw pixel distances)
-const MILESTONES = [1000, 5000, 10000]; // 100m, 500m, 1km
-
 interface GameCanvasProps {
   width: number;
   height: number;
   onGameOver: (data: { score: number; distance: number }) => void;
   isPlaying: boolean;
+  highScore: number;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -47,6 +45,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   height,
   onGameOver,
   isPlaying,
+  highScore,
 }) => {
   const canvasHeight = height - 60;
   const groundY = canvasHeight * 0.75; // stork feet level
@@ -84,11 +83,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const shakeX = useSharedValue(0);
   const shakeTimer = useSharedValue(0);
 
-  // === Milestone system ===
+  // === New Record celebration ===
   const milestoneAnim = useSharedValue(0);
   const milestoneFlash = useSharedValue(0);
   const milestoneStabilize = useSharedValue(0);
-  const lastMilestoneDist = useSharedValue(0);
+  const recordBroken = useSharedValue(0); // 0=not yet, 1=already triggered
   const milestoneIndex = useSharedValue(0);
   const particleData = useSharedValue<number[]>([]); // [x,y,life, x,y,life, ...] × 32
 
@@ -130,7 +129,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     milestoneAnim.value = 0;
     milestoneFlash.value = 0;
     milestoneStabilize.value = 0;
-    lastMilestoneDist.value = 0;
+    recordBroken.value = 0;
     milestoneIndex.value = 0;
     particleData.value = [];
     storkHillY.value = 0;
@@ -142,7 +141,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const newTerrain = generateTerrain();
     setTerrainSegments(newTerrain);
     terrainData.value = encodeTerrainForWorklet(newTerrain);
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, milestoneAnim, milestoneFlash, milestoneStabilize, lastMilestoneDist, milestoneIndex, particleData, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, terrainData]);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, milestoneAnim, milestoneFlash, milestoneStabilize, recordBroken, milestoneIndex, particleData, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, terrainData]);
 
   React.useEffect(() => {
     if (isPlaying) resetGame();
@@ -170,10 +169,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const effectiveT = Math.max(0, t - GRACE_PERIOD); // difficulty ramps from 0 after grace
     const wave = (Math.sin(effectiveT * 1.5) + 1) * 0.5;
     const surge = 1.0 + wave * 0.25;
-    const gravityMult = (2.0 + effectiveT * 0.18) * surge * graceRatio;
-    const damping = Math.max(0.60, 0.83 - effectiveT * 0.009) - wave * 0.06;
-    const windStr = Math.min((2.8 + effectiveT * 0.22) * surge, 10.0) * graceRatio;
-    const windChangeInt = Math.max(0.28, 1.3 - effectiveT * 0.35);
+    const gravityMult = (2.2 + effectiveT * 0.16) * surge * graceRatio;
+    const damping = Math.max(0.58, 0.82 - effectiveT * 0.011) - wave * 0.06;
+    const windStr = Math.min((3.2 + effectiveT * 0.28) * surge, 8.5) * graceRatio;
+    const windChangeInt = Math.max(0.5, 1.2 - effectiveT * 0.25);
 
     // ──── Wind ────
     const windPhase = Math.floor(t / windChangeInt);
@@ -184,7 +183,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (Math.abs(windRand) < 0.4) dir = -1;
     else if (Math.abs(windRand) < 0.8) dir = 1;
     const targetWind = dir * currentStrength;
-    windForceVal.value += (targetWind - windForceVal.value) * 0.02;
+    windForceVal.value += (targetWind - windForceVal.value) * 0.015;
 
     // ──── Tap Boost ────
     const leftJustPressed = inputLeft.value && !prevInputLeft.value;
@@ -193,9 +192,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     prevInputRight.value = inputRight.value;
 
     if (leftJustPressed || rightJustPressed) {
-      tapBoost.value = Math.min(tapBoost.value + 0.15, 0.5);
+      tapBoost.value = Math.min(tapBoost.value + 0.25, 0.7);
     }
-    tapBoost.value = Math.max(0, tapBoost.value - 2.5 * dt);
+    tapBoost.value = Math.max(0, tapBoost.value - 2.0 * dt);
 
     // ──── Physics ────
     const clampedGravityMult = Math.min(gravityMult, 6.0);
@@ -203,9 +202,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (milestoneStabilize.value > 0) milestoneStabilize.value -= dt;
     const stabilizeFactor = milestoneStabilize.value > 0 ? 0.25 : 1.0;
     const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * clampedGravityMult * stabilizeFactor;
-    // Recovery assist: the more tilted, the stronger the player push (up to 1.6x at max tilt)
+    // Recovery assist: the more tilted, the stronger the player push (up to 2.2x at max tilt)
     const angleRatio = Math.abs(angle.value) / GAME_OVER_ANGLE;
-    const recoveryAssist = 1.0 + angleRatio * 0.4;
+    const recoveryAssist = 1.0 + angleRatio * 1.2;
     const scaledPlayerTorque = PLAYER_TORQUE * (1.0 + tapBoost.value) * recoveryAssist;
     let playerAccel = 0;
     if (inputLeft.value) playerAccel -= scaledPlayerTorque;
@@ -234,9 +233,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // Update distance FIRST, then detect hills using the same distance the renderer sees
     walkSpeed.value = BASE_WALK_SPEED * (1 + effectiveT * 0.005) * speedBurst;
-    if (!inGrace) {
-      distance.value += walkSpeed.value * dt;
-    }
+    // Grace period: walk slowly so background moves, full speed after grace
+    const walkMult = inGrace ? graceRatio * 0.5 : 1.0;
+    distance.value += walkSpeed.value * walkMult * dt;
 
     // Near-hill terrain following (segment-based, matches GroundRenderer)
     const nearHillH = canvasHeight * 0.30;
@@ -305,25 +304,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     hillSlope.value = rawSlope * hillPhaseVal;
 
-    // Hill difficulty: gentle slope push + jitter when on a hill
+    // Hill difficulty: gentle slope push when on a hill
     if (hillPhaseVal > 0.15) {
-      const slopePush = hillSlope.value * 1.5;
+      const slopePush = hillSlope.value * 0.6;
       angularVelocity.value += slopePush * dt;
-
-      const hillJitter = Math.sin(elapsedTime.value * 18) * 0.8 * hillPhaseVal;
-      angularVelocity.value += hillJitter * dt;
 
       // Speed: slower uphill, faster downhill
       walkSpeed.value *= localT < 0.5 ? 0.98 : 1.03;
-
-      // Peak gust (reduced)
-      if (hillPhaseVal > 0.7) {
-        const gustBurst = Math.sin(elapsedTime.value * 25) * 1.5 * (hillPhaseVal - 0.7) * 3.33;
-        angularVelocity.value += gustBurst * dt;
-        if (shakeTimer.value <= 0) {
-          shakeTimer.value = 0.15;
-        }
-      }
     }
 
     // ──── Combo System ────
@@ -367,28 +354,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (comboLevelUpAnim.value > 0) comboLevelUpAnim.value -= dt;
     if (comboBrokenAnim.value > 0) comboBrokenAnim.value -= dt;
 
-    // ──── Milestone Events ────
-    const d = distance.value;
-    for (let mi = 0; mi < 3; mi++) {
-      const threshold = MILESTONES[mi];
-      if (d >= threshold && lastMilestoneDist.value < threshold) {
-        lastMilestoneDist.value = threshold;
-        milestoneAnim.value = 2.5;
-        milestoneFlash.value = 1.0;
-        milestoneStabilize.value = 2.0;
-        milestoneIndex.value = mi;
+    // ──── New Record Event ────
+    // Only trigger if there is a previous high score (not first game)
+    const distMeters = distance.value * PIXELS_TO_METERS;
+    const hsThreshold = highScore; // highScore is in meters
+    if (hsThreshold > 0 && recordBroken.value === 0 && distMeters >= hsThreshold) {
+      recordBroken.value = 1;
+      milestoneAnim.value = 3.0;
+      milestoneFlash.value = 1.0;
+      milestoneStabilize.value = 2.0;
+      milestoneIndex.value = 0;
 
-        // Burst particles: 32 particles × 3 values (x, y, life)
-        const cx = width / 2;
-        const cy = canvasHeight / 2;
-        const pts: number[] = [];
-        for (let p = 0; p < 32; p++) {
-          const a = (p / 32) * Math.PI * 2;
-          pts.push(cx, cy, 1.0); // x, y, life
-        }
-        particleData.value = pts;
-        break;
+      // Burst particles: 32 particles × 3 values (x, y, life)
+      const cx = width / 2;
+      const cy = canvasHeight / 2;
+      const pts: number[] = [];
+      for (let p = 0; p < 32; p++) {
+        const a = (p / 32) * Math.PI * 2;
+        pts.push(cx, cy, 1.0);
       }
+      particleData.value = pts;
     }
 
     if (milestoneAnim.value > 0) {
@@ -480,16 +465,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // Bridge shared values to React state for HUD
   const [displayDist, setDisplayDist] = useState(0);
+  const [displayScore, setDisplayScore] = useState(0);
   const [displayCombo, setDisplayCombo] = useState(1);
 
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setDisplayDist(Math.floor(distance.value * PIXELS_TO_METERS));
+      setDisplayScore(Math.floor(score.value));
       setDisplayCombo(comboMultiplier.value);
     }, 200);
     return () => clearInterval(interval);
-  }, [isPlaying, distance, comboMultiplier]);
+  }, [isPlaying, distance, score, comboMultiplier]);
 
   const onLeftPress = useCallback(() => { inputLeft.value = true; }, [inputLeft]);
   const onLeftRelease = useCallback(() => { inputLeft.value = false; }, [inputLeft]);
@@ -518,7 +505,6 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             elapsedTime={elapsedTime}
             hillY={storkHillY}
             hillSlope={hillSlope}
-            walkSpeed={walkSpeed}
           />
           <WeatherRenderer
             weatherType={weatherType}
@@ -579,6 +565,19 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     fontSize: 20,
     color: '#FFD700',
+    marginTop: 2,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 1,
+  },
+  hudRight: {
+    alignItems: 'flex-end',
+  },
+  hudScore: {
+    fontFamily: 'pixel',
+    fontSize: 18,
+    color: '#FFFFFF',
     marginTop: 2,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 1, height: 1 },
