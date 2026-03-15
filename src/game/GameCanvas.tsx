@@ -405,6 +405,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     }
 
     // ──── Environment: Sky Phase ────
+    const d = distance.value;
     if (d < 1500) {
       skyPhase.value = 0;
     } else if (d < 3000) {
