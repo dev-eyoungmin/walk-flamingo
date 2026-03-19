@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wobby - Support</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --sky: #87CEEB;
+      --sky-dark: #5bb8e8;
+      --sky-light: #e8f6fd;
+      --text-primary: #1a1a2e;
+      --text-secondary: #555570;
+      --border: #d4eaf7;
+      --white: #ffffff;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--white);
+      color: var(--text-primary);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--sky);
+      padding: 48px 24px 40px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--white);
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1.05rem;
+      color: rgba(255, 255, 255, 0.92);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* Main layout */
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+    }
+
+    /* Section titles */
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--sky);
+    }
+
+    section {
+      margin-bottom: 48px;
+    }
+
+    /* Contact card */
+    .contact-card {
+      background-color: var(--sky-light);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .contact-card p {
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .contact-card a {
+      display: inline-block;
+      background-color: var(--sky);
+      color: var(--white);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      transition: background-color 0.2s ease;
+    }
+
+    .contact-card a:hover {
+      background-color: var(--sky-dark);
+    }
+
+    .contact-card .email-text {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .contact-card .email-text a {
+      background: none;
+      color: var(--sky-dark);
+      padding: 0;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .contact-card .email-text a:hover {
+      color: var(--text-primary);
+      background: none;
+    }
+
+    /* FAQ */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .faq-item summary {
+      padding: 16px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--white);
+      color: var(--text-primary);
+      user-select: none;
+    }
+
+    .faq-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-item summary::after {
+      content: "+";
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--sky-dark);
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    .faq-item[open] summary::after {
+      content: "-";
+    }
+
+    .faq-item[open] summary {
+      background-color: var(--sky-light);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .faq-body {
+      padding: 16px 20px;
+      color: var(--text-secondary);
+      font-size: 0.97rem;
+    }
+
+    /* Privacy section */
+    .privacy-box {
+      background-color: #fafbfc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .privacy-box p {
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      font-size: 0.97rem;
+    }
+
+    .privacy-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .privacy-box strong {
+      color: var(--text-primary);
+    }
+
+    /* Bug report section */
+    .report-box {
+      background-color: var(--sky-light);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .report-box p {
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      font-size: 0.97rem;
+    }
+
+    .report-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .report-box a {
+      color: var(--sky-dark);
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .report-box a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      header h1 {
+        font-size: 2rem;
+      }
+
+      main {
+        padding: 32px 16px 48px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Wobby</h1>
+    <p>A casual game where you guide a flamingo on a walk. Simple controls, cheerful vibes, and a whole lot of wobbling.</p>
+  </header>
+
+  <main>
+
+    <!-- Contact / Support -->
+    <section id="contact">
+      <h2 class="section-title">Contact Support</h2>
+      <div class="contact-card">
+        <p>Have a question, encountered an issue, or just want to say hi? We would love to hear from you. Our support is handled directly by the developer, so responses may take 1-3 business days.</p>
+        <a href="mailto:be.onn.corp@gmail.com">Send an Email</a>
+        <p class="email-text">Or write to us directly at <a href="mailto:be.onn.corp@gmail.com">be.onn.corp@gmail.com</a></p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq">
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <div class="faq-list">
+
+        <details class="faq-item">
+          <summary>How do I play Wobby?</summary>
+          <div class="faq-body">
+            Tap the screen to control your flamingo as it walks forward. The goal is to keep your balance and travel as far as possible without falling over. The controls are intentionally simple so anyone can pick it up in seconds.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Why are there ads in the game?</summary>
+          <div class="faq-body">
+            Wobby is free to download and play. To keep it free, the game is supported by ads provided by Google AdMob. Ads may appear between rounds or at natural breaks in gameplay. We try to keep the ad experience as non-intrusive as possible.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>The game crashed or is not loading. What should I do?</summary>
+          <div class="faq-body">
+            First, try closing the app completely and reopening it. If the problem persists, try restarting your device. Make sure your iOS version is up to date. If you are still experiencing issues, please email us at be.onn.corp@gmail.com with a brief description of the problem and your device model.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Does Wobby collect my personal data?</summary>
+          <div class="faq-body">
+            Wobby uses Google AdMob to display ads. AdMob may collect advertising identifiers (IDFA) and usage data to serve personalized ads. On iOS, the app will ask for your permission to track before any data is collected, in compliance with Apple's App Tracking Transparency (ATT) framework. You can change your preference at any time in your device's Privacy settings.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Can I play without an internet connection?</summary>
+          <div class="faq-body">
+            Yes. The core gameplay does not require an internet connection. Some ad content may not load when offline, but the game itself will work normally.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>Is Wobby suitable for children?</summary>
+          <div class="faq-body">
+            Wobby is a family-friendly game with no violent content. However, because the app displays third-party ads, we recommend parental supervision for young children. Ad content is served by Google AdMob and is subject to their content policies.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary>How do I request a feature or give feedback?</summary>
+          <div class="faq-body">
+            We welcome suggestions from players. Send your ideas to be.onn.corp@gmail.com with the subject line "Feature Request" and we will review it. We cannot guarantee every request will be implemented, but all feedback is read and appreciated.
+          </div>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- Privacy -->
+    <section id="privacy">
+      <h2 class="section-title">Privacy Information</h2>
+      <div class="privacy-box">
+        <p>Wobby is developed by an independent developer and takes your privacy seriously. Below is a plain-language summary of how data is handled:</p>
+        <p><strong>Advertising:</strong> The app uses Google AdMob to display ads. AdMob may collect device advertising identifiers (IDFA) and general usage information to show relevant ads. This data is governed by Google's Privacy Policy.</p>
+        <p><strong>App Tracking Transparency:</strong> On iOS 14.5 and later, the app will prompt you with Apple's standard ATT dialog before any tracking occurs. You may choose to allow or decline personalized advertising. Declining will result in non-personalized ads rather than no ads.</p>
+        <p><strong>No account required:</strong> Wobby does not require you to create an account or provide any personal information to play.</p>
+        <p><strong>Data retention:</strong> The app itself does not store personal data on any server. Any data collected by AdMob is handled and retained according to Google's policies.</p>
+        <p>For privacy-related questions, contact us at <strong>be.onn.corp@gmail.com</strong>.</p>
+      </div>
+    </section>
+
+    <!-- Bug Reports / Feature Requests -->
+    <section id="report">
+      <h2 class="section-title">Report a Bug or Request a Feature</h2>
+      <div class="report-box">
+        <p>Found something that doesn't look right? Want to see a new feature in the game? We handle all feedback personally and take every report seriously.</p>
+        <p>Send an email to <a href="mailto:be.onn.corp@gmail.com">be.onn.corp@gmail.com</a> with the following information:</p>
+        <p>
+          - Subject: "Bug Report" or "Feature Request"<br />
+          - Your device model and iOS version<br />
+          - A short description of the issue or idea<br />
+          - Steps to reproduce the bug, if applicable
+        </p>
+        <p>We aim to respond within 1-3 business days. Thank you for helping make Wobby better.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Wobby &mdash; Support Page &middot; be.onn.corp@gmail.com</p>
+  </footer>
+
+</body>
+</html>

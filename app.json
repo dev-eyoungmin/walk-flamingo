@@ -93,7 +93,7 @@
       [
         "expo-tracking-transparency",
         {
-          "userTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+          "userTrackingPermission": "Your data will be used to deliver personalized ads, helping keep the app free. Your privacy is important to us — you can change this anytime in Settings."
         }
       ]
     ]
