@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, View, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet, StatusBar } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Font from 'expo-font';
-import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { IS_EXPO_GO } from './src/lib/adConfig';
 
@@ -19,16 +18,6 @@ export default function App() {
     await Font.loadAsync({
       'pixel': require('./assets/fonts/pixel.ttf'),
     });
-
-    // Request ATT permission (iOS 14.5+) before initializing ads
-    if (Platform.OS === 'ios') {
-      try {
-        const result = await requestTrackingPermissionsAsync();
-        console.log('[ATT] Tracking permission status:', result.status);
-      } catch (e) {
-        console.log('[ATT] Not available on this iOS version:', e);
-      }
-    }
 
     // Initialize AdMob SDK (required for production builds)
     if (!IS_EXPO_GO) {

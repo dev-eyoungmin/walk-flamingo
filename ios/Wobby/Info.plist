@@ -36,7 +36,7 @@
     <key>GADApplicationIdentifier</key>
     <string>ca-app-pub-7783064858826225~2444719252</string>
     <key>GADDelayAppMeasurementInit</key>
-    <false/>
+    <true/>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
     <key>LSMinimumSystemVersion</key>
@@ -52,8 +52,6 @@
     </dict>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
-    <key>NSUserTrackingUsageDescription</key>
-    <string>Your data will be used to deliver personalized ads, helping keep the app free. Your privacy is important to us — you can change this anytime in Settings.</string>
     <key>RCTNewArchEnabled</key>
     <true/>
     <key>SKAdNetworkItems</key>

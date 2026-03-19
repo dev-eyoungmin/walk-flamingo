@@ -4,6 +4,11 @@ import Constants from 'expo-constants';
 /** Check if running in Expo Go (ads not supported) */
 export const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
+/** Request non-personalized ads only (no tracking required) */
+export const AD_REQUEST_OPTIONS = {
+  requestNonPersonalizedAdsOnly: true,
+};
+
 /**
  * Use test ads until AdMob app review is complete.
  * Change to false once AdMob dashboard shows app status as "Ready".

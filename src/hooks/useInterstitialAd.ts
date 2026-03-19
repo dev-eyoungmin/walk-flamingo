@@ -11,7 +11,9 @@ export function useInterstitialAd() {
 
     try {
       const { InterstitialAd, AdEventType } = require('react-native-google-mobile-ads');
-      const ad = InterstitialAd.createForAdRequest(INTERSTITIAL_AD_UNIT_ID);
+      const ad = InterstitialAd.createForAdRequest(INTERSTITIAL_AD_UNIT_ID, {
+        requestNonPersonalizedAdsOnly: true,
+      });
 
       const unsubLoaded = ad.addAdEventListener(AdEventType.LOADED, () => {
         setLoaded(true);
