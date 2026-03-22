@@ -102,17 +102,17 @@ export function generateTerrain(): TerrainSegment[] {
       segments.push({
         type: 'hill',
         widthRatio: 0.8 + Math.random() * 0.8,
-        heightRatio: 0.3 + Math.random() * 0.7,
+        heightRatio: 0.65 + Math.random() * 0.35,
       });
     } else {
       segments.push({
         type: 'valley',
         widthRatio: 0.7 + Math.random() * 0.7,
-        heightRatio: 0.2 + Math.random() * 0.4,
+        heightRatio: 0.5 + Math.random() * 0.5,
       });
     }
-    // Flat gap between features
-    segments.push({ type: 'flat', widthRatio: 1.0 + Math.random() * 2.0 });
+    // Flat gap between features (shorter gaps)
+    segments.push({ type: 'flat', widthRatio: 0.5 + Math.random() * 1.0 });
   }
 
   return segments;

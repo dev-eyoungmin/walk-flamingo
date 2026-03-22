@@ -22,7 +22,7 @@ const GAME_OVER_ANGLE = (85 * Math.PI) / 180;
 const CENTER_THRESHOLD = (12 * Math.PI) / 180;
 const BASE_WALK_SPEED = 8;
 const POINTS_PER_SECOND = 10;
-const PIXELS_TO_METERS = 0.1;
+const PIXELS_TO_METERS = 0.04;
 const GRACE_PERIOD = 1.5; // seconds before full physics/scoring kicks in
 
 // Near hill parallax must match BackgroundRenderer
@@ -98,6 +98,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const skyPhase = useSharedValue(0);
   const weatherType = useSharedValue(0); // 0=none, 1=rain, 2=snow
   const weatherParticles = useSharedValue<number[]>([]);
+  const weatherCycleTimer = useSharedValue(0);
+  const lastWeatherChange = useSharedValue(0); // distance at last weather change
 
   const resetGame = useCallback(() => {
     angle.value = 0;
@@ -126,11 +128,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     skyPhase.value = 0;
     weatherType.value = 0;
     weatherParticles.value = [];
+    weatherCycleTimer.value = 0;
+    lastWeatherChange.value = 0;
     // Generate new random terrain
     const newTerrain = generateTerrain();
     setTerrainSegments(newTerrain);
     terrainData.value = encodeTerrainForWorklet(newTerrain);
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, terrainData]);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, weatherCycleTimer, lastWeatherChange, terrainData]);
 
   React.useEffect(() => {
     if (isPlaying) resetGame();
@@ -158,10 +162,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const effectiveT = Math.max(0, t - GRACE_PERIOD); // difficulty ramps from 0 after grace
     const wave = (Math.sin(effectiveT * 1.5) + 1) * 0.5;
     const surge = 1.0 + wave * 0.25;
-    const gravityMult = (2.2 + effectiveT * 0.16) * surge * graceRatio;
-    const damping = Math.max(0.58, 0.82 - effectiveT * 0.011) - wave * 0.06;
-    const windStr = Math.min((3.2 + effectiveT * 0.28) * surge, 8.5) * graceRatio;
-    const windChangeInt = Math.max(0.5, 1.2 - effectiveT * 0.25);
+    const gravityMult = (2.5 + effectiveT * 0.22) * surge * graceRatio;
+    const damping = Math.max(0.52, 0.80 - effectiveT * 0.015) - wave * 0.08;
+    const windStr = Math.min((3.8 + effectiveT * 0.35) * surge, 10.0) * graceRatio;
+    const windChangeInt = Math.max(0.4, 1.0 - effectiveT * 0.30);
 
     // ──── Wind ────
     const windPhase = Math.floor(t / windChangeInt);
@@ -188,9 +192,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     // ──── Physics ────
     const clampedGravityMult = Math.min(gravityMult, 6.0);
     const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * clampedGravityMult;
-    // Recovery assist: the more tilted, the stronger the player push (up to 2.2x at max tilt)
+    // Recovery assist: mild help when tilted (up to 1.5x at max tilt, was 2.2x)
     const angleRatio = Math.abs(angle.value) / GAME_OVER_ANGLE;
-    const recoveryAssist = 1.0 + angleRatio * 1.2;
+    const recoveryAssist = 1.0 + angleRatio * 0.5;
     const scaledPlayerTorque = PLAYER_TORQUE * (1.0 + tapBoost.value) * recoveryAssist;
     let playerAccel = 0;
     if (inputLeft.value) playerAccel -= scaledPlayerTorque;
@@ -224,7 +228,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     distance.value += walkSpeed.value * walkMult * dt;
 
     // Near-hill terrain following (segment-based, matches GroundRenderer)
-    const nearHillH = canvasHeight * 0.30;
+    const nearHillH = canvasHeight * 0.50;
     const segW = width * TERRAIN_SEG_W_RATIO;
 
     // Decode terrain from shared flat array: [type, widthRatio, heightRatio, ...]
@@ -290,13 +294,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     hillSlope.value = rawSlope * hillPhaseVal;
 
-    // Hill difficulty: gentle slope push when on a hill
-    if (hillPhaseVal > 0.15) {
-      const slopePush = hillSlope.value * 0.6;
+    // Hill difficulty: slope push + instability when on a hill
+    if (hillPhaseVal > 0.10) {
+      const slopePush = hillSlope.value * 1.8;
       angularVelocity.value += slopePush * dt;
 
-      // Speed: slower uphill, faster downhill
-      walkSpeed.value *= localT < 0.5 ? 0.98 : 1.03;
+      // Speed: much slower uphill, faster downhill
+      walkSpeed.value *= localT < 0.5 ? 0.88 : 1.12;
+
+      // Steep hills add instability jitter (scales with hill height and time)
+      const hillJitter = hillPhaseVal * (0.4 + effectiveT * 0.03);
+      const jitterNoise = Math.sin(t * 17.3 + hillPhaseVal * 5.0) * hillJitter;
+      angularVelocity.value += jitterNoise * dt;
     }
 
     // ──── Combo System ────
@@ -353,21 +362,27 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       skyPhase.value = 2;
     }
 
-    // ──── Environment: Weather ────
-    if (d > 5000 && weatherType.value !== 2) {
-      weatherType.value = 2;
+    // ──── Environment: Weather (cycling every ~50 displayed meters) ────
+    // 50 displayed meters = 50 / PIXELS_TO_METERS(0.04) = 1250 internal distance
+    const weatherInterval = 1250;
+    const distSinceChange = d - lastWeatherChange.value;
+
+    if (d > 1250 && distSinceChange > weatherInterval) {
+      // Cycle: none → rain → snow → rain → snow → ...
+      // After first activation, alternate between rain(1) and snow(2)
+      const prev = weatherType.value;
+      let next = 0;
+      if (prev === 0) next = 1;        // first weather: rain
+      else if (prev === 1) next = 2;   // rain → snow
+      else next = 1;                    // snow → rain
+
+      weatherType.value = next;
+      lastWeatherChange.value = d;
+
+      // Initialize particles for new weather
+      const count = next === 1 ? 60 : 40;
       const pts: number[] = [];
-      for (let i = 0; i < 40; i++) {
-        pts.push(
-          Math.abs(Math.sin(i * 73.7)) * width,
-          Math.abs(Math.sin(i * 47.3)) * canvasHeight,
-        );
-      }
-      weatherParticles.value = pts;
-    } else if (d > 2000 && weatherType.value === 0) {
-      weatherType.value = 1;
-      const pts: number[] = [];
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < count; i++) {
         pts.push(
           Math.abs(Math.sin(i * 73.7)) * width,
           Math.abs(Math.sin(i * 47.3)) * canvasHeight,
@@ -398,6 +413,21 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
       weatherParticles.value = [...pts];
+    }
+
+    // ──── Weather Physics Effects ────
+    if (weatherType.value === 1) {
+      // Rain: slippery ground (reduce damping) + wind gusts
+      angularVelocity.value *= 1.0 + 0.015 * dt * 60; // slight damping reduction per frame
+      const rainGust = Math.sin(t * 3.7) * 1.2;
+      angularVelocity.value += rainGust * dt;
+    } else if (weatherType.value === 2) {
+      // Snow: heavy wind bursts + reduced traction + visibility penalty (slower response)
+      angularVelocity.value *= 1.0 + 0.025 * dt * 60; // more slippery than rain
+      const snowGust = Math.sin(t * 2.1) * 1.8 + Math.cos(t * 5.3) * 0.8;
+      angularVelocity.value += snowGust * dt;
+      // Snow slows walk speed (trudging through snow)
+      walkSpeed.value *= 0.90;
     }
 
     // ──── Animation Frame ────

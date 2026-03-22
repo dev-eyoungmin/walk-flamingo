@@ -28,7 +28,7 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
   terrainSegments,
 }) => {
   const groundY = height * 0.75;
-  const hillH = height * 0.30;
+  const hillH = height * 0.50;
   const baseY = groundY + height * 0.02;
   const dirtOffset = height * 0.06;
   const segW = width * TERRAIN_SEG_W_RATIO;
