@@ -16,6 +16,8 @@ export const AppNavigator: React.FC = () => {
   const [lastScore, setLastScore] = useState(0);
   const [lastDistance, setLastDistance] = useState(0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [hasContinued, setHasContinued] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
   const { width, height } = useScreenDimensions();
   const { highScore, submitScore, loaded } = useHighScore();
   const { showAd } = useRewardedAd();
@@ -45,6 +47,8 @@ export const AppNavigator: React.FC = () => {
   }, [isFreePlay, consumeFreePlay, showAd]);
 
   const handlePlay = useCallback(() => {
+    setHasContinued(false);
+    setIsResuming(false);
     startGame();
   }, [startGame]);
 
@@ -62,8 +66,19 @@ export const AppNavigator: React.FC = () => {
   );
 
   const handleRetry = useCallback(() => {
-    startGame();
-  }, [startGame]);
+    setIsResuming(false);
+    showAd(() => {
+      setScreen('playing');
+    });
+  }, [showAd]);
+
+  const handleContinue = useCallback(() => {
+    showAd(() => {
+      setIsResuming(true);
+      setScreen('playing');
+      setHasContinued(true);
+    });
+  }, [showAd]);
 
   const handleHome = useCallback(() => {
     setScreen('start');
@@ -79,6 +94,7 @@ export const AppNavigator: React.FC = () => {
           width={width}
           height={height}
           isPlaying={screen === 'playing'}
+          isResuming={isResuming}
           onGameOver={handleGameOver}
         />
       )}
@@ -96,6 +112,9 @@ export const AppNavigator: React.FC = () => {
           highScore={highScore}
           isNewHighScore={isNewHighScore}
           onRetry={handleRetry}
+          onHome={handleHome}
+          onContinue={handleContinue}
+          canContinue={!hasContinued}
         />
       )}
     </View>

@@ -10,7 +10,7 @@ import {
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 import { TERRAIN_SEG_W_RATIO, type TerrainSegment } from '../game/constants';
 
-const P_HILLS_NEAR = 1.2;
+const P_HILLS_NEAR = 2.5;
 
 interface GroundRendererProps {
   width: number;
@@ -27,10 +27,10 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
   skyPhase,
   terrainSegments,
 }) => {
-  const groundY = height * 0.75;
-  const hillH = height * 0.50;
-  const baseY = groundY + height * 0.02;
-  const dirtOffset = height * 0.06;
+  const groundY = height * 0.65;
+  const hillH = height * 0.35;
+  const baseY = groundY;
+  const dirtOffset = height * 0.04;
   const segW = width * TERRAIN_SEG_W_RATIO;
 
   // Compute total pattern width
@@ -165,7 +165,7 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
       </Group>
 
       {/* 3. Brown flat rect at very bottom (safety fill for gaps) */}
-      <Rect x={0} y={height * 0.92} width={width} height={height * 0.08}>
+      <Rect x={0} y={height * 0.85} width={width} height={height * 0.15}>
         <LinearGradient
           start={vec(0, height * 0.92)}
           end={vec(0, height)}

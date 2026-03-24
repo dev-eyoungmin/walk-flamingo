@@ -1,5 +1,5 @@
-import React, { useCallback, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Platform, Animated as RNAnimated } from 'react-native';
 import { Canvas, Group } from '@shopify/react-native-skia';
 import {
   useSharedValue,
@@ -14,11 +14,25 @@ import { TouchControls } from '../components/TouchControls';
 import { WeatherRenderer } from '../components/WeatherRenderer';
 import { TERRAIN_SEG_W_RATIO, generateTerrain, encodeTerrainForWorklet, type TerrainSegment } from './constants';
 
+// Milestone thresholds (in displayed meters)
+const MILESTONES = [50, 100, 200, 500, 1000];
+
+// Rank thresholds (must match ranks.ts)
+const RANK_THRESHOLDS = [
+  { minDistance: 0, emoji: '🥚', name: 'Egg' },
+  { minDistance: 10, emoji: '🐣', name: 'Chick' },
+  { minDistance: 50, emoji: '🐥', name: 'Fledgling' },
+  { minDistance: 100, emoji: '🦩', name: 'Flamingo' },
+  { minDistance: 200, emoji: '🦅', name: 'Eagle' },
+  { minDistance: 500, emoji: '👑', name: 'King of Birds' },
+  { minDistance: 1000, emoji: '⭐', name: 'Legendary Bird' },
+];
+
 const SAFE_INSET = Platform.OS === 'ios' ? 44 : 0;
 
-const GRAVITY_TORQUE = 3.2;
+const GRAVITY_TORQUE = 5.0;
 const PLAYER_TORQUE = 10.0;
-const GAME_OVER_ANGLE = (85 * Math.PI) / 180;
+const GAME_OVER_ANGLE = (65 * Math.PI) / 180;
 const CENTER_THRESHOLD = (12 * Math.PI) / 180;
 const BASE_WALK_SPEED = 8;
 const POINTS_PER_SECOND = 10;
@@ -26,7 +40,7 @@ const PIXELS_TO_METERS = 0.04;
 const GRACE_PERIOD = 1.5; // seconds before full physics/scoring kicks in
 
 // Near hill parallax must match BackgroundRenderer
-const P_HILLS_NEAR = 1.2;
+const P_HILLS_NEAR = 2.5;
 
 // Combo thresholds (seconds to reach next level)
 // Inline in worklet: level 1→2: 3s, 2→3: 5s, 3→4: 8s
@@ -39,6 +53,7 @@ interface GameCanvasProps {
   height: number;
   onGameOver: (data: { score: number; distance: number }) => void;
   isPlaying: boolean;
+  isResuming?: boolean;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -46,9 +61,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   height,
   onGameOver,
   isPlaying,
+  isResuming = false,
 }) => {
   const canvasHeight = height - 60;
-  const groundY = canvasHeight * 0.75; // stork feet level
+  const groundY = canvasHeight * 0.65; // stork feet level
 
   // Track props as shared values for worklet access
   const isPlayingShared = useSharedValue(isPlaying);
@@ -94,6 +110,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const storkHillY = useSharedValue(0); // vertical offset for stork on hills
   const hillSlope = useSharedValue(0); // -1=uphill, +1=downhill, 0=flat
 
+  // === Resume grace period ===
+  const resumeGraceEnd = useSharedValue(0);
+
+  // === Milestone & Rank system ===
+  const lastMilestone = useSharedValue(0);
+  const currentRankIdx = useSharedValue(0);
+  const [milestoneText, setMilestoneText] = useState('');
+  const [rankUpText, setRankUpText] = useState('');
+  const milestoneOpacity = useRef(new RNAnimated.Value(0)).current;
+  const rankUpOpacity = useRef(new RNAnimated.Value(0)).current;
+
   // === Environment ===
   const skyPhase = useSharedValue(0);
   const weatherType = useSharedValue(0); // 0=none, 1=rain, 2=snow
@@ -130,20 +157,66 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     weatherParticles.value = [];
     weatherCycleTimer.value = 0;
     lastWeatherChange.value = 0;
+    resumeGraceEnd.value = 0;
+    lastMilestone.value = 0;
+    currentRankIdx.value = 0;
     // Generate new random terrain
     const newTerrain = generateTerrain();
     setTerrainSegments(newTerrain);
     terrainData.value = encodeTerrainForWorklet(newTerrain);
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, weatherCycleTimer, lastWeatherChange, terrainData]);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, weatherCycleTimer, lastWeatherChange, resumeGraceEnd, lastMilestone, currentRankIdx, terrainData]);
+
+  const resumeGame = useCallback(() => {
+    // Only reset physics state; keep score, distance, combo, terrain, weather, etc.
+    angle.value = 0;
+    angularVelocity.value = 0;
+    windForceVal.value = 0;
+    isGameOver.value = false;
+    inputLeft.value = false;
+    inputRight.value = false;
+    prevInputLeft.value = false;
+    prevInputRight.value = false;
+    tapBoost.value = 0;
+    shakeX.value = 0;
+    shakeTimer.value = 0;
+    // Re-apply grace period from current elapsed time
+    resumeGraceEnd.value = elapsedTime.value + GRACE_PERIOD;
+  }, [angle, angularVelocity, windForceVal, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, shakeX, shakeTimer, resumeGraceEnd, elapsedTime]);
 
   React.useEffect(() => {
-    if (isPlaying) resetGame();
-  }, [isPlaying, resetGame]);
+    if (isPlaying) {
+      if (isResuming) {
+        resumeGame();
+      } else {
+        resetGame();
+      }
+    }
+  }, [isPlaying, isResuming, resetGame, resumeGame]);
 
   const handleGameOver = useCallback(
     (s: number, d: number) => onGameOver({ score: s, distance: d }),
     [onGameOver],
   );
+
+  const showMilestone = useCallback((dist: number) => {
+    setMilestoneText(`${dist}m!`);
+    milestoneOpacity.setValue(0);
+    RNAnimated.sequence([
+      RNAnimated.timing(milestoneOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      RNAnimated.delay(1500),
+      RNAnimated.timing(milestoneOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start();
+  }, [milestoneOpacity]);
+
+  const showRankUp = useCallback((emoji: string, name: string) => {
+    setRankUpText(`${emoji} ${name}`);
+    rankUpOpacity.setValue(0);
+    RNAnimated.sequence([
+      RNAnimated.timing(rankUpOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+      RNAnimated.delay(2000),
+      RNAnimated.timing(rankUpOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, [rankUpOpacity]);
 
   useFrameCallback((frameInfo) => {
     'worklet';
@@ -155,15 +228,24 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const t = elapsedTime.value;
 
     // ──── Grace Period ────
-    const inGrace = t < GRACE_PERIOD;
-    const graceRatio = inGrace ? t / GRACE_PERIOD : 1.0; // 0→1 over grace period
+    // Support both initial grace (t < GRACE_PERIOD) and resume grace (t < resumeGraceEnd)
+    const initialGrace = t < GRACE_PERIOD;
+    const resumeGrace = resumeGraceEnd.value > 0 && t < resumeGraceEnd.value;
+    const inGrace = initialGrace || resumeGrace;
+    let graceRatio = 1.0;
+    if (initialGrace) {
+      graceRatio = t / GRACE_PERIOD;
+    } else if (resumeGrace) {
+      const resumeStart = resumeGraceEnd.value - GRACE_PERIOD;
+      graceRatio = (t - resumeStart) / GRACE_PERIOD;
+    }
 
     // ──── Difficulty (balanced ramp) ────
     const effectiveT = Math.max(0, t - GRACE_PERIOD); // difficulty ramps from 0 after grace
     const wave = (Math.sin(effectiveT * 1.5) + 1) * 0.5;
     const surge = 1.0 + wave * 0.25;
-    const gravityMult = (2.5 + effectiveT * 0.22) * surge * graceRatio;
-    const damping = Math.max(0.52, 0.80 - effectiveT * 0.015) - wave * 0.08;
+    const gravityMult = (3.0 + effectiveT * 0.28) * surge * graceRatio;
+    const damping = Math.max(0.48, 0.75 - effectiveT * 0.02) - wave * 0.10;
     const windStr = Math.min((3.8 + effectiveT * 0.35) * surge, 10.0) * graceRatio;
     const windChangeInt = Math.max(0.4, 1.0 - effectiveT * 0.30);
 
@@ -200,8 +282,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (inputLeft.value) playerAccel -= scaledPlayerTorque;
     if (inputRight.value) playerAccel += scaledPlayerTorque;
 
+    // Base wobble: constant random perturbation so stork never stands perfectly still
+    const wobble1 = Math.sin(t * 7.3 + 1.2) * 1.8;
+    const wobble2 = Math.sin(t * 13.1 + 3.7) * 1.2;
+    const wobble3 = Math.sin(t * 3.9) * 0.8;
+    const wobble4 = Math.sin(t * 19.7 + 5.1) * 0.6;
+    const baseWobble = (wobble1 + wobble2 + wobble3 + wobble4) * (1.2 + effectiveT * 0.06);
+
     angularVelocity.value =
-      (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value) * dt) * damping;
+      (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value + baseWobble) * dt) * damping;
     angle.value += angularVelocity.value * dt;
 
     // ──── Game Over Check (skip during grace period) ────
@@ -228,7 +317,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     distance.value += walkSpeed.value * walkMult * dt;
 
     // Near-hill terrain following (segment-based, matches GroundRenderer)
-    const nearHillH = canvasHeight * 0.50;
+    const nearHillH = canvasHeight * 0.35;
     const segW = width * TERRAIN_SEG_W_RATIO;
 
     // Decode terrain from shared flat array: [type, widthRatio, heightRatio, ...]
@@ -430,6 +519,38 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       walkSpeed.value *= 0.90;
     }
 
+    // ──── Milestone Check ────
+    const displayedDist = distance.value * PIXELS_TO_METERS;
+    // Check milestones: 50, 100, 200, 500, 1000
+    const milestoneThresholds = [50, 100, 200, 500, 1000];
+    for (let mi = 0; mi < milestoneThresholds.length; mi++) {
+      const threshold = milestoneThresholds[mi];
+      if (displayedDist >= threshold && lastMilestone.value < threshold) {
+        lastMilestone.value = threshold;
+        shakeTimer.value = 0.3;
+        runOnJS(showMilestone)(threshold);
+        break;
+      }
+    }
+
+    // ──── Rank Check ────
+    const rankThresholds = [0, 10, 50, 100, 200, 500, 1000];
+    let newRankIdx = 0;
+    for (let ri = 0; ri < rankThresholds.length; ri++) {
+      if (displayedDist >= rankThresholds[ri]) newRankIdx = ri;
+    }
+    if (newRankIdx > currentRankIdx.value) {
+      const prevIdx = currentRankIdx.value;
+      currentRankIdx.value = newRankIdx;
+      // Only show rank up for ranks > Egg (index 0)
+      if (newRankIdx > 0 && newRankIdx > prevIdx) {
+        const rankEmojis = ['🥚', '🐣', '🐥', '🦩', '🦅', '👑', '⭐'];
+        const rankNames = ['Egg', 'Chick', 'Fledgling', 'Flamingo', 'Eagle', 'King of Birds', 'Legendary Bird'];
+        shakeTimer.value = 0.4;
+        runOnJS(showRankUp)(rankEmojis[newRankIdx], rankNames[newRankIdx]);
+      }
+    }
+
     // ──── Animation Frame ────
     animTimer.value += dt;
     const frameDuration = 1 / 8;
@@ -500,6 +621,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         </View>
       )}
 
+      {/* Milestone Popup */}
+      {isPlaying && milestoneText !== '' && (
+        <RNAnimated.View style={[styles.milestoneOverlay, { opacity: milestoneOpacity }]} pointerEvents="none">
+          <Text style={styles.milestoneText}>{milestoneText}</Text>
+        </RNAnimated.View>
+      )}
+
+      {/* Rank Up Popup */}
+      {isPlaying && rankUpText !== '' && (
+        <RNAnimated.View style={[styles.rankUpOverlay, { opacity: rankUpOpacity }]} pointerEvents="none">
+          <Text style={styles.rankUpText}>{rankUpText}</Text>
+        </RNAnimated.View>
+      )}
+
       <TouchControls
         onLeftPress={onLeftPress}
         onLeftRelease={onLeftRelease}
@@ -550,5 +685,42 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     letterSpacing: 1,
+  },
+  milestoneOverlay: {
+    position: 'absolute',
+    top: '35%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  milestoneText: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#FFD700',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 6,
+    letterSpacing: 4,
+  },
+  rankUpOverlay: {
+    position: 'absolute',
+    top: '20%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  rankUpText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+    letterSpacing: 2,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
 });

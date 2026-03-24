@@ -20,6 +20,7 @@ interface GameScreenProps {
   width: number;
   height: number;
   isPlaying: boolean;
+  isResuming?: boolean;
   onGameOver: (data: { score: number; distance: number }) => void;
 }
 
@@ -27,6 +28,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   width,
   height,
   isPlaying,
+  isResuming,
   onGameOver,
 }) => {
   const showBanner = BannerAd && BANNER_AD_UNIT_ID;
@@ -38,6 +40,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         height={height}
         onGameOver={onGameOver}
         isPlaying={isPlaying}
+        isResuming={isResuming}
       />
 
       {showBanner ? (

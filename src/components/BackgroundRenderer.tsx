@@ -23,11 +23,11 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
   distance,
   skyPhase,
 }) => {
-  const groundY = height * 0.75;
+  const groundY = height * 0.65;
 
   // Parallax factors
-  const P_CLOUD = 0.15;
-  const P_HILLS_FAR = 0.4;
+  const P_CLOUD = 0.6;
+  const P_HILLS_FAR = 1.5;
 
   // Sun/Moon
   const sunX = width * 0.85;

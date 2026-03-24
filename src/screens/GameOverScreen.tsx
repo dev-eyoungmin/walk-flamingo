@@ -15,6 +15,9 @@ interface GameOverScreenProps {
   highScore: number;
   isNewHighScore: boolean;
   onRetry: () => void;
+  onHome: () => void;
+  onContinue?: () => void;
+  canContinue?: boolean;
 }
 
 export const GameOverScreen: React.FC<GameOverScreenProps> = ({
@@ -23,6 +26,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   highScore,
   isNewHighScore,
   onRetry,
+  onHome,
+  onContinue,
+  canContinue = false,
 }) => {
   const { height } = useWindowDimensions();
   const rank = useMemo(() => getRank(distance), [distance]);
@@ -150,8 +156,66 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           </Text>
         )}
 
-        {/* Retry Button */}
-        <View style={[styles.buttons, { marginTop: s(14) }]}>
+        {/* Continue Button (watch ad to resume) */}
+        {canContinue && onContinue && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              styles.continueButton,
+              {
+                paddingHorizontal: s(48),
+                paddingVertical: s(12),
+                borderRadius: s(32),
+                marginTop: s(14),
+                alignSelf: 'center',
+              },
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={onContinue}
+          >
+            <Text
+              style={[
+                styles.continueButtonText,
+                { fontSize: s(16), letterSpacing: s(2) },
+              ]}
+            >
+              CONTINUE
+            </Text>
+            <Text
+              style={[
+                styles.continueSubtext,
+                { fontSize: s(9) },
+              ]}
+            >
+              Watch Ad
+            </Text>
+          </Pressable>
+        )}
+
+        {/* Home + Retry Buttons */}
+        <View style={[styles.buttons, { marginTop: canContinue && onContinue ? s(8) : s(14), gap: s(12) }]}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              styles.homeButton,
+              {
+                paddingHorizontal: s(48),
+                paddingVertical: s(14),
+                borderRadius: s(32),
+              },
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={onHome}
+          >
+            <Text
+              style={[
+                styles.homeButtonText,
+                { fontSize: s(16), letterSpacing: s(2) },
+              ]}
+            >
+              HOME
+            </Text>
+          </Pressable>
           <Pressable
             style={({ pressed }) => [
               styles.button,
@@ -260,6 +324,8 @@ const styles = StyleSheet.create({
   },
   buttons: {
     alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   button: {
     elevation: 3,
@@ -268,6 +334,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
     alignItems: 'center',
+  },
+  homeButton: {
+    backgroundColor: '#888888',
+  },
+  homeButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  continueButton: {
+    backgroundColor: '#DAA520',
+  },
+  continueButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  continueSubtext: {
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
+    marginTop: 2,
   },
   retryButton: {
     backgroundColor: '#FF7A9A',
