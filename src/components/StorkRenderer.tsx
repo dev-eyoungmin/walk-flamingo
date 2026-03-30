@@ -13,6 +13,7 @@ interface StorkRendererProps {
   angularVelocity?: SharedValue<number>;
   dangerRatio?: SharedValue<number>;
   isGameOver?: SharedValue<boolean>;
+  gameOverTimer?: SharedValue<number>; // time since game over started (0 to ~0.8s)
 }
 
 export const StorkRenderer: React.FC<StorkRendererProps> = ({
@@ -26,6 +27,7 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   angularVelocity,
   dangerRatio,
   isGameOver,
+  gameOverTimer,
 }) => {
   const cx = width / 2;
   const groundY = height * 0.75;
@@ -78,11 +80,11 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   const rootTr = useDerivedValue(() => {
     const gameOver = isGameOver?.value ?? false;
     if (gameOver) {
-      const t = elapsedTime.value;
+      const t = gameOverTimer?.value ?? 0; // relative time since game over (0 to ~0.8s)
       // Exaggerated spin accelerating over time
-      const spin = t * 8.0;
-      // Fall downward
-      const fallY = t * t * 200;
+      const spin = angle.value + t * 8.0;
+      // Fall downward (quadratic acceleration)
+      const fallY = t * t * 300;
       return [
         { translateX: cx },
         { translateY: groundY + (hillY?.value ?? 0) + fallY },
@@ -131,10 +133,14 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
 
     // Neck counter-tilts against body angle with velocity-based whiplash overshoot
     const angVel = angularVelocity?.value ?? 0;
-    // Counter-tilt: neck lags behind body rotation
-    const counterTilt = -angVel * 0.15;
+    const tilt = angle.value;
+    // Static counter-tilt: neck resists the body's tilt angle
+    const staticCounterTilt = -tilt * 0.12;
+    // Velocity-based lag: neck lags behind rapid changes
+    const velocityLag = -angVel * 0.1;
     // Whiplash overshoot based on angular velocity magnitude
-    const whiplash = -angVel * 0.08 * Math.sin(elapsedTime.value * 12);
+    const whiplash = -angVel * 0.06 * Math.sin(elapsedTime.value * 12);
+    const counterTilt = staticCounterTilt + velocityLag + whiplash;
 
     return [
       { translateX: neckBaseX },
