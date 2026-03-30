@@ -264,14 +264,18 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   // 4. Legs: Rotate relative to Hip (0,0) — constant cadence
   const backLegTr = useDerivedValue(() => {
     const t = elapsedTime.value * WALK_HZ * TAU;
-    const swing = Math.sin(t) * LEG_SWING;
-    return [{ rotate: swing }];
+    const raw = Math.sin(t);
+    const swing = raw * LEG_SWING * 1.3; // 30% more pronounced swing
+    const hipShift = Math.abs(raw) * U * 0.3; // slight up-down hip displacement
+    return [{ translateY: -hipShift }, { rotate: swing }];
   });
 
   const frontLegTr = useDerivedValue(() => {
     const t = elapsedTime.value * WALK_HZ * TAU;
-    const swing = Math.sin(t + Math.PI) * LEG_SWING;
-    return [{ rotate: swing }];
+    const raw = Math.sin(t + Math.PI);
+    const swing = raw * LEG_SWING * 1.3;
+    const hipShift = Math.abs(raw) * U * 0.3;
+    return [{ translateY: -hipShift }, { rotate: swing }];
   });
 
   // 5. Knees: Move down to end of thigh, then rotate
@@ -279,7 +283,9 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     const t = elapsedTime.value * WALK_HZ * TAU;
     const sinT = Math.sin(t);
     const baseBend = 20;
-    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8;
+    const liftPhase = Math.max(0, sinT); // positive when lifting
+    const stampPhase = Math.max(0, -sinT) * 0.3; // slight forward lean on ground contact
+    const bend = baseBend * (Math.PI/180) + liftPhase * 1.0 + stampPhase;
     return [{ translateY: thighLen }, { rotate: bend }];
   });
 
@@ -287,7 +293,9 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     const t = elapsedTime.value * WALK_HZ * TAU;
     const sinT = Math.sin(t + Math.PI);
     const baseBend = 20;
-    const bend = baseBend * (Math.PI/180) + Math.max(0, sinT) * 0.8;
+    const liftPhase = Math.max(0, sinT);
+    const stampPhase = Math.max(0, -sinT) * 0.3;
+    const bend = baseBend * (Math.PI/180) + liftPhase * 1.0 + stampPhase;
     return [{ translateY: thighLen }, { rotate: bend }];
   });
 
