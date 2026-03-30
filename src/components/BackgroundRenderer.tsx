@@ -114,6 +114,67 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
     return 0.8 * Math.max(0.1, 1 - phase * 0.4);
   });
 
+  // Birds
+  const birdPath = useMemo(() => {
+    const p = Skia.Path.Make();
+    p.moveTo(-6, 2);
+    p.quadTo(-3, -2, 0, 0);
+    p.quadTo(3, -2, 6, 2);
+    return p;
+  }, []);
+
+  const birdData = useMemo(() => {
+    const seeds = [0.317, 0.623, 0.841, 0.159, 0.472];
+    return seeds.map((s, i) => ({
+      x: s * width * 2,
+      y: height * 0.08 + Math.abs(Math.sin(i * 57.3 + 1.1)) * (height * 0.20),
+      size: 4 + Math.abs(Math.sin(i * 31.7 + 2.3)) * 4,
+      speed: 0.3 + Math.abs(Math.sin(i * 19.4 + 0.7)) * 0.4,
+    }));
+  }, [width, height]);
+
+  const birdTr0 = useDerivedValue(() => {
+    const t = distance.value * 0.01;
+    const b = birdData[0];
+    const x = ((b.x - distance.value * b.speed) % (width * 2 + 100) + (width * 2 + 100)) % (width * 2 + 100) - 50;
+    const y = b.y + Math.sin(t * 2.1 + 0) * 8;
+    const rot = Math.sin(t * 4.2 + 0) * 0.25;
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }, { scale: b.size / 6 }];
+  });
+  const birdTr1 = useDerivedValue(() => {
+    const t = distance.value * 0.01;
+    const b = birdData[1];
+    const x = ((b.x - distance.value * b.speed) % (width * 2 + 100) + (width * 2 + 100)) % (width * 2 + 100) - 50;
+    const y = b.y + Math.sin(t * 1.8 + 1) * 8;
+    const rot = Math.sin(t * 3.6 + 1) * 0.25;
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }, { scale: b.size / 6 }];
+  });
+  const birdTr2 = useDerivedValue(() => {
+    const t = distance.value * 0.01;
+    const b = birdData[2];
+    const x = ((b.x - distance.value * b.speed) % (width * 2 + 100) + (width * 2 + 100)) % (width * 2 + 100) - 50;
+    const y = b.y + Math.sin(t * 2.3 + 2) * 8;
+    const rot = Math.sin(t * 4.6 + 2) * 0.25;
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }, { scale: b.size / 6 }];
+  });
+  const birdTr3 = useDerivedValue(() => {
+    const t = distance.value * 0.01;
+    const b = birdData[3];
+    const x = ((b.x - distance.value * b.speed) % (width * 2 + 100) + (width * 2 + 100)) % (width * 2 + 100) - 50;
+    const y = b.y + Math.sin(t * 1.6 + 3) * 8;
+    const rot = Math.sin(t * 3.2 + 3) * 0.25;
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }, { scale: b.size / 6 }];
+  });
+  const birdTr4 = useDerivedValue(() => {
+    const t = distance.value * 0.01;
+    const b = birdData[4];
+    const x = ((b.x - distance.value * b.speed) % (width * 2 + 100) + (width * 2 + 100)) % (width * 2 + 100) - 50;
+    const y = b.y + Math.sin(t * 2.5 + 4) * 8;
+    const rot = Math.sin(t * 5.0 + 4) * 0.25;
+    return [{ translateX: x }, { translateY: y }, { rotate: rot }, { scale: b.size / 6 }];
+  });
+  const birdTransforms = [birdTr0, birdTr1, birdTr2, birdTr3, birdTr4];
+
   // Hills
   const farHillsTr = useDerivedValue(() => [
     { translateX: -(distance.value * P_HILLS_FAR) % width },
@@ -181,6 +242,26 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
       <Circle cx={sunX} cy={sunY} r={sunR} color="#FFD700" opacity={sunOpacity} />
       <Circle cx={sunX} cy={sunY} r={sunR * 1.3} color="#FFD700" opacity={useDerivedValue(() => (sunOpacity.value ?? 0) * 0.25)} />
 
+      {/* Sun rays during sunset */}
+      <Group opacity={sunsetOpacity}>
+        {[0, 30, 60, 90, 120, 150].map((deg) => (
+          <Rect
+            key={`ray-${deg}`}
+            x={sunX - 1}
+            y={sunBaseY - sunR * 4}
+            width={2}
+            height={sunR * 4}
+            color="#FFD700"
+            opacity={0.15}
+            transform={[
+              { translateX: -sunX }, { translateY: -sunBaseY },
+              { rotate: (deg * Math.PI) / 180 },
+              { translateX: sunX }, { translateY: sunBaseY },
+            ]}
+          />
+        ))}
+      </Group>
+
       {/* Moon (crescent) */}
       <Circle cx={sunX - 40} cy={sunBaseY} r={sunR} color="#FFFDE7" opacity={moonOpacity} />
       <Circle
@@ -205,6 +286,19 @@ export const BackgroundRenderer: React.FC<BackgroundRendererProps> = ({
       <Group transform={cloudTr2} opacity={cloudOpacity2}>
         <Path path={cloudPath} color="#FFFFFF" transform={[{ scale: 0.7 }]} />
       </Group>
+
+      {/* Flying birds */}
+      {birdTransforms.map((tr, i) => (
+        <Path
+          key={`bird-${i}`}
+          path={birdPath}
+          color="#333333"
+          style="stroke"
+          strokeWidth={1.5}
+          opacity={0.5}
+          transform={tr}
+        />
+      ))}
 
       {/* Far hills */}
       <Group transform={farHillsTr}>
