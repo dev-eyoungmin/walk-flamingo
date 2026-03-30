@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Animated,
   useWindowDimensions,
+  Share,
 } from 'react-native';
 import { getRank } from '../lib/ranks';
 
@@ -35,6 +36,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(50)).current;
   const scoreScale = useRef(new Animated.Value(0.5)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
 
   // Scale factor based on available height (landscape)
   // Reference height: 400px. Below that, scale down proportionally.
@@ -61,8 +63,22 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         delay: 200,
         useNativeDriver: true,
       }),
+      Animated.sequence([
+        Animated.timing(shakeAnim, { toValue: 8, duration: 50, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -6, duration: 50, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 4, duration: 50, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
+      ]),
     ]).start();
-  }, [fadeIn, slideUp, scoreScale]);
+  }, [fadeIn, slideUp, scoreScale, shakeAnim]);
+
+  const handleShare = useCallback(async () => {
+    try {
+      await Share.share({
+        message: `🦩 I walked ${distance}m in Flamingo Walk! ${rank.emoji} Rank: ${rank.name}. Can you beat me?`,
+      });
+    } catch (_) {}
+  }, [distance, rank]);
 
   return (
     <Animated.View style={[styles.overlay, { opacity: fadeIn }]}>
@@ -74,7 +90,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
             paddingVertical: s(24),
             borderRadius: s(24),
             maxHeight: height * 0.9,
-            transform: [{ translateY: slideUp }],
+            transform: [{ translateY: slideUp }, { translateX: shakeAnim }],
           },
         ]}
       >
@@ -238,6 +254,19 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
               RETRY
             </Text>
           </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              styles.shareButton,
+              { paddingHorizontal: s(36), paddingVertical: s(14), borderRadius: s(32) },
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleShare}
+          >
+            <Text style={[styles.shareButtonText, { fontSize: s(14), letterSpacing: s(1) }]}>
+              SHARE
+            </Text>
+          </Pressable>
         </View>
       </Animated.View>
     </Animated.View>
@@ -365,4 +394,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
   },
+  shareButton: { backgroundColor: '#4ECDC4' },
+  shareButtonText: { color: '#FFFFFF', fontWeight: '800' },
 });
