@@ -125,6 +125,28 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
     return p;
   }, [width, height, baseY, dirtOffset, segW, hillH, terrainSegments]);
 
+  // Grass tufts spread across the pattern width (deterministic positions)
+  const grassTufts = useMemo(() => {
+    const tufts: { x: number; h: number; lean: number }[] = [];
+    for (let i = 0; i < 40; i++) {
+      const seed = Math.sin(i * 137.508 + 42.0);
+      tufts.push({
+        x: Math.abs(seed) * totalPatternW * 2,
+        h: 3 + Math.abs(Math.sin(i * 73.1)) * 5,
+        lean: Math.sin(i * 29.3) * 0.2,
+      });
+    }
+    return tufts;
+  }, [totalPatternW]);
+
+  // Grass blade: small curved quad
+  const grassBladePath = useMemo(() => {
+    const p = Skia.Path.Make();
+    p.moveTo(-1, 0);
+    p.quadTo(0, -8, 1, 0);
+    return p;
+  }, []);
+
   // Scroll transform - now wraps by totalPatternW
   const hillScrollTr = useDerivedValue(() => [
     { translateX: -(distance.value * P_HILLS_NEAR) % totalPatternW },
@@ -164,7 +186,25 @@ export const GroundRenderer: React.FC<GroundRendererProps> = ({
         <Path path={brownDirtPath} color={dirtColor} />
       </Group>
 
-      {/* 3. Brown flat rect at very bottom (safety fill for gaps) */}
+      {/* 3. Grass tufts along terrain surface */}
+      <Group transform={hillScrollTr}>
+        {grassTufts.map((tuft, i) => (
+          <Group key={i} transform={[{ translateX: tuft.x }, { translateY: baseY - 1 }]}>
+            {/* 3 blades slightly fanned out */}
+            <Group transform={[{ scaleY: tuft.h / 8 }, { skewX: tuft.lean - 0.15 }]}>
+              <Path path={grassBladePath} color="#4CAF50" style="stroke" strokeWidth={1.2} />
+            </Group>
+            <Group transform={[{ scaleY: tuft.h / 8 }, { skewX: tuft.lean }]}>
+              <Path path={grassBladePath} color="#66BB6A" style="stroke" strokeWidth={1.4} />
+            </Group>
+            <Group transform={[{ scaleY: tuft.h / 8 }, { skewX: tuft.lean + 0.15 }]}>
+              <Path path={grassBladePath} color="#4CAF50" style="stroke" strokeWidth={1.2} />
+            </Group>
+          </Group>
+        ))}
+      </Group>
+
+      {/* 4. Brown flat rect at very bottom (safety fill for gaps) */}
       <Rect x={0} y={height * 0.85} width={width} height={height * 0.15}>
         <LinearGradient
           start={vec(0, height * 0.92)}
