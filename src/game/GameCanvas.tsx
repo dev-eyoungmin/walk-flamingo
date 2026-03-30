@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform, Animated as RNAnimated } from 'react-native';
-import { Canvas, Group } from '@shopify/react-native-skia';
+import { Canvas, Group, Rect, LinearGradient, vec } from '@shopify/react-native-skia';
 import {
   useSharedValue,
   useFrameCallback,
@@ -12,6 +12,8 @@ import { GroundRenderer } from '../components/GroundRenderer';
 import { StorkRenderer } from '../components/StorkRenderer';
 import { TouchControls } from '../components/TouchControls';
 import { WeatherRenderer } from '../components/WeatherRenderer';
+import { EnvironmentRenderer } from '../components/EnvironmentRenderer';
+import { ParticleRenderer } from '../components/ParticleRenderer';
 import { TERRAIN_SEG_W_RATIO, generateTerrain, encodeTerrainForWorklet, type TerrainSegment } from './constants';
 
 // Milestone thresholds (in displayed meters)
@@ -101,6 +103,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const shakeX = useSharedValue(0);
   const shakeTimer = useSharedValue(0);
 
+  // === Danger & game over animation ===
+  const dangerRatioSV = useSharedValue(0);
+  const gameOverTimer = useSharedValue(0);
+  const gameOverSlowMo = useSharedValue(false);
 
   // === Terrain (random per game) ===
   const [terrainSegments, setTerrainSegments] = useState<TerrainSegment[]>(() => generateTerrain());
@@ -160,11 +166,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     resumeGraceEnd.value = 0;
     lastMilestone.value = 0;
     currentRankIdx.value = 0;
+    dangerRatioSV.value = 0;
+    gameOverTimer.value = 0;
+    gameOverSlowMo.value = false;
     // Generate new random terrain
     const newTerrain = generateTerrain();
     setTerrainSegments(newTerrain);
     terrainData.value = encodeTerrainForWorklet(newTerrain);
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, weatherCycleTimer, lastWeatherChange, resumeGraceEnd, lastMilestone, currentRankIdx, terrainData]);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, weatherCycleTimer, lastWeatherChange, resumeGraceEnd, lastMilestone, currentRankIdx, terrainData, dangerRatioSV, gameOverTimer, gameOverSlowMo]);
 
   const resumeGame = useCallback(() => {
     // Only reset physics state; keep score, distance, combo, terrain, weather, etc.
@@ -179,9 +188,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     tapBoost.value = 0;
     shakeX.value = 0;
     shakeTimer.value = 0;
+    dangerRatioSV.value = 0;
+    gameOverTimer.value = 0;
+    gameOverSlowMo.value = false;
     // Re-apply grace period from current elapsed time
     resumeGraceEnd.value = elapsedTime.value + GRACE_PERIOD;
-  }, [angle, angularVelocity, windForceVal, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, shakeX, shakeTimer, resumeGraceEnd, elapsedTime]);
+  }, [angle, angularVelocity, windForceVal, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, shakeX, shakeTimer, resumeGraceEnd, elapsedTime, dangerRatioSV, gameOverTimer, gameOverSlowMo]);
 
   React.useEffect(() => {
     if (isPlaying) {
@@ -293,14 +305,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value + baseWobble) * dt) * damping;
     angle.value += angularVelocity.value * dt;
 
+    // ──── Danger Ratio (for visual feedback) ────
+    dangerRatioSV.value = Math.abs(angle.value) / GAME_OVER_ANGLE;
+
     // ──── Game Over Check (skip during grace period) ────
+    // Slow-mo ragdoll: play 0.8s of falling animation before triggering game over
     if (!inGrace && Math.abs(angle.value) >= GAME_OVER_ANGLE) {
-      isGameOver.value = true;
-      runOnJS(handleGameOver)(
-        Math.floor(score.value),
-        Math.floor(distance.value * PIXELS_TO_METERS),
-      );
-      return;
+      if (!gameOverSlowMo.value) {
+        gameOverSlowMo.value = true;
+        gameOverTimer.value = 0;
+      }
+      gameOverTimer.value += dt;
+      if (gameOverTimer.value > 0.8) {
+        isGameOver.value = true;
+        runOnJS(handleGameOver)(
+          Math.floor(score.value),
+          Math.floor(distance.value * PIXELS_TO_METERS),
+        );
+      }
+      return; // skip normal physics during ragdoll
     }
 
     // ──── Time & Distance ────
@@ -583,6 +606,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Screen shake transform
   const shakeTransform = useDerivedValue(() => [{ translateX: shakeX.value }]);
 
+  // Danger vignette opacity
+  const dangerVignetteOpacity = useDerivedValue(() => {
+    const d = dangerRatioSV.value;
+    if (d < 0.5) return 0;
+    return (d - 0.5) * 0.6; // max 0.3 opacity at full danger
+  });
+
   return (
     <View style={styles.container}>
       <Canvas style={{ width, height: canvasHeight }}>
@@ -594,14 +624,34 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             skyPhase={skyPhase}
           />
           <GroundRenderer width={width} height={canvasHeight} distance={distance} skyPhase={skyPhase} terrainSegments={terrainSegments} />
+          <EnvironmentRenderer
+            width={width}
+            height={canvasHeight}
+            distance={distance}
+            skyPhase={skyPhase}
+          />
           <StorkRenderer
             width={width}
             height={canvasHeight}
             angle={angle}
+            angularVelocity={angularVelocity}
             animFrame={animFrame}
             elapsedTime={elapsedTime}
             hillY={storkHillY}
             hillSlope={hillSlope}
+            dangerRatio={dangerRatioSV}
+            isGameOver={gameOverSlowMo}
+            gameOverTimer={gameOverTimer}
+          />
+          <ParticleRenderer
+            width={width}
+            height={canvasHeight}
+            comboLevelUpAnim={comboLevelUpAnim}
+            dangerRatio={dangerRatioSV}
+            elapsedTime={elapsedTime}
+            distance={distance}
+            angle={angle}
+            isGameOver={gameOverSlowMo}
           />
           <WeatherRenderer
             weatherType={weatherType}
@@ -609,6 +659,23 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             width={width}
             height={canvasHeight}
           />
+          {/* Danger vignette - red edges when close to falling */}
+          <Rect x={0} y={0} width={width * 0.15} height={canvasHeight}
+            opacity={dangerVignetteOpacity}>
+            <LinearGradient start={vec(0, 0)} end={vec(width * 0.15, 0)} colors={['rgba(255,30,30,0.5)', 'transparent']} />
+          </Rect>
+          <Rect x={width * 0.85} y={0} width={width * 0.15} height={canvasHeight}
+            opacity={dangerVignetteOpacity}>
+            <LinearGradient start={vec(width * 0.85 + width * 0.15, 0)} end={vec(width * 0.85, 0)} colors={['rgba(255,30,30,0.5)', 'transparent']} />
+          </Rect>
+          <Rect x={0} y={0} width={width} height={canvasHeight * 0.12}
+            opacity={dangerVignetteOpacity}>
+            <LinearGradient start={vec(0, 0)} end={vec(0, canvasHeight * 0.12)} colors={['rgba(255,30,30,0.4)', 'transparent']} />
+          </Rect>
+          <Rect x={0} y={canvasHeight * 0.88} width={width} height={canvasHeight * 0.12}
+            opacity={dangerVignetteOpacity}>
+            <LinearGradient start={vec(0, canvasHeight)} end={vec(0, canvasHeight * 0.88)} colors={['rgba(255,30,30,0.4)', 'transparent']} />
+          </Rect>
         </Group>
       </Canvas>
 
