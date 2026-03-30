@@ -10,6 +10,9 @@ interface StorkRendererProps {
   elapsedTime: SharedValue<number>;
   hillY?: SharedValue<number>;
   hillSlope?: SharedValue<number>; // -1=uphill, +1=downhill, 0=flat
+  angularVelocity?: SharedValue<number>;
+  dangerRatio?: SharedValue<number>;
+  isGameOver?: SharedValue<boolean>;
 }
 
 export const StorkRenderer: React.FC<StorkRendererProps> = ({
@@ -20,6 +23,9 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   elapsedTime,
   hillY,
   hillSlope,
+  angularVelocity,
+  dangerRatio,
+  isGameOver,
 }) => {
   const cx = width / 2;
   const groundY = height * 0.75;
@@ -43,6 +49,7 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   const C_CHEEK = '#FF5070';
   const C_SHADOW = 'rgba(0,0,0,0.15)';
   const C_WING = '#E8658A';
+  const C_MOUTH = '#CC3344';
 
   // Dimensions — SVG-matched proportions: long legs + original body/head sizes
   const thighLen = U * 6.5;
@@ -67,11 +74,27 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   ]);
 
   // 1. Root: Moves to Ground Pivot (cx, groundY + hillY), then applies tilt rotation
-  const rootTr = useDerivedValue(() => [
-    { translateX: cx },
-    { translateY: groundY + (hillY?.value ?? 0) },
-    { rotate: angle.value },
-  ]);
+  // When game over, override with ragdoll spin + fall
+  const rootTr = useDerivedValue(() => {
+    const gameOver = isGameOver?.value ?? false;
+    if (gameOver) {
+      const t = elapsedTime.value;
+      // Exaggerated spin accelerating over time
+      const spin = t * 8.0;
+      // Fall downward
+      const fallY = t * t * 200;
+      return [
+        { translateX: cx },
+        { translateY: groundY + (hillY?.value ?? 0) + fallY },
+        { rotate: spin },
+      ];
+    }
+    return [
+      { translateX: cx },
+      { translateY: groundY + (hillY?.value ?? 0) },
+      { rotate: angle.value },
+    ];
+  });
 
   // 2. Hip: Moves UP from Ground to Hip height.
   // All body parts attach here (0,0 is now the Hip).
@@ -79,33 +102,158 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     { translateY: -totalLegLen }
   ]);
 
-  // 3. Body: Bobs + hill lean (no tilt sway)
+  // 3. Body: Bobs + hill lean + squash-and-stretch from walking rhythm
   const bodyBobTr = useDerivedValue(() => {
     const t = elapsedTime.value * WALK_HZ * TAU;
     const bob = Math.sin(t * 2) * U * 0.2;
     const slope = hillSlope?.value ?? 0;
     const climbLean = slope * 0.25;
+
+    // Squash-and-stretch: walking rhythm causes subtle compress/stretch
+    const walkPhase = Math.sin(t * 2);
+    const squashX = 1.0 + walkPhase * 0.03; // subtle horizontal squash
+    const squashY = 1.0 - walkPhase * 0.03; // inverse vertical stretch
+
     return [
       { translateY: bob },
       { rotate: climbLean },
+      { scaleX: squashX },
+      { scaleY: squashY },
     ];
   });
 
-  // 3b. Neck+Head: Natural bobbing (no tilt-based sway)
+  // 3b. Neck+Head: Spring lag counter-tilt with velocity-based whiplash
   const neckBaseX = U * 1.5;
   const neckBaseY = bodyYOffset - bodyRy * 0.7;
   const neckSwayTr = useDerivedValue(() => {
     const slope = hillSlope?.value ?? 0;
     const climbNeckLean = slope * 0.15;
+
+    // Neck counter-tilts against body angle with velocity-based whiplash overshoot
+    const angVel = angularVelocity?.value ?? 0;
+    // Counter-tilt: neck lags behind body rotation
+    const counterTilt = -angVel * 0.15;
+    // Whiplash overshoot based on angular velocity magnitude
+    const whiplash = -angVel * 0.08 * Math.sin(elapsedTime.value * 12);
+
     return [
       { translateX: neckBaseX },
       { translateY: neckBaseY },
-      { rotate: climbNeckLean },
+      { rotate: climbNeckLean + counterTilt + whiplash },
       { translateX: -neckBaseX },
       { translateY: -neckBaseY },
     ];
   });
 
+  // Wing flap: reactive to tilt danger
+  const wingFlapTr = useDerivedValue(() => {
+    const danger = dangerRatio?.value ?? 0;
+    const t = elapsedTime.value;
+
+    // Base gentle flap
+    const baseFreq = 2.0;
+    const baseAmp = 0.1;
+
+    // Danger increases frequency and amplitude
+    const freq = baseFreq + danger * 8.0; // flap faster when danger increases
+    const amp = baseAmp + danger * 0.6;   // flap wider when danger increases
+
+    const flapAngle = Math.sin(t * freq * TAU) * amp;
+    const flapScaleY = 1.0 - Math.abs(Math.sin(t * freq * TAU)) * 0.3 * (0.3 + danger * 0.7);
+
+    return [
+      { translateX: -U * 0.7 },
+      { translateY: bodyYOffset - U * 0.7 },
+      { rotate: flapAngle },
+      { scaleY: flapScaleY },
+    ];
+  });
+
+  // Tail sway: swings opposite to angular velocity direction
+  const tailSwayTr = useDerivedValue(() => {
+    const angVel = angularVelocity?.value ?? 0;
+    // Tail swings opposite to angular velocity with inertia
+    const tailAngle = -angVel * 0.25;
+    // Add some natural sway
+    const naturalSway = Math.sin(elapsedTime.value * 1.5 * TAU) * 0.05;
+
+    const tx = -bodyRx * 0.8;
+    const ty = bodyYOffset;
+
+    return [
+      { translateX: tx },
+      { translateY: ty },
+      { rotate: tailAngle + naturalSway },
+      { translateX: -tx },
+      { translateY: -ty },
+    ];
+  });
+
+  // Expression system: eye scale, pupil scale, mouth open
+  const eyeScaleVal = useDerivedValue(() => {
+    const danger = dangerRatio?.value ?? 0;
+    // Eye widens with danger: scale 1.0 -> 1.8
+    return 1.0 + danger * 0.8;
+  });
+
+  const pupilScaleVal = useDerivedValue(() => {
+    const danger = dangerRatio?.value ?? 0;
+    // Pupil shrinks when scared: scale 1.0 -> 0.5
+    return 1.0 - danger * 0.5;
+  });
+
+  const mouthOpenVal = useDerivedValue(() => {
+    const danger = dangerRatio?.value ?? 0;
+    // Mouth opens when danger > 0.7
+    const mouthDanger = danger - 0.7;
+    if (mouthDanger <= 0) return 0;
+    // Scale from 0 to 1 over the 0.7->1.0 range
+    return mouthDanger / 0.3;
+  });
+
+  // Eye transform (scales around eye center)
+  const eyeWhiteTr = useDerivedValue(() => {
+    const s = eyeScaleVal.value;
+    return [
+      { translateX: headX + U * 0.5 },
+      { translateY: headY - U * 0.3 },
+      { scaleX: s },
+      { scaleY: s },
+      { translateX: -(headX + U * 0.5) },
+      { translateY: -(headY - U * 0.3) },
+    ];
+  });
+
+  const pupilTr = useDerivedValue(() => {
+    const s = pupilScaleVal.value;
+    return [
+      { translateX: headX + U * 0.5 },
+      { translateY: headY - U * 0.3 },
+      { scaleX: s },
+      { scaleY: s },
+      { translateX: -(headX + U * 0.5) },
+      { translateY: -(headY - U * 0.3) },
+    ];
+  });
+
+  // Mouth oval dimensions (derived)
+  const mouthRx = U * 0.6;
+  const mouthRy = U * 0.5;
+  const mouthCx = headX + U * 0.3;
+  const mouthCy = headY + U * 1.5;
+
+  const mouthTr = useDerivedValue(() => {
+    const openness = mouthOpenVal.value;
+    const sy = openness; // 0 = closed (invisible), 1 = fully open
+    return [
+      { translateX: mouthCx },
+      { translateY: mouthCy },
+      { scaleX: 1 },
+      { scaleY: sy },
+      { translateX: -mouthCx },
+      { translateY: -mouthCy },
+    ];
+  });
 
   // 4. Legs: Rotate relative to Hip (0,0) — constant cadence
   const backLegTr = useDerivedValue(() => {
@@ -237,22 +385,24 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
                 </Group>
             </Group>
 
-            {/* Body Group */}
+            {/* Body Group (with squash-and-stretch) */}
             <Group transform={bodyBobTr}>
                 {/* Main Body (Centered at 0, bodyYOffset) */}
                 <Oval x={-bodyRx} y={bodyYOffset - bodyRy} width={bodyRx*2} height={bodyRy*2} color={C_BODY} />
                 <Circle cx={-U*2} cy={bodyYOffset - U*2} r={U*1.7} color={C_BODY_LIGHT} />
 
-                {/* Wing */}
-                <Group transform={[{translateX: -U*0.7}, {translateY: bodyYOffset - U*0.7}]}>
+                {/* Wing (with danger-reactive flap) */}
+                <Group transform={wingFlapTr}>
                     <Circle cx={0} cy={0} r={U * 2.5} color={C_WING} />
                     <Circle cx={0} cy={0} r={U * 2.5} color={C_WING} transform={[{scaleY: 0.7}]} />
                 </Group>
 
-                {/* Tail */}
-                <Path path={tailPath} color={C_WING} style="stroke" strokeWidth={U} strokeCap="round" />
+                {/* Tail (with inertia sway) */}
+                <Group transform={tailSwayTr}>
+                    <Path path={tailPath} color={C_WING} style="stroke" strokeWidth={U} strokeCap="round" />
+                </Group>
 
-                {/* Neck + Head Group (extra whiplash sway) */}
+                {/* Neck + Head Group (spring lag whiplash) */}
                 <Group transform={neckSwayTr}>
                     {/* Neck */}
                     <Path path={neckPath} color={C_NECK} style="stroke" strokeWidth={U * 1.2} strokeCap="round" />
@@ -267,10 +417,25 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
                         <Path path={beakPath} color={C_BEAK} />
                         <Path path={beakTipPath} color={C_BEAK_TIP} />
 
-                        {/* Eye */}
-                        <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.9} color={C_EYE_W} />
-                        <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.5} color={C_EYE_B} />
+                        {/* Eye (scales with danger) */}
+                        <Group transform={eyeWhiteTr}>
+                            <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.9} color={C_EYE_W} />
+                        </Group>
+                        <Group transform={pupilTr}>
+                            <Circle cx={headX + U*0.5} cy={headY - U*0.3} r={U*0.5} color={C_EYE_B} />
+                        </Group>
                         <Circle cx={headX + U*0.7} cy={headY - U*0.4} r={U*0.15} color={C_EYE_W} />
+
+                        {/* Mouth (panic expression, visible when danger > 0.7) */}
+                        <Group transform={mouthTr}>
+                            <Oval
+                                x={mouthCx - mouthRx}
+                                y={mouthCy - mouthRy}
+                                width={mouthRx * 2}
+                                height={mouthRy * 2}
+                                color={C_MOUTH}
+                            />
+                        </Group>
                     </Group>
                 </Group>
             </Group>
