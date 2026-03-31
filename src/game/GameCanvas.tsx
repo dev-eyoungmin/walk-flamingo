@@ -1,6 +1,7 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform, Animated as RNAnimated } from 'react-native';
 import { Canvas, Group, Rect, LinearGradient, vec } from '@shopify/react-native-skia';
+import * as Haptics from 'expo-haptics';
 import {
   useSharedValue,
   useFrameCallback,
@@ -39,7 +40,7 @@ const CENTER_THRESHOLD = (12 * Math.PI) / 180;
 const BASE_WALK_SPEED = 8;
 const POINTS_PER_SECOND = 10;
 const PIXELS_TO_METERS = 0.04;
-const GRACE_PERIOD = 1.5; // seconds before full physics/scoring kicks in
+const GRACE_PERIOD = 3.0; // seconds before full physics/scoring kicks in (was 1.5)
 
 // Near hill parallax must match BackgroundRenderer
 const P_HILLS_NEAR = 2.5;
@@ -212,6 +213,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   const showMilestone = useCallback((dist: number) => {
     setMilestoneText(`${dist}m!`);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     milestoneOpacity.setValue(0);
     RNAnimated.sequence([
       RNAnimated.timing(milestoneOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -220,8 +222,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     ]).start();
   }, [milestoneOpacity]);
 
+  const hapticComboUp = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
   const showRankUp = useCallback((emoji: string, name: string) => {
     setRankUpText(`${emoji} ${name}`);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     rankUpOpacity.setValue(0);
     RNAnimated.sequence([
       RNAnimated.timing(rankUpOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
@@ -252,14 +259,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       graceRatio = (t - resumeStart) / GRACE_PERIOD;
     }
 
-    // ──── Difficulty (balanced ramp) ────
+    // ──── Difficulty (soft start, then accelerating ramp) ────
     const effectiveT = Math.max(0, t - GRACE_PERIOD); // difficulty ramps from 0 after grace
     const wave = (Math.sin(effectiveT * 1.5) + 1) * 0.5;
     const surge = 1.0 + wave * 0.25;
-    const gravityMult = (3.0 + effectiveT * 0.28) * surge * graceRatio;
-    const damping = Math.max(0.48, 0.75 - effectiveT * 0.02) - wave * 0.10;
-    const windStr = Math.min((3.8 + effectiveT * 0.35) * surge, 10.0) * graceRatio;
-    const windChangeInt = Math.max(0.4, 1.0 - effectiveT * 0.30);
+    // Soft start: gravity ramps slowly for first 15s, then accelerates
+    const earlyFactor = Math.min(1.0, effectiveT / 15.0); // 0->1 over 15s
+    const gravityBase = 1.5 + earlyFactor * 1.5; // 1.5 -> 3.0 over 15s
+    const gravityLate = Math.max(0, effectiveT - 15) * 0.20; // +0.20/s after 15s
+    const gravityMult = (gravityBase + gravityLate) * surge * graceRatio;
+    const damping = Math.max(0.52, 0.82 - effectiveT * 0.012) - wave * 0.06;
+    const windBase = 1.5 + earlyFactor * 2.0; // 1.5 -> 3.5 over 15s
+    const windLate = Math.max(0, effectiveT - 15) * 0.25;
+    const windStr = Math.min((windBase + windLate) * surge, 10.0) * graceRatio;
+    const windChangeInt = Math.max(0.4, 2.0 - effectiveT * 0.12);
 
     // ──── Wind ────
     const windPhase = Math.floor(t / windChangeInt);
@@ -299,7 +312,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const wobble2 = Math.sin(t * 13.1 + 3.7) * 1.2;
     const wobble3 = Math.sin(t * 3.9) * 0.8;
     const wobble4 = Math.sin(t * 19.7 + 5.1) * 0.6;
-    const baseWobble = (wobble1 + wobble2 + wobble3 + wobble4) * (1.2 + effectiveT * 0.06);
+    const baseWobble = (wobble1 + wobble2 + wobble3 + wobble4) * (0.6 + effectiveT * 0.04);
 
     angularVelocity.value =
       (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value + baseWobble) * dt) * damping;
@@ -432,6 +445,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           comboTimer.value = 0;
           comboLevelUpAnim.value = 0.6;
           shakeTimer.value = 0.25;
+          runOnJS(hapticComboUp)();
         }
       }
     } else {
@@ -587,6 +601,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const [displayDist, setDisplayDist] = useState(0);
   const [displayScore, setDisplayScore] = useState(0);
   const [displayCombo, setDisplayCombo] = useState(1);
+  const [displayWind, setDisplayWind] = useState(0);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -594,9 +609,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       setDisplayDist(Math.floor(distance.value * PIXELS_TO_METERS));
       setDisplayScore(Math.floor(score.value));
       setDisplayCombo(comboMultiplier.value);
+      setDisplayWind(windForceVal.value);
     }, 200);
     return () => clearInterval(interval);
-  }, [isPlaying, distance, score, comboMultiplier]);
+  }, [isPlaying, distance, score, comboMultiplier, windForceVal]);
 
   const onLeftPress = useCallback(() => { inputLeft.value = true; }, [inputLeft]);
   const onLeftRelease = useCallback(() => { inputLeft.value = false; }, [inputLeft]);
@@ -685,6 +701,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           <View style={styles.hudLeft}>
             <Text style={styles.hudDist}>{displayDist}m</Text>
           </View>
+          <View style={styles.hudCenter}>
+            {displayCombo > 1 && (
+              <Text style={[styles.hudCombo, displayCombo >= 4 ? styles.hudComboMax : displayCombo >= 3 ? styles.hudComboHigh : null]}>
+                x{displayCombo}
+              </Text>
+            )}
+          </View>
+          <View style={styles.hudRight}>
+            <Text style={styles.hudWind}>
+              {displayWind < -1 ? '◁◁ WIND' : displayWind > 1 ? 'WIND ▷▷' : ''}
+            </Text>
+          </View>
         </View>
       )}
 
@@ -740,8 +768,40 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
     letterSpacing: 1,
   },
+  hudCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hudCombo: {
+    fontFamily: 'pixel',
+    fontSize: 22,
+    color: '#4ECDC4',
+    fontWeight: '900',
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    letterSpacing: 2,
+  },
+  hudComboHigh: {
+    color: '#FFD700',
+    fontSize: 24,
+  },
+  hudComboMax: {
+    color: '#FF6B8A',
+    fontSize: 26,
+  },
   hudRight: {
     alignItems: 'flex-end',
+  },
+  hudWind: {
+    fontFamily: 'pixel',
+    fontSize: 12,
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 1,
+    opacity: 0.8,
   },
   hudScore: {
     fontFamily: 'pixel',

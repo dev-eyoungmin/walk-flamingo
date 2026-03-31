@@ -1,19 +1,19 @@
 import type { PhysicsConstants } from './types';
 
-/** Core physics tuning constants */
+/** Core physics tuning constants (reference values — GameCanvas.tsx uses inline values for worklet compatibility) */
 export const PHYSICS: PhysicsConstants = {
-  /** Base gravity torque in rad/s^2 */
-  gravityTorque: 2.5,
-  /** Player input torque in rad/s^2 */
-  playerTorque: 6.0,
+  /** Base gravity torque in rad/s^2 (GameCanvas uses 5.0 with soft-start ramp) */
+  gravityTorque: 5.0,
+  /** Player input torque in rad/s^2 (GameCanvas uses 10.0) */
+  playerTorque: 10.0,
   /** Base angular velocity damping per frame */
-  baseDamping: 0.92,
-  /** Game over angle in radians (42 degrees) */
-  gameOverAngle: (42 * Math.PI) / 180,
-  /** Warning angle in radians (45 degrees) */
-  warningAngle: (45 * Math.PI) / 180,
+  baseDamping: 0.82,
+  /** Game over angle in radians (65 degrees) */
+  gameOverAngle: (65 * Math.PI) / 180,
+  /** Warning angle in radians (55 degrees) */
+  warningAngle: (55 * Math.PI) / 180,
   /** Base walk speed in pixels/second */
-  baseWalkSpeed: 80,
+  baseWalkSpeed: 8,
   /** Sprite animation frames per second */
   spriteFrameRate: 8,
 };
