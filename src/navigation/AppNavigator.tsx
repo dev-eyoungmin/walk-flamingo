@@ -67,10 +67,8 @@ export const AppNavigator: React.FC = () => {
 
   const handleRetry = useCallback(() => {
     setIsResuming(false);
-    showAd(() => {
-      setScreen('playing');
-    });
-  }, [showAd]);
+    setScreen('playing');
+  }, []);
 
   const handleContinue = useCallback(() => {
     showAd(() => {
