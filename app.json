@@ -2,7 +2,7 @@
   "expo": {
     "name": "Wobby",
     "slug": "wobbly-flamingo",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wobbly.flamingo.game",
-      "buildNumber": "1.1.1",
+      "buildNumber": "1.1.2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -27,7 +27,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.wobbly.flamingo.game",
-      "versionCode": 3
+      "versionCode": 4
     },
     "plugins": [
       "expo-font",
