@@ -135,6 +135,141 @@ export const TERRAIN_SEGMENTS: TerrainSegment[] = generateTerrain();
 /** Base segment width multiplier (ratio of screen width) */
 export const TERRAIN_SEG_W_RATIO = 0.35;
 
+/** Coin & reward system constants */
+export const COIN = {
+  /** Distance interval between coin spawns (in internal distance units) */
+  SPAWN_INTERVAL: 200,
+  /** Base coin value */
+  BASE_VALUE: 10,
+  /** Collection hitbox radius (pixels) */
+  COLLECT_RADIUS: 40,
+  /** Max coins visible at once (ring buffer size) */
+  MAX_VISIBLE: 5,
+  /** Coin radius for rendering */
+  RADIUS: 14,
+  /** Min Y offset from ground (higher = more risk) */
+  MIN_HEIGHT: 30,
+  /** Max Y offset from ground */
+  MAX_HEIGHT: 120,
+  /** Spin speed (radians per second) */
+  SPIN_SPEED: 4.0,
+  /** Collect animation duration (seconds) */
+  COLLECT_ANIM_DURATION: 0.4,
+} as const;
+
+/** Near-miss bonus constants */
+export const NEAR_MISS = {
+  /** Danger ratio threshold to trigger (must exceed this) */
+  DANGER_ENTER: 0.75,
+  /** Danger ratio to count as "saved" (must go below this) */
+  DANGER_EXIT: 0.3,
+  /** Bonus points for a near miss */
+  BONUS_POINTS: 50,
+} as const;
+
+/** Floating text constants */
+export const FLOATING_TEXT = {
+  /** Duration of float animation (seconds) */
+  DURATION: 0.8,
+  /** Max simultaneous floating texts */
+  MAX_COUNT: 3,
+  /** Float distance in pixels (upward) */
+  FLOAT_DISTANCE: 60,
+  /** Slots: each slot = [active(0/1), timer, x, y, value, type(0=coin,1=bonus,2=combo)] */
+  SLOT_SIZE: 6,
+} as const;
+
+/** Combo grace buffer constants */
+export const COMBO_GRACE = {
+  /** Grace period in seconds before combo breaks */
+  BUFFER_TIME: 0.5,
+} as const;
+
+/** Event system constants */
+export const EVENTS = {
+  /** Minimum internal distance before first event can appear */
+  FIRST_EVENT_DIST: 600,
+  /** Base gap between events in internal distance units */
+  BASE_GAP: 400,
+  /** Minimum gap between events */
+  MIN_GAP: 200,
+  /** Gap shrink rate per second of elapsed time */
+  GAP_SHRINK_RATE: 0.02,
+  /** Max events in the pre-generated queue */
+  QUEUE_SIZE: 30,
+
+  /** Obstacle constants */
+  OBSTACLE: {
+    /** Warning time before obstacle arrives (seconds) */
+    WARNING_TIME: 1.5,
+    /** Angular velocity impulse on hit (rad/s) */
+    HIT_IMPULSE: 8.0,
+    /** Hitbox radius (pixels) */
+    HITBOX_RADIUS: 35,
+    /** Rock scroll speed multiplier (relative to walkSpeed) */
+    SCROLL_SPEED: 1.5,
+    /** Branch fall speed (pixels/second) */
+    BRANCH_FALL_SPEED: 200,
+  },
+
+  /** Environment event constants */
+  ENVIRONMENT: {
+    /** Gust wind force */
+    GUST_FORCE: 6.0,
+    /** Gust duration (seconds) */
+    GUST_DURATION: 3.5,
+    /** Quake oscillation amplitude */
+    QUAKE_AMPLITUDE: 4.0,
+    /** Quake duration (seconds) */
+    QUAKE_DURATION: 3.5,
+    /** Ice damping override */
+    ICE_DAMPING: 0.4,
+    /** Ice duration (seconds) */
+    ICE_DURATION: 4.5,
+    /** Warning lead time (seconds) */
+    WARNING_TIME: 2.0,
+  },
+
+  /** Challenge constants */
+  CHALLENGE: {
+    /** Stay centered duration (seconds) */
+    CENTERED_DURATION: 3.0,
+    /** Stay centered reward */
+    CENTERED_REWARD: 100,
+    /** Survive storm duration (seconds) */
+    STORM_DURATION: 4.0,
+    /** Survive storm reward */
+    STORM_REWARD: 150,
+    /** Lean direction duration (seconds) */
+    LEAN_DURATION: 2.0,
+    /** Lean direction reward */
+    LEAN_REWARD: 80,
+    /** Lean angle threshold (radians, ~20 degrees) */
+    LEAN_THRESHOLD: (20 * Math.PI) / 180,
+  },
+
+  /** Speed change constants */
+  SPEED: {
+    /** Sprint multiplier */
+    SPRINT_MULT: 2.0,
+    /** Slowdown multiplier */
+    SLOWDOWN_MULT: 0.5,
+    /** Duration (seconds) */
+    DURATION: 3.0,
+    /** Warning lead time (seconds) */
+    WARNING_TIME: 1.0,
+  },
+} as const;
+
+/**
+ * Event slot encoding for worklet SharedValue.
+ * Each event = [type, subtype, triggerDist, param1, param2, param3, status]
+ * type: 0=obstacle, 1=environment, 2=challenge, 3=speed
+ * subtype: depends on type
+ * status: 0=pending, 1=warning, 2=active, 3=done
+ */
+export const EVENT_SLOT_SIZE = 7;
+
 /** UI layout constants (ratios of screen dimensions) */
 export const LAYOUT = {
   /** Ground level from bottom (ratio of height) */

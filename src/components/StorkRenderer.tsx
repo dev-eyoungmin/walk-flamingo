@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Group, Circle, Path, Rect, RoundedRect, Oval, Skia } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
+import { SkinPalette } from '../lib/skins';
 
 interface StorkRendererProps {
   width: number;
@@ -14,6 +15,7 @@ interface StorkRendererProps {
   dangerRatio?: SharedValue<number>;
   isGameOver?: SharedValue<boolean>;
   gameOverTimer?: SharedValue<number>; // time since game over started (0 to ~0.8s)
+  skinPalette?: SkinPalette;
 }
 
 export const StorkRenderer: React.FC<StorkRendererProps> = ({
@@ -28,30 +30,32 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   dangerRatio,
   isGameOver,
   gameOverTimer,
+  skinPalette,
 }) => {
   const cx = width / 2;
   const groundY = height * 0.75;
 
   // Unit scale
   const U = Math.min(width, height) * 0.02;
-  const WALK_HZ = 1.2;
+  const BASE_WALK_HZ = 1.2;
   const TAU = Math.PI * 2;
   const LEG_SWING = 0.35;
 
-  // Colors
-  const C_BODY = '#FF7A9A';
-  const C_BODY_LIGHT = '#FFA0B8';
-  const C_LEG = '#E86A6A';
-  const C_LEG_DARK = '#D05A5A';
-  const C_NECK = '#FF7A9A';
-  const C_BEAK = '#FF8845';
-  const C_BEAK_TIP = '#2A2A2A';
-  const C_EYE_W = '#FFFFFF';
-  const C_EYE_B = '#1A1A1A';
-  const C_CHEEK = '#FF5070';
-  const C_SHADOW = 'rgba(0,0,0,0.15)';
-  const C_WING = '#E8658A';
-  const C_MOUTH = '#CC3344';
+  // Colors — palette-driven with fallback defaults
+  const C_BODY       = skinPalette?.body      ?? '#FF7A9A';
+  const C_BODY_LIGHT = skinPalette?.bodyLight ?? '#FFA0B8';
+  const C_LEG        = skinPalette?.legs      ?? '#E86A6A';
+  const C_LEG_DARK   = skinPalette?.legsDark  ?? '#D05A5A';
+  const C_NECK       = skinPalette?.neck      ?? '#FF7A9A';
+  const C_CHEEK      = skinPalette?.cheek     ?? '#FF5070';
+  const C_WING       = skinPalette?.wing      ?? '#E8658A';
+  // Fixed colors — not affected by skin palette
+  const C_BEAK       = '#FF8845';
+  const C_BEAK_TIP   = '#2A2A2A';
+  const C_EYE_W      = '#FFFFFF';
+  const C_EYE_B      = '#1A1A1A';
+  const C_SHADOW     = 'rgba(0,0,0,0.15)';
+  const C_MOUTH      = '#CC3344';
 
   // Dimensions — SVG-matched proportions: long legs + original body/head sizes
   const thighLen = U * 6.5;
@@ -98,16 +102,22 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     ];
   });
 
-  // 2. Hip: Moves UP from Ground to Hip height.
-  // All body parts attach here (0,0 is now the Hip).
-  const hipTr = useDerivedValue(() => [
-    { translateY: -totalLegLen }
-  ]);
+  // 2. Hip: Moves UP from Ground to Hip height + lateral hip sway
+  const hipTr = useDerivedValue(() => {
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015; // P0-1.1: speed-linked walk frequency
+    const t = elapsedTime.value * walkHz * TAU;
+    const hipSway = Math.sin(t) * U * 0.3; // P0-1.4: lateral hip sway
+    return [
+      { translateY: -totalLegLen },
+      { translateX: hipSway },
+    ];
+  });
 
   // 3. Body: Bobs + hill lean + squash-and-stretch from walking rhythm
   const bodyBobTr = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
-    const bob = Math.sin(t * 2) * U * 0.2;
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
+    const bob = Math.sin(t * 2) * U * 0.5; // P0-1.4: amplified body bob (was 0.2)
     const slope = hillSlope?.value ?? 0;
     const climbLean = slope * 0.25;
 
@@ -125,9 +135,12 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
   });
 
   // 3b. Neck+Head: Spring lag counter-tilt with velocity-based whiplash
+  // P0-1.5: Head counter-motion — bobs opposite to body with slight delay
   const neckBaseX = U * 1.5;
   const neckBaseY = bodyYOffset - bodyRy * 0.7;
   const neckSwayTr = useDerivedValue(() => {
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
     const slope = hillSlope?.value ?? 0;
     const climbNeckLean = slope * 0.15;
 
@@ -142,19 +155,24 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     const whiplash = -angVel * 0.06 * Math.sin(elapsedTime.value * 12);
     const counterTilt = staticCounterTilt + velocityLag + whiplash;
 
+    // P0-1.5: Head counter-bob — opposite to body bob with phase delay
+    const headCounterBob = -Math.sin(t * 2 + 0.4) * U * 0.25;
+
     return [
       { translateX: neckBaseX },
-      { translateY: neckBaseY },
+      { translateY: neckBaseY + headCounterBob },
       { rotate: climbNeckLean + counterTilt + whiplash },
       { translateX: -neckBaseX },
       { translateY: -neckBaseY },
     ];
   });
 
-  // Wing flap: reactive to tilt danger
+  // Wing flap: reactive to tilt danger + P0-1.6: walk-cycle secondary bounce
   const wingFlapTr = useDerivedValue(() => {
     const danger = dangerRatio?.value ?? 0;
     const t = elapsedTime.value;
+    const walkHz = BASE_WALK_HZ + t * 0.015;
+    const walkT = t * walkHz * TAU;
 
     // Base gentle flap
     const baseFreq = 2.0;
@@ -167,10 +185,13 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     const flapAngle = Math.sin(t * freq * TAU) * amp;
     const flapScaleY = 1.0 - Math.abs(Math.sin(t * freq * TAU)) * 0.3 * (0.3 + danger * 0.7);
 
+    // P0-1.6: Walk-cycle secondary bounce on wings
+    const walkBounce = Math.sin(walkT * 2) * 0.04;
+
     return [
       { translateX: -U * 0.7 },
       { translateY: bodyYOffset - U * 0.7 },
-      { rotate: flapAngle },
+      { rotate: flapAngle + walkBounce },
       { scaleY: flapScaleY },
     ];
   });
@@ -261,42 +282,76 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     ];
   });
 
-  // 4. Legs: Rotate relative to Hip (0,0) — constant cadence
+  // 4. Legs: Rotate relative to Hip (0,0) — P0-1.1: speed-linked frequency
+  // P0-1.7: Asymmetric leg swing: sin(t) + 0.3*sin(2t) — fast lift, slow put-down
   const backLegTr = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
-    const raw = Math.sin(t);
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
+    const raw = Math.sin(t) + 0.3 * Math.sin(2 * t); // P0-1.7: asymmetric swing
     const swing = raw * LEG_SWING * 1.3; // 30% more pronounced swing
     const hipShift = Math.abs(raw) * U * 0.3; // slight up-down hip displacement
     return [{ translateY: -hipShift }, { rotate: swing }];
   });
 
   const frontLegTr = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
-    const raw = Math.sin(t + Math.PI);
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
+    const raw = Math.sin(t + Math.PI) + 0.3 * Math.sin(2 * (t + Math.PI)); // P0-1.7
     const swing = raw * LEG_SWING * 1.3;
     const hipShift = Math.abs(raw) * U * 0.3;
     return [{ translateY: -hipShift }, { rotate: swing }];
   });
 
   // 5. Knees: Move down to end of thigh, then rotate
+  // P0-1.2: Foot-strike snap with overshoot-bounce at bottom of swing
   const kneeBendBack = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
     const sinT = Math.sin(t);
     const baseBend = 20;
     const liftPhase = Math.max(0, sinT); // positive when lifting
-    const stampPhase = Math.max(0, -sinT) * 0.3; // slight forward lean on ground contact
-    const bend = baseBend * (Math.PI/180) + liftPhase * 1.0 + stampPhase;
+    // P0-1.2: overshoot bounce on ground contact
+    const contactPhase = Math.max(0, -sinT);
+    const overshoot = contactPhase * 0.15 * Math.sin(t * 6); // "thump" bounce
+    const stampPhase = contactPhase * 0.3 + overshoot;
+    const bend = baseBend * (Math.PI / 180) + liftPhase * 1.0 + stampPhase;
     return [{ translateY: thighLen }, { rotate: bend }];
   });
 
   const kneeBendFront = useDerivedValue(() => {
-    const t = elapsedTime.value * WALK_HZ * TAU;
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
     const sinT = Math.sin(t + Math.PI);
     const baseBend = 20;
     const liftPhase = Math.max(0, sinT);
-    const stampPhase = Math.max(0, -sinT) * 0.3;
-    const bend = baseBend * (Math.PI/180) + liftPhase * 1.0 + stampPhase;
+    const contactPhase = Math.max(0, -sinT);
+    const overshoot = contactPhase * 0.15 * Math.sin((t + Math.PI) * 6);
+    const stampPhase = contactPhase * 0.3 + overshoot;
+    const bend = baseBend * (Math.PI / 180) + liftPhase * 1.0 + stampPhase;
     return [{ translateY: thighLen }, { rotate: bend }];
+  });
+
+  // P0-1.3: Ankle joint — dorsiflexion on lift, plantarflexion on strike
+  const ankleBack = useDerivedValue(() => {
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
+    const sinT = Math.sin(t);
+    // Lift phase: dorsiflexion (toe up, negative rotation)
+    const liftPhase = Math.max(0, sinT);
+    // Contact phase: plantarflexion (toe down, positive rotation)
+    const contactPhase = Math.max(0, -sinT);
+    const ankleAngle = -liftPhase * 0.4 + contactPhase * 0.25;
+    return [{ translateY: shinLen }, { rotate: ankleAngle }];
+  });
+
+  const ankleFront = useDerivedValue(() => {
+    const walkHz = BASE_WALK_HZ + elapsedTime.value * 0.015;
+    const t = elapsedTime.value * walkHz * TAU;
+    const sinT = Math.sin(t + Math.PI);
+    const liftPhase = Math.max(0, sinT);
+    const contactPhase = Math.max(0, -sinT);
+    const ankleAngle = -liftPhase * 0.4 + contactPhase * 0.25;
+    return [{ translateY: shinLen }, { rotate: ankleAngle }];
   });
 
 
@@ -309,8 +364,8 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     const startY = bodyYOffset - bodyRy * 0.7;
     p.moveTo(startX, startY);
     // Single cubic bezier S-curve:
-    // CP1 pulls LEFT → backward bow at bottom
-    // CP2 pulls RIGHT → forward bow at top
+    // CP1 pulls LEFT -> backward bow at bottom
+    // CP2 pulls RIGHT -> forward bow at top
     p.cubicTo(
         startX + U * 4, startY - U * 4,     // CP1: right & up (forward lean from body)
         headX - U * 5, headY + U * 5,       // CP2: left & down from head (backward curve at top)
@@ -355,20 +410,25 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
     return p;
   }, [bodyRx, bodyYOffset, U]);
 
-  const lowerLegPath = useMemo(() => {
+  // Shin path (without foot — foot is separate for ankle rotation)
+  const shinPath = useMemo(() => {
     const p = Skia.Path.Make();
     const r = legW * 0.5;
-    // Draw from (0,0) down to shinLen
-    const startY = 0;
-    p.addRRect({ rect: { x: -r, y: startY, width: r * 2, height: shinLen }, rx: r, ry: r });
-    // Foot
-    p.moveTo(-r, shinLen);
-    p.lineTo(r + U * 1.5, shinLen);
-    p.lineTo(r, shinLen + U * 0.8);
-    p.lineTo(-r, shinLen);
+    p.addRRect({ rect: { x: -r, y: 0, width: r * 2, height: shinLen }, rx: r, ry: r });
+    return p;
+  }, [legW, shinLen]);
+
+  // Foot path (rendered at ankle pivot)
+  const footPath = useMemo(() => {
+    const p = Skia.Path.Make();
+    const r = legW * 0.5;
+    p.moveTo(-r, 0);
+    p.lineTo(r + U * 1.5, 0);
+    p.lineTo(r, U * 0.8);
+    p.lineTo(-r, 0);
     p.close();
     return p;
-  }, [legW, shinLen, U]);
+  }, [legW, U]);
 
 
   return (
@@ -386,7 +446,12 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
                 {/* Knee Joint */}
                 <Group transform={kneeBendBack}>
                     <Circle cx={0} cy={0} r={legW * 0.6} color={C_LEG_DARK} />
-                    <Path path={lowerLegPath} color={C_LEG_DARK} />
+                    {/* Shin */}
+                    <Path path={shinPath} color={C_LEG_DARK} />
+                    {/* Ankle Joint + Foot (P0-1.3) */}
+                    <Group transform={ankleBack}>
+                        <Path path={footPath} color={C_LEG_DARK} />
+                    </Group>
                 </Group>
             </Group>
 
@@ -395,7 +460,10 @@ export const StorkRenderer: React.FC<StorkRendererProps> = ({
                 <RoundedRect x={-legW/2} y={0} width={legW} height={thighLen} r={legW/2} color={C_LEG} />
                 <Group transform={kneeBendFront}>
                     <Circle cx={0} cy={0} r={legW * 0.6} color={C_LEG} />
-                    <Path path={lowerLegPath} color={C_LEG} />
+                    <Path path={shinPath} color={C_LEG} />
+                    <Group transform={ankleFront}>
+                        <Path path={footPath} color={C_LEG} />
+                    </Group>
                 </Group>
             </Group>
 

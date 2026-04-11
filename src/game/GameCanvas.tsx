@@ -15,7 +15,22 @@ import { TouchControls } from '../components/TouchControls';
 import { WeatherRenderer } from '../components/WeatherRenderer';
 import { EnvironmentRenderer } from '../components/EnvironmentRenderer';
 import { ParticleRenderer } from '../components/ParticleRenderer';
-import { TERRAIN_SEG_W_RATIO, generateTerrain, encodeTerrainForWorklet, type TerrainSegment } from './constants';
+import { TERRAIN_SEG_W_RATIO, generateTerrain, encodeTerrainForWorklet, type TerrainSegment, COIN, NEAR_MISS, FLOATING_TEXT, COMBO_GRACE, EVENTS, EVENT_SLOT_SIZE } from './constants';
+import { CoinRenderer, COIN_SLOT_SIZE } from '../components/CoinRenderer';
+import { FloatingTextRenderer } from '../components/FloatingTextRenderer';
+import { NearMissRenderer } from '../components/NearMissRenderer';
+import {
+  generateEventQueue,
+  EVT_OBSTACLE, EVT_ENVIRONMENT, EVT_CHALLENGE, EVT_SPEED,
+  OBS_ROCK, OBS_BRANCH,
+  ENV_GUST, ENV_QUAKE, ENV_ICE,
+  CHL_CENTERED, CHL_STORM, CHL_LEAN,
+  SPD_SPRINT, SPD_SLOWDOWN,
+  STATUS_PENDING, STATUS_WARNING, STATUS_ACTIVE, STATUS_DONE,
+} from './events';
+import { ObstacleRenderer } from '../components/ObstacleRenderer';
+import { EventWarningRenderer } from '../components/EventWarningRenderer';
+import { SkinPalette } from '../lib/skins';
 
 // Milestone thresholds (in displayed meters)
 const MILESTONES = [50, 100, 200, 500, 1000];
@@ -54,9 +69,12 @@ const COMBO_T3 = 8.0;
 interface GameCanvasProps {
   width: number;
   height: number;
-  onGameOver: (data: { score: number; distance: number }) => void;
+  onGameOver: (data: { score: number; distance: number; coins?: number }) => void;
   isPlaying: boolean;
   isResuming?: boolean;
+  pendingBoost?: 'shield' | 'slowmo' | null;
+  skinPalette?: SkinPalette;
+  onPlaySfx?: (name: string) => void;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -65,6 +83,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onGameOver,
   isPlaying,
   isResuming = false,
+  pendingBoost,
+  skinPalette,
+  onPlaySfx,
 }) => {
   const canvasHeight = height - 60;
   const groundY = canvasHeight * 0.65; // stork feet level
@@ -135,6 +156,63 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const weatherCycleTimer = useSharedValue(0);
   const lastWeatherChange = useSharedValue(0); // distance at last weather change
 
+  // === Coin System ===
+  // Each coin slot: [screenX, screenY, active(0/1), collectAnim, value]
+  const coinSlots = useSharedValue<number[]>(
+    new Array(COIN.MAX_VISIBLE * COIN_SLOT_SIZE).fill(0),
+  );
+  const coinSpinAngle = useSharedValue(0);
+  const nextCoinDist = useSharedValue(COIN.SPAWN_INTERVAL); // next spawn distance
+  const coinCount = useSharedValue(0); // total coins collected this session
+  const coinRingHead = useSharedValue(0); // ring buffer head index
+
+  // === Floating Text System ===
+  // Each slot: [active, timer, x, y, value, type]
+  const floatingTexts = useSharedValue<number[]>(
+    new Array(FLOATING_TEXT.MAX_COUNT * FLOATING_TEXT.SLOT_SIZE).fill(0),
+  );
+
+  // === Near-Miss System ===
+  const nearMissAnim = useSharedValue(0); // countdown timer for popup
+  const wasInDanger = useSharedValue(0); // 1 if dangerRatio was > DANGER_ENTER
+
+  // === Combo Grace Buffer ===
+  const comboGraceTimer = useSharedValue(0); // countdown; if >0, combo not yet broken
+
+  // === Event System ===
+  const eventQueue = useSharedValue<number[]>(generateEventQueue(Date.now(), width));
+  const eventCursor = useSharedValue(0);
+  const activeEventType = useSharedValue(-1);
+  const activeEventSubtype = useSharedValue(0);
+  const activeEventTimer = useSharedValue(0);
+  const activeEventParam = useSharedValue(0);
+  const warningTimer = useSharedValue(0);
+  const warningEventType = useSharedValue(-1);
+  const warningEventSubtype = useSharedValue(0);
+  const warningEventParam = useSharedValue(0);
+
+  // === Obstacle rendering data ===
+  const obstacleData = useSharedValue<number[]>([0, 0, 0, 0, 0]);
+
+  // === Challenge tracking ===
+  const challengeActive = useSharedValue(0);
+  const challengeSubtype = useSharedValue(0);
+  const challengeTimer = useSharedValue(0);
+  const challengeParam = useSharedValue(0);
+  const challengeReward = useSharedValue(0);
+  const challengeSuccess = useSharedValue(0);
+  const challengeResultAnim = useSharedValue(0);
+
+  // === Speed modifier ===
+  const speedModifier = useSharedValue(1.0);
+
+  // === Boost ===
+  const boostType = useSharedValue(0); // 0=none, 1=shield, 2=slowmo
+  const boostTimer = useSharedValue(0);
+
+  // === Hit flash ===
+  const hitFlashTimer = useSharedValue(0);
+
   const resetGame = useCallback(() => {
     angle.value = 0;
     angularVelocity.value = 0;
@@ -170,11 +248,46 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     dangerRatioSV.value = 0;
     gameOverTimer.value = 0;
     gameOverSlowMo.value = false;
+    // Reset coin system
+    coinSlots.value = new Array(COIN.MAX_VISIBLE * COIN_SLOT_SIZE).fill(0);
+    coinSpinAngle.value = 0;
+    nextCoinDist.value = COIN.SPAWN_INTERVAL;
+    coinCount.value = 0;
+    coinRingHead.value = 0;
+    floatingTexts.value = new Array(FLOATING_TEXT.MAX_COUNT * FLOATING_TEXT.SLOT_SIZE).fill(0);
+    nearMissAnim.value = 0;
+    wasInDanger.value = 0;
+    comboGraceTimer.value = 0;
+    // Reset event system
+    eventQueue.value = generateEventQueue(Date.now(), width);
+    eventCursor.value = 0;
+    activeEventType.value = -1;
+    activeEventSubtype.value = 0;
+    activeEventTimer.value = 0;
+    activeEventParam.value = 0;
+    warningTimer.value = 0;
+    warningEventType.value = -1;
+    warningEventSubtype.value = 0;
+    warningEventParam.value = 0;
+    obstacleData.value = [0, 0, 0, 0, 0];
+    challengeActive.value = 0;
+    challengeSubtype.value = 0;
+    challengeTimer.value = 0;
+    challengeParam.value = 0;
+    challengeReward.value = 0;
+    challengeSuccess.value = 0;
+    challengeResultAnim.value = 0;
+    speedModifier.value = 1.0;
+    hitFlashTimer.value = 0;
+    // Apply pending boost
+    if (pendingBoost === 'shield') { boostType.value = 1; boostTimer.value = 3.0; }
+    else if (pendingBoost === 'slowmo') { boostType.value = 2; boostTimer.value = 3.0; }
+    else { boostType.value = 0; boostTimer.value = 0; }
     // Generate new random terrain
     const newTerrain = generateTerrain();
     setTerrainSegments(newTerrain);
     terrainData.value = encodeTerrainForWorklet(newTerrain);
-  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, weatherCycleTimer, lastWeatherChange, resumeGraceEnd, lastMilestone, currentRankIdx, terrainData, dangerRatioSV, gameOverTimer, gameOverSlowMo]);
+  }, [angle, angularVelocity, windForceVal, elapsedTime, distance, score, walkSpeed, animFrame, animTimer, isGameOver, inputLeft, inputRight, prevInputLeft, prevInputRight, tapBoost, comboMultiplier, comboTimer, comboLevelUpAnim, comboBrokenAnim, shakeX, shakeTimer, storkHillY, hillSlope, skyPhase, weatherType, weatherParticles, weatherCycleTimer, lastWeatherChange, resumeGraceEnd, lastMilestone, currentRankIdx, terrainData, dangerRatioSV, gameOverTimer, gameOverSlowMo, coinSlots, coinSpinAngle, nextCoinDist, coinCount, coinRingHead, floatingTexts, nearMissAnim, wasInDanger, comboGraceTimer, eventQueue, eventCursor, activeEventType, activeEventSubtype, activeEventTimer, activeEventParam, warningTimer, warningEventType, warningEventSubtype, warningEventParam, obstacleData, challengeActive, challengeSubtype, challengeTimer, challengeParam, challengeReward, challengeSuccess, challengeResultAnim, speedModifier, boostType, boostTimer, hitFlashTimer, pendingBoost, width]);
 
   const resumeGame = useCallback(() => {
     // Only reset physics state; keep score, distance, combo, terrain, weather, etc.
@@ -207,7 +320,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   }, [isPlaying, isResuming, resetGame, resumeGame]);
 
   const handleGameOver = useCallback(
-    (s: number, d: number) => onGameOver({ score: s, distance: d }),
+    (s: number, d: number, c: number) => onGameOver({ score: s, distance: d, coins: c }),
     [onGameOver],
   );
 
@@ -226,6 +339,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
+  const hapticCoinCollect = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const hapticNearMiss = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, []);
+
   const showRankUp = useCallback((emoji: string, name: string) => {
     setRankUpText(`${emoji} ${name}`);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -236,6 +357,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       RNAnimated.timing(rankUpOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
     ]).start();
   }, [rankUpOpacity]);
+
+  const hapticObstacleHit = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  }, []);
+  const hapticObstacleDodge = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+  const hapticChallengeStart = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  }, []);
+  const hapticChallengeSuccess = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, []);
 
   useFrameCallback((frameInfo) => {
     'worklet';
@@ -268,7 +402,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const gravityBase = 1.5 + earlyFactor * 1.5; // 1.5 -> 3.0 over 15s
     const gravityLate = Math.max(0, effectiveT - 15) * 0.20; // +0.20/s after 15s
     const gravityMult = (gravityBase + gravityLate) * surge * graceRatio;
-    const damping = Math.max(0.52, 0.82 - effectiveT * 0.012) - wave * 0.06;
+    let effectiveDamping = Math.max(0.52, 0.82 - effectiveT * 0.012) - wave * 0.06;
+    if (activeEventType.value === EVT_ENVIRONMENT && activeEventSubtype.value === ENV_ICE) {
+      effectiveDamping = EVENTS.ENVIRONMENT.ICE_DAMPING;
+    }
     const windBase = 1.5 + earlyFactor * 2.0; // 1.5 -> 3.5 over 15s
     const windLate = Math.max(0, effectiveT - 15) * 0.25;
     const windStr = Math.min((windBase + windLate) * surge, 10.0) * graceRatio;
@@ -298,7 +435,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // ──── Physics ────
     const clampedGravityMult = Math.min(gravityMult, 6.0);
-    const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * clampedGravityMult;
+    let finalGravityMult = clampedGravityMult;
+    if (boostType.value === 2) finalGravityMult *= 0.5;
+    const gravityAccel = GRAVITY_TORQUE * Math.sin(angle.value) * finalGravityMult;
     // Recovery assist: mild help when tilted (up to 1.5x at max tilt, was 2.2x)
     const angleRatio = Math.abs(angle.value) / GAME_OVER_ANGLE;
     const recoveryAssist = 1.0 + angleRatio * 0.5;
@@ -315,7 +454,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const baseWobble = (wobble1 + wobble2 + wobble3 + wobble4) * (0.6 + effectiveT * 0.04);
 
     angularVelocity.value =
-      (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value + baseWobble) * dt) * damping;
+      (angularVelocity.value + (gravityAccel + playerAccel + windForceVal.value + baseWobble) * dt) * effectiveDamping;
     angle.value += angularVelocity.value * dt;
 
     // ──── Danger Ratio (for visual feedback) ────
@@ -323,7 +462,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // ──── Game Over Check (skip during grace period) ────
     // Slow-mo ragdoll: play 0.8s of falling animation before triggering game over
-    if (!inGrace && Math.abs(angle.value) >= GAME_OVER_ANGLE) {
+    if (!inGrace && Math.abs(angle.value) >= GAME_OVER_ANGLE && boostType.value !== 1) {
       if (!gameOverSlowMo.value) {
         gameOverSlowMo.value = true;
         gameOverTimer.value = 0;
@@ -334,9 +473,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         runOnJS(handleGameOver)(
           Math.floor(score.value),
           Math.floor(distance.value * PIXELS_TO_METERS),
+          Math.floor(coinCount.value),
         );
       }
       return; // skip normal physics during ragdoll
+    }
+    // Shield auto-correct: gently pull back from edge when shield active
+    if (boostType.value === 1 && Math.abs(angle.value) > GAME_OVER_ANGLE * 0.8) {
+      angle.value *= 0.95;
     }
 
     // ──── Time & Distance ────
@@ -348,6 +492,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
     // Update distance FIRST, then detect hills using the same distance the renderer sees
     walkSpeed.value = BASE_WALK_SPEED * (1 + effectiveT * 0.005) * speedBurst;
+    walkSpeed.value *= speedModifier.value;
     // Grace period: walk slowly so background moves, full speed after grace
     const walkMult = inGrace ? graceRatio * 0.5 : 1.0;
     distance.value += walkSpeed.value * walkMult * dt;
@@ -446,12 +591,34 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           comboLevelUpAnim.value = 0.6;
           shakeTimer.value = 0.25;
           runOnJS(hapticComboUp)();
+          runOnJS(onPlaySfx ?? (() => {}))('comboUp');
         }
       }
     } else {
-      if (comboMultiplier.value > 1) comboBrokenAnim.value = 0.3;
-      comboMultiplier.value = 1;
-      comboTimer.value = 0;
+      // Combo grace buffer: delay combo break by COMBO_GRACE.BUFFER_TIME
+      if (comboMultiplier.value > 1) {
+        if (comboGraceTimer.value <= 0) {
+          // Start grace countdown
+          comboGraceTimer.value = COMBO_GRACE.BUFFER_TIME;
+        }
+        comboGraceTimer.value -= dt;
+        if (comboGraceTimer.value <= 0) {
+          // Grace expired, break combo
+          comboBrokenAnim.value = 0.3;
+          comboMultiplier.value = 1;
+          comboTimer.value = 0;
+          comboGraceTimer.value = 0;
+        }
+        // While in grace, don't reset comboTimer so player keeps accumulated time
+      } else {
+        comboTimer.value = 0;
+        comboGraceTimer.value = 0;
+      }
+    }
+
+    // Reset grace timer when back in center
+    if (inCenter && comboGraceTimer.value > 0) {
+      comboGraceTimer.value = 0;
     }
 
     const centerBonus = inCenter ? 1.5 : 1.0;
@@ -475,6 +642,161 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (comboLevelUpAnim.value > 0) comboLevelUpAnim.value -= dt;
     if (comboBrokenAnim.value > 0) comboBrokenAnim.value -= dt;
 
+    // ──── Coin Spin ────
+    coinSpinAngle.value += COIN.SPIN_SPEED * dt;
+
+    // ──── Coin Spawning (deterministic based on distance) ────
+    const storkScreenX = width / 2;
+    if (distance.value >= nextCoinDist.value) {
+      // Deterministic height: use sine of spawn distance as seed
+      const seed = nextCoinDist.value * 7.31;
+      const heightFrac = (Math.sin(seed) + 1) * 0.5; // 0..1
+      const coinH = COIN.MIN_HEIGHT + heightFrac * (COIN.MAX_HEIGHT - COIN.MIN_HEIGHT);
+      const coinScreenY = groundY - coinH;
+
+      // Deterministic value: higher coins are worth more
+      const valueMult = 1 + Math.floor(heightFrac * 3); // 1x, 2x, 3x
+      const coinValue = COIN.BASE_VALUE * valueMult;
+
+      // Place in ring buffer
+      const slotIdx = coinRingHead.value % COIN.MAX_VISIBLE;
+      const slots = coinSlots.value;
+      const bi = slotIdx * COIN_SLOT_SIZE;
+      // coin world position: distance at spawn + screen offset ahead
+      slots[bi] = width + 40; // spawn off-screen right
+      slots[bi + 1] = coinScreenY;
+      slots[bi + 2] = 1; // active
+      slots[bi + 3] = 0; // collectAnim
+      slots[bi + 4] = coinValue;
+      // Store spawn distance in a helper way: use the screenX to track world position
+      // We need to move coins with the world. Store world distance at spawn.
+      coinSlots.value = slots;
+
+      coinRingHead.value = coinRingHead.value + 1;
+
+      // Deterministic interval: varies between 150-300 based on distance
+      const intervalSeed = Math.sin(nextCoinDist.value * 3.17) * 0.5 + 0.5;
+      nextCoinDist.value = distance.value + 150 + intervalSeed * 150;
+    }
+
+    // ──── Coin Movement & Collection ────
+    {
+      const slots = coinSlots.value;
+      let changed = false;
+      for (let ci = 0; ci < COIN.MAX_VISIBLE; ci++) {
+        const bi = ci * COIN_SLOT_SIZE;
+        // Update collect animation
+        if (slots[bi + 3] > 0) {
+          slots[bi + 3] -= dt;
+          if (slots[bi + 3] < 0) slots[bi + 3] = 0;
+          changed = true;
+        }
+        if (slots[bi + 2] < 0.5) continue; // not active
+
+        // Move coin left with world scroll
+        slots[bi] -= walkSpeed.value * walkMult * dt;
+        changed = true;
+
+        // Off-screen left: deactivate
+        if (slots[bi] < -40) {
+          slots[bi + 2] = 0;
+          continue;
+        }
+
+        // Collision detection with stork
+        const dx = slots[bi] - storkScreenX;
+        const dy = slots[bi + 1] - (groundY + storkHillY.value);
+        const distSq = dx * dx + dy * dy;
+        if (distSq < COIN.COLLECT_RADIUS * COIN.COLLECT_RADIUS) {
+          // Collect!
+          const value = slots[bi + 4];
+          slots[bi + 2] = 0; // deactivate
+          slots[bi + 3] = COIN.COLLECT_ANIM_DURATION; // trigger burst
+          coinCount.value = coinCount.value + value;
+          score.value += value * comboMultiplier.value;
+
+          // Spawn floating text
+          const ftSlots = floatingTexts.value;
+          for (let fi = 0; fi < FLOATING_TEXT.MAX_COUNT; fi++) {
+            const fbi = fi * FLOATING_TEXT.SLOT_SIZE;
+            if (ftSlots[fbi] < 0.5) {
+              ftSlots[fbi] = 1; // active
+              ftSlots[fbi + 1] = 0; // timer
+              ftSlots[fbi + 2] = slots[bi]; // x
+              ftSlots[fbi + 3] = slots[bi + 1]; // y
+              ftSlots[fbi + 4] = value * comboMultiplier.value; // displayed value
+              ftSlots[fbi + 5] = 0; // type: coin
+              break;
+            }
+          }
+          floatingTexts.value = ftSlots;
+
+          runOnJS(hapticCoinCollect)();
+          runOnJS(onPlaySfx ?? (() => {}))('coinCollect');
+          changed = true;
+        }
+      }
+      if (changed) {
+        coinSlots.value = slots;
+      }
+    }
+
+    // ──── Near-Miss Detection ────
+    {
+      const dr = dangerRatio;
+      if (dr > NEAR_MISS.DANGER_ENTER) {
+        wasInDanger.value = 1;
+      }
+      if (wasInDanger.value > 0.5 && dr < NEAR_MISS.DANGER_EXIT) {
+        // Near miss achieved!
+        wasInDanger.value = 0;
+        nearMissAnim.value = 1.0;
+        score.value += NEAR_MISS.BONUS_POINTS;
+
+        // Spawn floating text for near-miss bonus
+        const ftSlots = floatingTexts.value;
+        for (let fi = 0; fi < FLOATING_TEXT.MAX_COUNT; fi++) {
+          const fbi = fi * FLOATING_TEXT.SLOT_SIZE;
+          if (ftSlots[fbi] < 0.5) {
+            ftSlots[fbi] = 1;
+            ftSlots[fbi + 1] = 0;
+            ftSlots[fbi + 2] = storkScreenX;
+            ftSlots[fbi + 3] = groundY - 80;
+            ftSlots[fbi + 4] = NEAR_MISS.BONUS_POINTS;
+            ftSlots[fbi + 5] = 1; // type: bonus
+            break;
+          }
+        }
+        floatingTexts.value = ftSlots;
+
+        runOnJS(hapticNearMiss)();
+        runOnJS(onPlaySfx ?? (() => {}))('nearMiss');
+      }
+    }
+
+    // ──── Update Floating Texts ────
+    {
+      const ftSlots = floatingTexts.value;
+      let ftChanged = false;
+      for (let fi = 0; fi < FLOATING_TEXT.MAX_COUNT; fi++) {
+        const fbi = fi * FLOATING_TEXT.SLOT_SIZE;
+        if (ftSlots[fbi] < 0.5) continue;
+        ftSlots[fbi + 1] += dt;
+        if (ftSlots[fbi + 1] >= FLOATING_TEXT.DURATION) {
+          ftSlots[fbi] = 0; // deactivate
+        }
+        ftChanged = true;
+      }
+      if (ftChanged) {
+        floatingTexts.value = ftSlots;
+      }
+    }
+
+    // ──── Update Near-Miss Animation ────
+    if (nearMissAnim.value > 0) {
+      nearMissAnim.value -= dt;
+      if (nearMissAnim.value < 0) nearMissAnim.value = 0;
+    }
 
     // ──── Environment: Sky Phase ────
     const d = distance.value;
@@ -507,12 +829,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
       // Initialize particles for new weather
       const count = next === 1 ? 60 : 40;
-      const pts: number[] = [];
+      const pts: number[] = new Array(count * 2);
       for (let i = 0; i < count; i++) {
-        pts.push(
-          Math.abs(Math.sin(i * 73.7)) * width,
-          Math.abs(Math.sin(i * 47.3)) * canvasHeight,
-        );
+        pts[i * 2] = Math.abs(Math.sin(i * 73.7)) * width;
+        pts[i * 2 + 1] = Math.abs(Math.sin(i * 47.3)) * canvasHeight;
       }
       weatherParticles.value = pts;
     }
@@ -527,7 +847,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           pts[i + 1] = -10;
         }
       }
-      weatherParticles.value = [...pts];
+      const copy: number[] = new Array(pts.length);
+      for (let ci = 0; ci < pts.length; ci++) { copy[ci] = pts[ci]; }
+      weatherParticles.value = copy;
     } else if (weatherType.value === 2) {
       const pts = weatherParticles.value;
       for (let i = 0; i < pts.length; i += 2) {
@@ -538,7 +860,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           pts[i + 1] = -8;
         }
       }
-      weatherParticles.value = [...pts];
+      const copy: number[] = new Array(pts.length);
+      for (let ci = 0; ci < pts.length; ci++) { copy[ci] = pts[ci]; }
+      weatherParticles.value = copy;
     }
 
     // ──── Weather Physics Effects ────
@@ -595,6 +919,285 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       animTimer.value -= frameDuration;
       animFrame.value = (animFrame.value + 1) % 4;
     }
+
+    // ──── Event System Processing ────
+    const currentDist = distance.value;
+    const eq = eventQueue.value;
+    const cursor = eventCursor.value;
+
+    // --- Scan event queue for next pending event ---
+    if (cursor < EVENTS.QUEUE_SIZE && activeEventType.value < 0) {
+      const off = cursor * EVENT_SLOT_SIZE;
+      const evtType = eq[off];
+      const evtSubtype = eq[off + 1];
+      const triggerDist = eq[off + 2];
+      const param1 = eq[off + 3];
+      const param2 = eq[off + 4];
+      const param3 = eq[off + 5];
+      const status = eq[off + 6];
+
+      // Determine warning lead distance
+      let warningLeadDist = 0;
+      if (evtType === EVT_OBSTACLE) {
+        warningLeadDist = EVENTS.OBSTACLE.WARNING_TIME * walkSpeed.value;
+      } else if (evtType === EVT_ENVIRONMENT) {
+        warningLeadDist = EVENTS.ENVIRONMENT.WARNING_TIME * walkSpeed.value;
+      } else if (evtType === EVT_SPEED) {
+        warningLeadDist = EVENTS.SPEED.WARNING_TIME * walkSpeed.value;
+      } else if (evtType === EVT_CHALLENGE) {
+        warningLeadDist = EVENTS.ENVIRONMENT.WARNING_TIME * walkSpeed.value;
+      }
+
+      // Enter warning phase
+      if (status === STATUS_PENDING && currentDist >= triggerDist - warningLeadDist) {
+        eq[off + 6] = STATUS_WARNING;
+        eventQueue.value = eq;
+        warningEventType.value = evtType;
+        warningEventSubtype.value = evtSubtype;
+        warningEventParam.value = param1;
+        if (evtType === EVT_OBSTACLE) {
+          warningTimer.value = EVENTS.OBSTACLE.WARNING_TIME;
+        } else if (evtType === EVT_ENVIRONMENT) {
+          warningTimer.value = EVENTS.ENVIRONMENT.WARNING_TIME;
+        } else if (evtType === EVT_SPEED) {
+          warningTimer.value = EVENTS.SPEED.WARNING_TIME;
+        } else {
+          warningTimer.value = EVENTS.ENVIRONMENT.WARNING_TIME;
+        }
+        runOnJS(onPlaySfx ?? (() => {}))('warning');
+      }
+
+      // Enter active phase when distance reached
+      if (eq[off + 6] === STATUS_WARNING && currentDist >= triggerDist) {
+        eq[off + 6] = STATUS_ACTIVE;
+        eventQueue.value = eq;
+        warningTimer.value = 0;
+        warningEventType.value = -1;
+        activeEventType.value = evtType;
+        activeEventSubtype.value = evtSubtype;
+        activeEventParam.value = param1;
+
+        if (evtType === EVT_OBSTACLE) {
+          // Set obstacle data: [type, screenX, screenY, active, side]
+          const side = param1;
+          const startX = side > 0 ? width + 50 : -50;
+          const startY = evtSubtype === OBS_ROCK ? groundY - 12 : 0;
+          obstacleData.value = [evtSubtype, startX, startY, 1, side];
+          activeEventTimer.value = 3.0; // max lifetime
+          runOnJS(onPlaySfx ?? (() => {}))('obstacleAppear');
+        } else if (evtType === EVT_ENVIRONMENT) {
+          activeEventTimer.value = param2; // duration
+          if (evtSubtype === ENV_GUST) {
+            runOnJS(onPlaySfx ?? (() => {}))('gust');
+          } else if (evtSubtype === ENV_QUAKE) {
+            runOnJS(onPlaySfx ?? (() => {}))('quake');
+          } else if (evtSubtype === ENV_ICE) {
+            runOnJS(onPlaySfx ?? (() => {}))('ice');
+          }
+        } else if (evtType === EVT_CHALLENGE) {
+          challengeActive.value = 1;
+          challengeSubtype.value = evtSubtype;
+          challengeTimer.value = param2; // duration
+          challengeParam.value = param1; // direction for lean
+          challengeReward.value = param3;
+          challengeSuccess.value = 1; // assume success, fail on violation
+          activeEventTimer.value = param2;
+          runOnJS(hapticChallengeStart)();
+          runOnJS(onPlaySfx ?? (() => {}))('challengeStart');
+        } else if (evtType === EVT_SPEED) {
+          speedModifier.value = param1; // multiplier
+          activeEventTimer.value = param2; // duration
+          runOnJS(onPlaySfx ?? (() => {}))('speedChange');
+        }
+      }
+    }
+
+    // --- Warning timer countdown ---
+    if (warningTimer.value > 0) {
+      warningTimer.value -= dt;
+      if (warningTimer.value < 0) warningTimer.value = 0;
+    }
+
+    // --- Active event tick ---
+    if (activeEventType.value >= 0) {
+      activeEventTimer.value -= dt;
+
+      const aType = activeEventType.value;
+      const aSub = activeEventSubtype.value;
+
+      // --- Obstacle movement & collision ---
+      if (aType === EVT_OBSTACLE) {
+        const oData = obstacleData.value;
+        if (oData[3] > 0.5) {
+          const side = oData[4];
+          const obstacleSpeed = walkSpeed.value * EVENTS.OBSTACLE.SCROLL_SPEED;
+
+          if (aSub === OBS_ROCK) {
+            // Rock scrolls horizontally
+            oData[1] += (side > 0 ? -1 : 1) * obstacleSpeed * dt;
+          } else {
+            // Branch falls from top
+            oData[1] = width / 2 + side * 40; // drift slightly from center
+            oData[2] += EVENTS.OBSTACLE.BRANCH_FALL_SPEED * dt;
+          }
+
+          // Collision check with stork (center of screen at groundY)
+          const storkX = width / 2;
+          const storkY = groundY + storkHillY.value;
+          const dx = oData[1] - storkX;
+          const dy = oData[2] - storkY;
+          const distToStork = Math.sqrt(dx * dx + dy * dy);
+
+          if (distToStork < EVENTS.OBSTACLE.HITBOX_RADIUS) {
+            if (boostType.value === 1) {
+              // Shield absorbs hit
+              boostType.value = 0;
+              boostTimer.value = 0;
+              hitFlashTimer.value = 0.3;
+              oData[3] = 0; // deactivate obstacle
+              runOnJS(onPlaySfx ?? (() => {}))('shieldBreak');
+            } else {
+              // Hit! Apply impulse
+              const impulseDir = angle.value >= 0 ? 1 : -1;
+              angularVelocity.value += EVENTS.OBSTACLE.HIT_IMPULSE * impulseDir;
+              hitFlashTimer.value = 0.3;
+              oData[3] = 0; // deactivate obstacle
+              shakeTimer.value = 0.35;
+              runOnJS(hapticObstacleHit)();
+              runOnJS(onPlaySfx ?? (() => {}))('obstacleHit');
+            }
+          }
+
+          // Off-screen check: deactivate if gone past
+          if (oData[1] < -80 || oData[1] > width + 80 || oData[2] > canvasHeight + 40) {
+            if (oData[3] > 0.5) {
+              oData[3] = 0; // deactivate (dodged)
+              runOnJS(hapticObstacleDodge)();
+              runOnJS(onPlaySfx ?? (() => {}))('obstacleDodge');
+            }
+          }
+
+          obstacleData.value = oData;
+        }
+      }
+
+      // --- Environment physics ---
+      if (aType === EVT_ENVIRONMENT) {
+        if (aSub === ENV_GUST) {
+          const gustDir = activeEventParam.value; // -1 or 1
+          angularVelocity.value += EVENTS.ENVIRONMENT.GUST_FORCE * gustDir * dt;
+        } else if (aSub === ENV_QUAKE) {
+          const quakeOsc = Math.sin(t * 25) * EVENTS.ENVIRONMENT.QUAKE_AMPLITUDE;
+          angularVelocity.value += quakeOsc * dt;
+          // Also add screen shake during quake
+          shakeX.value = Math.sin(t * 40) * 3.0;
+        }
+        // ICE handled above in effectiveDamping
+      }
+
+      // --- Challenge tracking ---
+      if (aType === EVT_CHALLENGE) {
+        challengeTimer.value -= dt;
+
+        // Check if player meets challenge requirement
+        if (aSub === CHL_CENTERED) {
+          // Must stay within center threshold
+          if (Math.abs(angle.value) > CENTER_THRESHOLD * 2) {
+            challengeSuccess.value = 0;
+          }
+        } else if (aSub === CHL_STORM) {
+          // Just survive — success stays 1 as long as not game over
+        } else if (aSub === CHL_LEAN) {
+          // Must lean in the required direction past threshold
+          const leanDir = challengeParam.value;
+          const leanAngle = angle.value * leanDir;
+          if (leanAngle < EVENTS.CHALLENGE.LEAN_THRESHOLD * 0.5) {
+            challengeSuccess.value = 0;
+          }
+        }
+
+        // Challenge completed
+        if (challengeTimer.value <= 0) {
+          challengeActive.value = 0;
+          if (challengeSuccess.value > 0.5) {
+            // Reward
+            score.value += challengeReward.value * comboMultiplier.value;
+            challengeResultAnim.value = 1.0; // positive = success
+            runOnJS(hapticChallengeSuccess)();
+            runOnJS(onPlaySfx ?? (() => {}))('challengeSuccess');
+
+            // Spawn floating text for challenge reward
+            const ftSlots = floatingTexts.value;
+            for (let fi = 0; fi < FLOATING_TEXT.MAX_COUNT; fi++) {
+              const fbi = fi * FLOATING_TEXT.SLOT_SIZE;
+              if (ftSlots[fbi] < 0.5) {
+                ftSlots[fbi] = 1;
+                ftSlots[fbi + 1] = 0;
+                ftSlots[fbi + 2] = width / 2;
+                ftSlots[fbi + 3] = canvasHeight * 0.2;
+                ftSlots[fbi + 4] = challengeReward.value;
+                ftSlots[fbi + 5] = 1; // type: bonus
+                break;
+              }
+            }
+            floatingTexts.value = ftSlots;
+          } else {
+            challengeResultAnim.value = -1.0; // negative = fail
+            runOnJS(onPlaySfx ?? (() => {}))('challengeFail');
+          }
+        }
+      }
+
+      // --- Event finished ---
+      if (activeEventTimer.value <= 0) {
+        // Mark as done and advance cursor
+        const off = cursor * EVENT_SLOT_SIZE;
+        eq[off + 6] = STATUS_DONE;
+        eventQueue.value = eq;
+        eventCursor.value = cursor + 1;
+
+        // Reset active event state
+        activeEventType.value = -1;
+        activeEventSubtype.value = 0;
+        activeEventTimer.value = 0;
+        activeEventParam.value = 0;
+
+        // Reset obstacle data
+        obstacleData.value = [0, 0, 0, 0, 0];
+
+        // Reset speed modifier
+        if (aType === EVT_SPEED) {
+          speedModifier.value = 1.0;
+        }
+      }
+    }
+
+    // --- Boost timer countdown ---
+    if (boostTimer.value > 0) {
+      boostTimer.value -= dt;
+      if (boostTimer.value <= 0) {
+        boostTimer.value = 0;
+        boostType.value = 0;
+        runOnJS(onPlaySfx ?? (() => {}))('boostEnd');
+      }
+    }
+
+    // --- Hit flash timer countdown ---
+    if (hitFlashTimer.value > 0) {
+      hitFlashTimer.value -= dt;
+      if (hitFlashTimer.value < 0) hitFlashTimer.value = 0;
+    }
+
+    // --- Challenge result animation countdown ---
+    if (challengeResultAnim.value !== 0) {
+      const sign = challengeResultAnim.value > 0 ? 1 : -1;
+      const absVal = Math.abs(challengeResultAnim.value) - dt;
+      if (absVal <= 0) {
+        challengeResultAnim.value = 0;
+      } else {
+        challengeResultAnim.value = absVal * sign;
+      }
+    }
   }, isPlaying);
 
   // Bridge shared values to React state for HUD
@@ -602,6 +1205,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const [displayScore, setDisplayScore] = useState(0);
   const [displayCombo, setDisplayCombo] = useState(1);
   const [displayWind, setDisplayWind] = useState(0);
+  const [displayCoins, setDisplayCoins] = useState(0);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -610,9 +1214,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       setDisplayScore(Math.floor(score.value));
       setDisplayCombo(comboMultiplier.value);
       setDisplayWind(windForceVal.value);
+      setDisplayCoins(Math.floor(coinCount.value));
     }, 200);
     return () => clearInterval(interval);
-  }, [isPlaying, distance, score, comboMultiplier, windForceVal]);
+  }, [isPlaying, distance, score, comboMultiplier, windForceVal, coinCount]);
 
   const onLeftPress = useCallback(() => { inputLeft.value = true; }, [inputLeft]);
   const onLeftRelease = useCallback(() => { inputLeft.value = false; }, [inputLeft]);
@@ -621,6 +1226,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
 
   // Screen shake transform
   const shakeTransform = useDerivedValue(() => [{ translateX: shakeX.value }]);
+
+  // Hit flash opacity
+  const hitFlashOpacity = useDerivedValue(() => hitFlashTimer.value > 0 ? 0.4 : 0);
 
   // Danger vignette opacity
   const dangerVignetteOpacity = useDerivedValue(() => {
@@ -632,7 +1240,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   return (
     <View style={styles.container}>
       <Canvas style={{ width, height: canvasHeight }}>
-        <Group>
+        <Group transform={shakeTransform}>
           <BackgroundRenderer
             width={width}
             height={canvasHeight}
@@ -658,6 +1266,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             dangerRatio={dangerRatioSV}
             isGameOver={gameOverSlowMo}
             gameOverTimer={gameOverTimer}
+            skinPalette={skinPalette}
+          />
+          <CoinRenderer
+            coinSlots={coinSlots}
+            coinSpinAngle={coinSpinAngle}
+            groundY={groundY}
+            maxCoins={COIN.MAX_VISIBLE}
           />
           <ParticleRenderer
             width={width}
@@ -668,6 +1283,40 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             distance={distance}
             angle={angle}
             isGameOver={gameOverSlowMo}
+          />
+          <FloatingTextRenderer
+            floatingTexts={floatingTexts}
+            width={width}
+            height={canvasHeight}
+          />
+          <NearMissRenderer
+            nearMissAnim={nearMissAnim}
+            width={width}
+            height={canvasHeight}
+          />
+          <ObstacleRenderer
+            obstacleData={obstacleData}
+            groundY={groundY}
+            width={width}
+            height={canvasHeight}
+          />
+          <EventWarningRenderer
+            warningTimer={warningTimer}
+            warningEventType={warningEventType}
+            warningEventSubtype={warningEventSubtype}
+            warningEventParam={warningEventParam}
+            challengeActive={challengeActive}
+            challengeSubtype={challengeSubtype}
+            challengeTimer={challengeTimer}
+            challengeParam={challengeParam}
+            challengeResultAnim={challengeResultAnim}
+            activeEventType={activeEventType}
+            activeEventSubtype={activeEventSubtype}
+            boostType={boostType}
+            boostTimer={boostTimer}
+            speedModifier={speedModifier}
+            width={width}
+            height={canvasHeight}
           />
           <WeatherRenderer
             weatherType={weatherType}
@@ -692,6 +1341,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             opacity={dangerVignetteOpacity}>
             <LinearGradient start={vec(0, canvasHeight)} end={vec(0, canvasHeight * 0.88)} colors={['rgba(255,30,30,0.4)', 'transparent']} />
           </Rect>
+          {/* Hit flash overlay */}
+          <Rect x={0} y={0} width={width} height={canvasHeight}
+            color="white"
+            opacity={hitFlashOpacity}
+          />
         </Group>
       </Canvas>
 
@@ -699,18 +1353,28 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       {isPlaying && (
         <View style={styles.hud} pointerEvents="none">
           <View style={styles.hudLeft}>
-            <Text style={styles.hudDist}>{displayDist}m</Text>
+            <View style={styles.hudDistPill}>
+              <Text style={styles.hudDist}>{displayDist}m</Text>
+            </View>
+            {displayCoins > 0 && (
+              <Text style={styles.hudCoins}>🪙 {displayCoins}</Text>
+            )}
           </View>
           <View style={styles.hudCenter}>
             {displayCombo > 1 && (
-              <Text style={[styles.hudCombo, displayCombo >= 4 ? styles.hudComboMax : displayCombo >= 3 ? styles.hudComboHigh : null]}>
-                x{displayCombo}
-              </Text>
+              <View style={styles.hudComboContainer}>
+                <Text style={[styles.hudCombo, displayCombo >= 4 ? styles.hudComboMax : displayCombo >= 3 ? styles.hudComboHigh : null]}>
+                  x{displayCombo}
+                </Text>
+                <View style={styles.hudComboProgressTrack}>
+                  <View style={[styles.hudComboProgressFill, { width: displayCombo >= 4 ? '100%' : '50%' }]} />
+                </View>
+              </View>
             )}
           </View>
           <View style={styles.hudRight}>
             <Text style={styles.hudWind}>
-              {displayWind < -1 ? '◁◁ WIND' : displayWind > 1 ? 'WIND ▷▷' : ''}
+              {displayWind < -1 ? 'WIND' : displayWind > 1 ? 'WIND' : ''}
             </Text>
           </View>
         </View>
@@ -758,22 +1422,40 @@ const styles = StyleSheet.create({
   hudLeft: {
     alignItems: 'flex-start',
   },
+  hudDistPill: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 14,
+  },
   hudDist: {
-    fontFamily: 'pixel',
     fontSize: 20,
+    fontWeight: '800',
     color: '#FFD700',
-    marginTop: 2,
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     letterSpacing: 1,
   },
+  hudCoins: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFD700',
+    marginTop: 4,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    letterSpacing: 1,
+    opacity: 0.9,
+  },
   hudCenter: {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  hudComboContainer: {
+    alignItems: 'center',
+  },
   hudCombo: {
-    fontFamily: 'pixel',
     fontSize: 22,
     color: '#4ECDC4',
     fontWeight: '900',
@@ -790,12 +1472,25 @@ const styles = StyleSheet.create({
     color: '#FF6B8A',
     fontSize: 26,
   },
+  hudComboProgressTrack: {
+    width: 50,
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 2,
+    marginTop: 3,
+    overflow: 'hidden',
+  },
+  hudComboProgressFill: {
+    height: 3,
+    backgroundColor: '#4ECDC4',
+    borderRadius: 2,
+  },
   hudRight: {
     alignItems: 'flex-end',
   },
   hudWind: {
-    fontFamily: 'pixel',
     fontSize: 12,
+    fontWeight: '700',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 1, height: 1 },
@@ -804,8 +1499,8 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   hudScore: {
-    fontFamily: 'pixel',
     fontSize: 18,
+    fontWeight: '800',
     color: '#FFFFFF',
     marginTop: 2,
     textShadowColor: 'rgba(0,0,0,0.6)',

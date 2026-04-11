@@ -21,7 +21,10 @@ interface GameScreenProps {
   height: number;
   isPlaying: boolean;
   isResuming?: boolean;
-  onGameOver: (data: { score: number; distance: number }) => void;
+  onGameOver: (data: { score: number; distance: number; coins?: number }) => void;
+  pendingBoost?: 'shield' | 'slowmo' | null;
+  skinPalette?: { body: string; bodyLight: string; legs: string; legsDark: string; wing: string; neck: string; cheek: string; };
+  onPlaySfx?: (name: string) => void;
 }
 
 export const GameScreen: React.FC<GameScreenProps> = ({
@@ -30,6 +33,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   isPlaying,
   isResuming,
   onGameOver,
+  pendingBoost,
+  skinPalette,
+  onPlaySfx,
 }) => {
   const showBanner = BannerAd && BANNER_AD_UNIT_ID;
 
@@ -41,6 +47,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         onGameOver={onGameOver}
         isPlaying={isPlaying}
         isResuming={isResuming}
+        pendingBoost={pendingBoost}
+        skinPalette={skinPalette}
+        onPlaySfx={onPlaySfx}
       />
 
       {showBanner ? (
