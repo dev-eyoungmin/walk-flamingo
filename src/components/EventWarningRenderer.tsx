@@ -339,15 +339,9 @@ const ChallengeUI: React.FC<{
     return `LEAN ${dir}!`;
   });
 
-  const getDuration = (sub: number): number => {
-    if (sub === CHL_CENTERED) return EVENTS.CHALLENGE.CENTERED_DURATION;
-    if (sub === CHL_STORM) return EVENTS.CHALLENGE.STORM_DURATION;
-    return EVENTS.CHALLENGE.LEAN_DURATION;
-  };
-
   const progressBarWidth = useDerivedValue(() => {
     const sub = challengeSubtype.value;
-    const duration = getDuration(sub);
+    const duration = sub === CHL_CENTERED ? 3.0 : sub === CHL_STORM ? 4.0 : 2.0;
     const remaining = Math.max(0, challengeTimer.value);
     const ratio = duration > 0 ? remaining / duration : 0;
     return ratio * (CHALLENGE_W - 16);
@@ -355,7 +349,7 @@ const ChallengeUI: React.FC<{
 
   const progressBarColor = useDerivedValue(() => {
     const sub = challengeSubtype.value;
-    const duration = getDuration(sub);
+    const duration = sub === CHL_CENTERED ? 3.0 : sub === CHL_STORM ? 4.0 : 2.0;
     const remaining = challengeTimer.value;
     const ratio = duration > 0 ? remaining / duration : 0;
     if (ratio > 0.5) return '#44FF44';
