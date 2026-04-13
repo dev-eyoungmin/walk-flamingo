@@ -383,6 +383,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       : 1 / 60;
     const t = elapsedTime.value;
 
+
     // ──── Grace Period ────
     // Support both initial grace (t < GRACE_PERIOD) and resume grace (t < resumeGraceEnd)
     const initialGrace = t < GRACE_PERIOD;
