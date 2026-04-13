@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   Animated,
+  ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import { getRank } from '../lib/ranks';
@@ -146,13 +147,16 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         style={[
           styles.container,
           {
-            paddingHorizontal: s(36),
-            paddingVertical: s(20),
             borderRadius: s(24),
             maxHeight: height * 0.92,
+            maxWidth: 420,
             transform: [{ translateY: slideUp }, { translateX: shakeAnim }],
           },
         ]}
+      >
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: s(28), paddingVertical: s(12), alignItems: 'center' }}
+        showsVerticalScrollIndicator={false}
       >
         {/* New High Score star particles */}
         {isNewHighScore && (
@@ -293,155 +297,83 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           </Text>
         )}
 
-        {/* Continue Button (watch ad to resume) */}
-        {canContinue && onContinue && (
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              styles.continueButton,
-              {
-                paddingHorizontal: s(48),
-                paddingVertical: s(10),
-                borderRadius: s(32),
-                marginTop: s(10),
-                alignSelf: 'center',
-              },
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={onContinue}
-          >
-            <Text
-              style={[
-                styles.continueButtonText,
-                { fontSize: s(15), letterSpacing: s(2) },
-              ]}
-            >
-              CONTINUE
-            </Text>
-            <Text
-              style={[
-                styles.continueSubtext,
-                { fontSize: s(9) },
-              ]}
-            >
-              Watch Ad
-            </Text>
-          </Pressable>
-        )}
-
-        {/* Boost Buttons (Shield + Slow-Mo) */}
-        {onBoost && (
-          <View style={[styles.boostRow, { marginTop: s(8), gap: s(8) }]}>
+        {/* Action buttons — compact row layout for landscape */}
+        <View style={[styles.actionRow, { marginTop: s(8), gap: s(6) }]}>
+          {canContinue && onContinue && (
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                styles.boostButton,
-                {
-                  paddingHorizontal: s(20),
-                  paddingVertical: s(8),
-                  borderRadius: s(24),
-                },
+                styles.continueButton,
+                { paddingHorizontal: s(16), paddingVertical: s(8), borderRadius: s(20) },
                 pressed && styles.buttonPressed,
               ]}
-              onPress={() => onBoost('shield')}
+              onPress={onContinue}
             >
-              <Text style={[styles.boostButtonText, { fontSize: s(12), letterSpacing: s(1) }]}>
-                SHIELD
-              </Text>
-              <Text style={[styles.adSubtext, { fontSize: s(9) }]}>Watch Ad</Text>
+              <Text style={[styles.continueButtonText, { fontSize: s(11), letterSpacing: s(1) }]}>CONTINUE</Text>
             </Pressable>
+          )}
+          {onBoost && (
+            <>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button, styles.boostButton,
+                  { paddingHorizontal: s(12), paddingVertical: s(8), borderRadius: s(20) },
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={() => onBoost('shield')}
+              >
+                <Text style={[styles.boostButtonText, { fontSize: s(10) }]}>SHIELD</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button, styles.boostButton,
+                  { paddingHorizontal: s(12), paddingVertical: s(8), borderRadius: s(20) },
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={() => onBoost('slowmo')}
+              >
+                <Text style={[styles.boostButtonText, { fontSize: s(10) }]}>SLOW-MO</Text>
+              </Pressable>
+            </>
+          )}
+          {onSkinUnlock && (
             <Pressable
               style={({ pressed }) => [
-                styles.button,
-                styles.boostButton,
-                {
-                  paddingHorizontal: s(20),
-                  paddingVertical: s(8),
-                  borderRadius: s(24),
-                },
+                styles.button, styles.skinButton,
+                { paddingHorizontal: s(12), paddingVertical: s(8), borderRadius: s(20) },
                 pressed && styles.buttonPressed,
               ]}
-              onPress={() => onBoost('slowmo')}
+              onPress={() => setShowSkinPreview(true)}
             >
-              <Text style={[styles.boostButtonText, { fontSize: s(12), letterSpacing: s(1) }]}>
-                SLOW-MO
-              </Text>
-              <Text style={[styles.adSubtext, { fontSize: s(9) }]}>Watch Ad</Text>
+              <Text style={[styles.skinButtonText, { fontSize: s(10) }]}>SKIN</Text>
             </Pressable>
-          </View>
-        )}
+          )}
+        </View>
 
-        {/* Skin Button */}
-        {onSkinUnlock && (
+        {/* Home + Retry */}
+        <View style={[styles.buttons, { marginTop: s(6), gap: s(10) }]}>
           <Pressable
             style={({ pressed }) => [
-              styles.button,
-              styles.skinButton,
-              {
-                paddingHorizontal: s(40),
-                paddingVertical: s(8),
-                borderRadius: s(24),
-                marginTop: s(8),
-                alignSelf: 'center',
-              },
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={() => setShowSkinPreview(true)}
-          >
-            <Text style={[styles.skinButtonText, { fontSize: s(13), letterSpacing: s(2) }]}>
-              SKIN
-            </Text>
-            <Text style={[styles.adSubtext, { fontSize: s(9) }]}>Watch Ad</Text>
-          </Pressable>
-        )}
-
-        {/* Home + Retry Buttons with gradient style */}
-        <View style={[styles.buttons, { marginTop: canContinue && onContinue ? s(6) : s(10), gap: s(12) }]}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.button,
-              styles.homeButton,
-              {
-                paddingHorizontal: s(40),
-                paddingVertical: s(12),
-                borderRadius: s(32),
-              },
+              styles.button, styles.homeButton,
+              { paddingHorizontal: s(32), paddingVertical: s(10), borderRadius: s(24) },
               pressed && styles.buttonPressed,
             ]}
             onPress={onHome}
           >
-            <Text
-              style={[
-                styles.homeButtonText,
-                { fontSize: s(15), letterSpacing: s(2) },
-              ]}
-            >
-              HOME
-            </Text>
+            <Text style={[styles.homeButtonText, { fontSize: s(13), letterSpacing: s(1) }]}>HOME</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [
-              styles.button,
-              styles.retryButton,
-              {
-                paddingHorizontal: s(48),
-                paddingVertical: s(12),
-                borderRadius: s(32),
-              },
+              styles.button, styles.retryButton,
+              { paddingHorizontal: s(40), paddingVertical: s(10), borderRadius: s(24) },
               pressed && styles.buttonPressed,
             ]}
             onPress={onRetry}
           >
-            <Text
-              style={[
-                styles.retryButtonText,
-                { fontSize: s(15), letterSpacing: s(2) },
-              ]}
-            >
-              RETRY
-            </Text>
+            <Text style={[styles.retryButtonText, { fontSize: s(13), letterSpacing: s(1) }]}>RETRY</Text>
           </Pressable>
         </View>
+      </ScrollView>
       </Animated.View>
 
       {showSkinPreview && onSkinUnlock && (
@@ -591,6 +523,12 @@ const styles = StyleSheet.create({
   newBestText: {
     color: '#DAA520',
     fontWeight: '800',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    alignSelf: 'stretch',
   },
   buttons: {
     alignSelf: 'stretch',
