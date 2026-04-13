@@ -57,6 +57,9 @@ const POINTS_PER_SECOND = 10;
 const PIXELS_TO_METERS = 0.04;
 const GRACE_PERIOD = 3.0; // seconds before full physics/scoring kicks in (was 1.5)
 
+// No-op function for safe runOnJS calls when onPlaySfx is not provided
+const noop = (_name: string) => {};
+
 // Near hill parallax must match BackgroundRenderer
 const P_HILLS_NEAR = 2.5;
 
@@ -591,7 +594,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           comboLevelUpAnim.value = 0.6;
           shakeTimer.value = 0.25;
           runOnJS(hapticComboUp)();
-          runOnJS(onPlaySfx ?? (() => {}))('comboUp');
+          runOnJS(onPlaySfx ?? noop)('comboUp');
         }
       }
     } else {
@@ -732,7 +735,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           floatingTexts.value = ftSlots;
 
           runOnJS(hapticCoinCollect)();
-          runOnJS(onPlaySfx ?? (() => {}))('coinCollect');
+          runOnJS(onPlaySfx ?? noop)('coinCollect');
           changed = true;
         }
       }
@@ -770,7 +773,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         floatingTexts.value = ftSlots;
 
         runOnJS(hapticNearMiss)();
-        runOnJS(onPlaySfx ?? (() => {}))('nearMiss');
+        runOnJS(onPlaySfx ?? noop)('nearMiss');
       }
     }
 
@@ -964,7 +967,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         } else {
           warningTimer.value = EVENTS.ENVIRONMENT.WARNING_TIME;
         }
-        runOnJS(onPlaySfx ?? (() => {}))('warningBeep');
+        runOnJS(onPlaySfx ?? noop)('warningBeep');
       }
 
       // Enter active phase when distance reached
@@ -984,15 +987,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           const startY = evtSubtype === OBS_ROCK ? groundY - 12 : 0;
           obstacleData.value = [evtSubtype, startX, startY, 1, side];
           activeEventTimer.value = 3.0; // max lifetime
-          runOnJS(onPlaySfx ?? (() => {}))('warningBeep');
+          runOnJS(onPlaySfx ?? noop)('warningBeep');
         } else if (evtType === EVT_ENVIRONMENT) {
           activeEventTimer.value = param2; // duration
           if (evtSubtype === ENV_GUST) {
-            runOnJS(onPlaySfx ?? (() => {}))('gust');
+            runOnJS(onPlaySfx ?? noop)('gust');
           } else if (evtSubtype === ENV_QUAKE) {
-            runOnJS(onPlaySfx ?? (() => {}))('quake');
+            runOnJS(onPlaySfx ?? noop)('quake');
           } else if (evtSubtype === ENV_ICE) {
-            runOnJS(onPlaySfx ?? (() => {}))('warningBeep');
+            runOnJS(onPlaySfx ?? noop)('warningBeep');
           }
         } else if (evtType === EVT_CHALLENGE) {
           challengeActive.value = 1;
@@ -1003,11 +1006,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           challengeSuccess.value = 1; // assume success, fail on violation
           activeEventTimer.value = param2;
           runOnJS(hapticChallengeStart)();
-          runOnJS(onPlaySfx ?? (() => {}))('challengeStart');
+          runOnJS(onPlaySfx ?? noop)('challengeStart');
         } else if (evtType === EVT_SPEED) {
           speedModifier.value = param1; // multiplier
           activeEventTimer.value = param2; // duration
-          runOnJS(onPlaySfx ?? (() => {}))('speedChange');
+          runOnJS(onPlaySfx ?? noop)('speedChange');
         }
       }
     }
@@ -1055,7 +1058,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               boostTimer.value = 0;
               hitFlashTimer.value = 0.3;
               oData[3] = 0; // deactivate obstacle
-              runOnJS(onPlaySfx ?? (() => {}))('obstacleHit');
+              runOnJS(onPlaySfx ?? noop)('obstacleHit');
             } else {
               // Hit! Apply impulse
               const impulseDir = angle.value >= 0 ? 1 : -1;
@@ -1064,7 +1067,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               oData[3] = 0; // deactivate obstacle
               shakeTimer.value = 0.35;
               runOnJS(hapticObstacleHit)();
-              runOnJS(onPlaySfx ?? (() => {}))('obstacleHit');
+              runOnJS(onPlaySfx ?? noop)('obstacleHit');
             }
           }
 
@@ -1073,7 +1076,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             if (oData[3] > 0.5) {
               oData[3] = 0; // deactivate (dodged)
               runOnJS(hapticObstacleDodge)();
-              runOnJS(onPlaySfx ?? (() => {}))('obstacleSwipe');
+              runOnJS(onPlaySfx ?? noop)('obstacleSwipe');
             }
           }
 
@@ -1124,7 +1127,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             score.value += challengeReward.value * comboMultiplier.value;
             challengeResultAnim.value = 1.0; // positive = success
             runOnJS(hapticChallengeSuccess)();
-            runOnJS(onPlaySfx ?? (() => {}))('challengeSuccess');
+            runOnJS(onPlaySfx ?? noop)('challengeSuccess');
 
             // Spawn floating text for challenge reward
             const ftSlots = floatingTexts.value;
@@ -1143,7 +1146,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             floatingTexts.value = ftSlots;
           } else {
             challengeResultAnim.value = -1.0; // negative = fail
-            runOnJS(onPlaySfx ?? (() => {}))('challengeFail');
+            runOnJS(onPlaySfx ?? noop)('challengeFail');
           }
         }
       }
@@ -1178,7 +1181,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (boostTimer.value <= 0) {
         boostTimer.value = 0;
         boostType.value = 0;
-        runOnJS(onPlaySfx ?? (() => {}))('speedChange');
+        runOnJS(onPlaySfx ?? noop)('speedChange');
       }
     }
 
