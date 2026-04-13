@@ -50,7 +50,19 @@ function samplesToBase64(samples: number[]): string {
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return `data:audio/wav;base64,${btoa(binary)}`;
+  // React Native doesn't have btoa — manual base64 encode
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let b64 = '';
+  for (let i = 0; i < binary.length; i += 3) {
+    const a = binary.charCodeAt(i);
+    const b = i + 1 < binary.length ? binary.charCodeAt(i + 1) : 0;
+    const c = i + 2 < binary.length ? binary.charCodeAt(i + 2) : 0;
+    b64 += chars[a >> 2];
+    b64 += chars[((a & 3) << 4) | (b >> 4)];
+    b64 += i + 1 < binary.length ? chars[((b & 15) << 2) | (c >> 6)] : '=';
+    b64 += i + 2 < binary.length ? chars[c & 63] : '=';
+  }
+  return `data:audio/wav;base64,${b64}`;
 }
 
 // ---------------------------------------------------------------------------

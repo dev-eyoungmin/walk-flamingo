@@ -964,7 +964,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         } else {
           warningTimer.value = EVENTS.ENVIRONMENT.WARNING_TIME;
         }
-        runOnJS(onPlaySfx ?? (() => {}))('warning');
+        runOnJS(onPlaySfx ?? (() => {}))('warningBeep');
       }
 
       // Enter active phase when distance reached
@@ -984,7 +984,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           const startY = evtSubtype === OBS_ROCK ? groundY - 12 : 0;
           obstacleData.value = [evtSubtype, startX, startY, 1, side];
           activeEventTimer.value = 3.0; // max lifetime
-          runOnJS(onPlaySfx ?? (() => {}))('obstacleAppear');
+          runOnJS(onPlaySfx ?? (() => {}))('warningBeep');
         } else if (evtType === EVT_ENVIRONMENT) {
           activeEventTimer.value = param2; // duration
           if (evtSubtype === ENV_GUST) {
@@ -992,7 +992,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           } else if (evtSubtype === ENV_QUAKE) {
             runOnJS(onPlaySfx ?? (() => {}))('quake');
           } else if (evtSubtype === ENV_ICE) {
-            runOnJS(onPlaySfx ?? (() => {}))('ice');
+            runOnJS(onPlaySfx ?? (() => {}))('warningBeep');
           }
         } else if (evtType === EVT_CHALLENGE) {
           challengeActive.value = 1;
@@ -1055,7 +1055,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
               boostTimer.value = 0;
               hitFlashTimer.value = 0.3;
               oData[3] = 0; // deactivate obstacle
-              runOnJS(onPlaySfx ?? (() => {}))('shieldBreak');
+              runOnJS(onPlaySfx ?? (() => {}))('obstacleHit');
             } else {
               // Hit! Apply impulse
               const impulseDir = angle.value >= 0 ? 1 : -1;
@@ -1073,7 +1073,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             if (oData[3] > 0.5) {
               oData[3] = 0; // deactivate (dodged)
               runOnJS(hapticObstacleDodge)();
-              runOnJS(onPlaySfx ?? (() => {}))('obstacleDodge');
+              runOnJS(onPlaySfx ?? (() => {}))('obstacleSwipe');
             }
           }
 
@@ -1178,7 +1178,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (boostTimer.value <= 0) {
         boostTimer.value = 0;
         boostType.value = 0;
-        runOnJS(onPlaySfx ?? (() => {}))('boostEnd');
+        runOnJS(onPlaySfx ?? (() => {}))('speedChange');
       }
     }
 

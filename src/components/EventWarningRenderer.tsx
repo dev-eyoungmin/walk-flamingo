@@ -34,6 +34,13 @@ const CHL_LEAN = 2;
 const BOOST_SHIELD = 1;
 const BOOST_SLOWMO = 2;
 
+// Fonts — created once at module level to avoid re-creation in sub-components
+const fontFamily = Platform.select({ ios: 'Helvetica Neue', default: 'sans-serif' }) as string;
+const TITLE_FONT = matchFont({ fontFamily, fontSize: 18, fontWeight: '700' });
+const LABEL_FONT = matchFont({ fontFamily, fontSize: 16, fontWeight: '700' });
+const RESULT_FONT = matchFont({ fontFamily, fontSize: 22, fontWeight: '700' });
+const BOOST_FONT = matchFont({ fontFamily, fontSize: 14, fontWeight: '700' });
+
 // ---------------------------------------------------------------------------
 // Layout helpers
 // ---------------------------------------------------------------------------
@@ -113,8 +120,7 @@ const WarningBanner: React.FC<{
   cx: number;
   topY: number;
 }> = ({ warningTimer, warningEventType, warningEventSubtype, cx, topY }) => {
-  const fontFamily = Platform.select({ ios: 'Helvetica Neue', default: 'sans-serif' });
-  const titleFont = matchFont({ fontFamily, fontSize: 18, fontWeight: '700' });
+  const titleFont = TITLE_FONT;
 
   const bannerOpacity = useDerivedValue(() => {
     const t = warningTimer.value;
@@ -318,9 +324,8 @@ const ChallengeUI: React.FC<{
   cx,
   cy,
 }) => {
-  const fontFamily = Platform.select({ ios: 'Helvetica Neue', default: 'sans-serif' });
-  const labelFont = matchFont({ fontFamily, fontSize: 16, fontWeight: '700' });
-  const resultFont = matchFont({ fontFamily, fontSize: 22, fontWeight: '700' });
+  const labelFont = LABEL_FONT;
+  const resultFont = RESULT_FONT;
 
   const panelOpacity = useDerivedValue(() => {
     return challengeActive.value > 0 ? 1 : 0;
@@ -424,8 +429,7 @@ const BoostIndicator: React.FC<{
   cx: number;
   bottomY: number;
 }> = ({ boostType, boostTimer, cx, bottomY }) => {
-  const fontFamily = Platform.select({ ios: 'Helvetica Neue', default: 'sans-serif' });
-  const boostFont = matchFont({ fontFamily, fontSize: 14, fontWeight: '700' });
+  const boostFont = BOOST_FONT;
 
   const boostOpacity = useDerivedValue(() => {
     const bType = boostType.value;
