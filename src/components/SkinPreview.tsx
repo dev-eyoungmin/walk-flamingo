@@ -60,9 +60,10 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
                 style={({ pressed }) => [
                   styles.skinCard,
                   {
-                    width: s(76),
-                    paddingVertical: s(12),
-                    paddingHorizontal: s(8),
+                    width: s(80),
+                    height: s(130),
+                    paddingVertical: s(10),
+                    paddingHorizontal: s(6),
                     borderRadius: s(12),
                     borderWidth: isActive ? 2 : 1,
                     borderColor: isActive ? skin.body : 'rgba(0,0,0,0.1)',
@@ -126,8 +127,9 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
                 <Text
                   style={[
                     styles.skinName,
-                    { fontSize: s(10), marginTop: s(6), color: skin.body },
+                    { fontSize: s(9), marginTop: s(4), color: skin.body },
                   ]}
+                  numberOfLines={1}
                 >
                   {skin.name.toUpperCase()}
                 </Text>
