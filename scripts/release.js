@@ -18,8 +18,7 @@ console.log(`🚀 Bumping version: ${currentVersion} -> ${newVersion}`);
 
 // 3. Update package.json
 pkg.version = newVersion;
-fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '
-');
+fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
 // 4. Update app.json (version + versionCode + buildNumber)
 appJson.expo.version = newVersion;
@@ -32,8 +31,7 @@ if (appJson.expo.ios) {
   // Sync buildNumber with version string
   appJson.expo.ios.buildNumber = newVersion;
 }
-fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2) + '
-');
+fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2) + '\n');
 
 // 5. Git Commit & Push
 try {
