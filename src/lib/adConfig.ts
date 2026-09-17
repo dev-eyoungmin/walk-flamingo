@@ -4,6 +4,10 @@ import Constants from 'expo-constants';
 /** Check if running in Expo Go (ads not supported) */
 export const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
+/** Interstitials show at most every N finished games and never more often than this interval. */
+export const INTERSTITIAL_EVERY_N_GAMES = 3;
+export const INTERSTITIAL_MIN_INTERVAL_MS = 60_000;
+
 /** Request non-personalized ads only (no tracking required) */
 export const AD_REQUEST_OPTIONS = {
   requestNonPersonalizedAdsOnly: true,

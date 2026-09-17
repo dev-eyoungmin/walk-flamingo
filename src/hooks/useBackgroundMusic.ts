@@ -1,4 +1,5 @@
-import { useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { InteractionManager } from 'react-native';
 import { Audio } from 'expo-av';
 
 // --- Procedural WAV generation (pentatonic melody + bass, ~8 bar loop) ---
@@ -136,42 +137,63 @@ function getWavUri(): string {
 
 export function useBackgroundMusic() {
   const soundRef = useRef<Audio.Sound | null>(null);
-  const loadingRef = useRef(false);
+  const loadingRef = useRef<Promise<Audio.Sound | null> | null>(null);
+  const wantPlayingRef = useRef(false);
 
-  const startMusic = useCallback(async () => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
-    try {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: getWavUri() },
-        { shouldPlay: true, isLooping: true, volume: 0.3 },
-      );
-      soundRef.current = sound;
-    } catch {
-      // Music is non-critical; fail silently
-    } finally {
-      loadingRef.current = false;
+  // Generate and load the loop once, after startup work settles, so pressing PLAY never stalls
+  const ensureLoaded = useCallback(() => {
+    if (soundRef.current) return Promise.resolve(soundRef.current);
+    if (!loadingRef.current) {
+      loadingRef.current = Audio.Sound.createAsync({ uri: getWavUri() }, { shouldPlay: false, isLooping: true, volume: 0.3 })
+        .then(({ sound }) => {
+          soundRef.current = sound;
+          return sound;
+        })
+        .catch(() => null);
     }
+    return loadingRef.current;
   }, []);
 
-  const stopMusic = useCallback(async () => {
-    loadingRef.current = false;
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      ensureLoaded();
+    });
+    return () => {
+      task.cancel();
+      soundRef.current?.unloadAsync().catch(() => undefined);
+      soundRef.current = null;
+    };
+  }, [ensureLoaded]);
+
+  const startMusic = useCallback(async () => {
+    wantPlayingRef.current = true;
+    const sound = await ensureLoaded();
+    if (!sound || !wantPlayingRef.current) return;
     try {
-      if (soundRef.current) {
-        await soundRef.current.stopAsync();
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
+      await sound.setPositionAsync(0);
+      await sound.playAsync();
+    } catch {
+      // Music is non-critical; fail silently
+    }
+  }, [ensureLoaded]);
+
+  const stopMusic = useCallback(async () => {
+    wantPlayingRef.current = false;
+    try {
+      await soundRef.current?.pauseAsync();
     } catch {
       // fail silently
     }
   }, []);
 
-  return { startMusic, stopMusic };
+  /** Speed the loop up for fever, back to 1 afterwards. */
+  const setMusicRate = useCallback(async (rate: number) => {
+    try {
+      await soundRef.current?.setRateAsync(rate, true);
+    } catch {
+      // fail silently
+    }
+  }, []);
+
+  return { startMusic, stopMusic, setMusicRate };
 }

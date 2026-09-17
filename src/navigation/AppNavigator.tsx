@@ -1,9 +1,10 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { StartScreen } from '../screens/StartScreen';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Share, StyleSheet, View } from 'react-native';
 import { GameScreen } from '../screens/GameScreen';
-import { GameOverScreen } from '../screens/GameOverScreen';
+import { StartScreen } from '../screens/StartScreen';
+import { GameOverScreen, RunSummary } from '../screens/GameOverScreen';
+import { SkinPreview } from '../components/SkinPreview';
+import type { BoostType, GameStats, RunMode } from '../game/GameCanvas';
 import { useHighScore } from '../hooks/useHighScore';
 import { useScreenDimensions } from '../hooks/useScreenDimensions';
 import { useRewardedAd } from '../hooks/useRewardedAd';
@@ -12,136 +13,293 @@ import { useFirstPlay } from '../hooks/useFirstPlay';
 import { useInterstitialAd } from '../hooks/useInterstitialAd';
 import { useSkin } from '../hooks/useSkin';
 import { useSfx } from '../hooks/useSfx';
-import type { GameScreen as GameScreenType } from '../game/types';
+import { useGameFeedback } from '../hooks/useGameFeedback';
+import { useProgress } from '../hooks/useProgress';
+import { INTERSTITIAL_EVERY_N_GAMES, INTERSTITIAL_MIN_INTERVAL_MS } from '../lib/adConfig';
+import { courseSeedForDay } from '../lib/progress';
+import { getRank } from '../lib/ranks';
+import { SKIN_PRICES } from '../lib/skins';
+
+/** New players see the flap tutorial during their first few runs. */
+const TUTORIAL_RUNS = 5;
+
+type Screen = 'start' | 'playing' | 'gameover';
+
+interface RunOptions {
+  newTerrain: boolean;
+  keepScroll?: boolean;
+  boost?: BoostType;
+  courseSeed?: number | null;
+}
+
+interface RunConfig {
+  id: number;
+  mode: RunMode;
+  terrainKey: number;
+  keepScroll: boolean;
+  boost: BoostType;
+  /** Today's course seed, or null for a random course */
+  courseSeed: number | null;
+}
 
 export const AppNavigator: React.FC = () => {
-  const [screen, setScreen] = useState<GameScreenType>('start');
-  const [lastScore, setLastScore] = useState(0);
-  const [lastDistance, setLastDistance] = useState(0);
-  const [lastCoins, setLastCoins] = useState(0);
-  const [isNewHighScore, setIsNewHighScore] = useState(false);
-  const [hasContinued, setHasContinued] = useState(false);
-  const [isResuming, setIsResuming] = useState(false);
-  const [pendingBoost, setPendingBoost] = useState<'shield' | 'slowmo' | null>(null);
   const { width, height } = useScreenDimensions();
-  const { highScore, submitScore, loaded } = useHighScore();
-  const { showAd } = useRewardedAd();
-  const { startMusic, stopMusic } = useBackgroundMusic();
+  const [screen, setScreen] = useState<Screen>('start');
+  const [run, setRun] = useState<RunConfig>({
+    id: 0,
+    mode: 'attract',
+    terrainKey: 0,
+    keepScroll: false,
+    boost: null,
+    courseSeed: null,
+  });
+  const [resumeId, setResumeId] = useState(0);
+  const [lastStats, setLastStats] = useState<GameStats | null>(null);
+  const [summary, setSummary] = useState<RunSummary | null>(null);
+  const [isNewBest, setIsNewBest] = useState(false);
+  const [hasContinued, setHasContinued] = useState(false);
+  const [showSkins, setShowSkins] = useState(false);
+  // Best score at the start of the run, so the HUD can announce when it is beaten
+  const [runBestScore, setRunBestScore] = useState(0);
+
+  const { bestScore, bestDistance, submitRun, loaded } = useHighScore();
+  const { showAd: showRewarded } = useRewardedAd();
+  const { startMusic, stopMusic, setMusicRate } = useBackgroundMusic();
   const { isFirstPlay, consumeFirstPlay, loaded: firstPlayLoaded } = useFirstPlay();
   const { showAd: showInterstitial } = useInterstitialAd();
-  const { activeSkin, selectSkin, loaded: skinLoaded } = useSkin();
+  const { progress, recordRun, buySkin, refreshDay, loaded: progressLoaded } = useProgress();
+  const { activeSkin, selectSkin, loaded: skinLoaded } = useSkin(progress.ownedSkins);
   const { play: playSfx } = useSfx();
-  const prevScreen = useRef<GameScreenType>(screen);
+  const handleFx = useGameFeedback(playSfx, setMusicRate);
 
-  useEffect(() => {
-    if (screen === 'playing' && prevScreen.current !== 'playing') {
-      startMusic();
-    } else if (screen !== 'playing' && prevScreen.current === 'playing') {
-      stopMusic();
-    }
-    prevScreen.current = screen;
-  }, [screen, startMusic, stopMusic]);
-
-  const handlePlay = useCallback(() => {
-    setHasContinued(false);
-    setIsResuming(false);
-    setPendingBoost(null);
-    setScreen('playing');
+  const gamesSinceAd = useRef(0);
+  const lastAdAt = useRef(0);
+  const noteAdWatched = useCallback(() => {
+    gamesSinceAd.current = 0;
+    lastAdAt.current = Date.now();
   }, []);
 
-  const handleGameOver = useCallback(
-    async (data: { score: number; distance: number; coins?: number }) => {
+  // Stats of the current run already recorded before a continue (stats keep accumulating after it)
+  const recordedStats = useRef<GameStats | null>(null);
+  const recordedSummary = useRef<RunSummary | null>(null);
+
+  useEffect(() => {
+    if (screen === 'playing') startMusic();
+    else {
       stopMusic();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      playSfx('gameOver');
-      setLastScore(data.score);
-      setLastDistance(data.distance);
-      setLastCoins(data.coins ?? 0);
-      const isNew = await submitScore(data.distance);
-      setIsNewHighScore(isNew);
+      setMusicRate(1);
+    }
+  }, [screen, startMusic, stopMusic, setMusicRate]);
+
+  // Missions and today's course roll over at midnight even if the app stays open
+  useEffect(() => {
+    if (screen === 'start') refreshDay();
+  }, [screen, refreshDay]);
+
+  const startRun = useCallback(
+    (mode: RunMode, options: RunOptions) => {
+      setRun((r) => ({
+        id: r.id + 1,
+        mode,
+        terrainKey: options.newTerrain ? r.terrainKey + 1 : r.terrainKey,
+        keepScroll: options.keepScroll ?? false,
+        boost: options.boost ?? null,
+        courseSeed: options.courseSeed ?? null,
+      }));
+    },
+    [],
+  );
+
+  const beginPlaying = useCallback(
+    (options: RunOptions) => {
+      setHasContinued(false);
+      recordedStats.current = null;
+      recordedSummary.current = null;
+      setRunBestScore(bestScore);
+      startRun('playing', options);
+      setScreen('playing');
+    },
+    [bestScore, startRun],
+  );
+
+  const handlePlay = useCallback(() => beginPlaying({ newTerrain: false, keepScroll: true }), [beginPlaying]);
+
+  // Everyone gets the same course today; it always starts from the beginning
+  const handleDaily = useCallback(() => {
+    const today = refreshDay();
+    beginPlaying({ newTerrain: true, courseSeed: courseSeedForDay(today.day) });
+  }, [refreshDay, beginPlaying]);
+
+  const handleGameOver = useCallback(
+    async (stats: GameStats) => {
+      setLastStats(stats);
+      const daily = run.courseSeed !== null;
+      const previous = recordedStats.current;
+      const before = recordedSummary.current;
+      const result = recordRun(stats, daily, previous);
+      const next: RunSummary = {
+        coinsEarned: (before?.coinsEarned ?? 0) + result.coinsEarned,
+        missionCoins: (before?.missionCoins ?? 0) + result.missionCoins,
+        completedIds: [...(before?.completedIds ?? []), ...result.completed.map((m) => m.id)],
+        wallet: result.data.wallet,
+        missions: result.data.missions,
+        daily: daily
+          ? {
+              best: result.data.daily.best,
+              top: result.data.daily.top,
+              newBest: result.newDailyBest || !!before?.daily?.newBest,
+              day: result.data.daily.day,
+            }
+          : null,
+      };
+      recordedStats.current = stats;
+      recordedSummary.current = next;
+      setSummary(next);
+
+      const isNew = await submitRun({ score: stats.score, meters: stats.meters });
+      setIsNewBest(isNew);
+      const show = () => setScreen('gameover');
 
       if (isFirstPlay) {
         await consumeFirstPlay();
-        setScreen('gameover');
+        show();
+        return;
+      }
+      gamesSinceAd.current += 1;
+      const now = Date.now();
+      if (
+        gamesSinceAd.current >= INTERSTITIAL_EVERY_N_GAMES &&
+        now - lastAdAt.current >= INTERSTITIAL_MIN_INTERVAL_MS
+      ) {
+        noteAdWatched();
+        showInterstitial(show);
       } else {
-        showInterstitial(() => {
-          setScreen('gameover');
-        });
+        show();
       }
     },
-    [submitScore, stopMusic, playSfx, isFirstPlay, consumeFirstPlay, showInterstitial],
+    [run.courseSeed, recordRun, submitRun, isFirstPlay, consumeFirstPlay, showInterstitial, noteAdWatched],
   );
 
+  // Retry stays on today's course if that's what was just played
   const handleRetry = useCallback(() => {
-    setIsResuming(false);
-    setPendingBoost(null);
-    setScreen('playing');
-  }, []);
+    if (run.courseSeed !== null) handleDaily();
+    else beginPlaying({ newTerrain: true });
+  }, [run.courseSeed, handleDaily, beginPlaying]);
 
   const handleContinue = useCallback(() => {
-    showAd(() => {
-      setIsResuming(true);
-      setScreen('playing');
+    showRewarded(() => {
+      noteAdWatched();
       setHasContinued(true);
+      setResumeId((id) => id + 1);
+      setScreen('playing');
     });
-  }, [showAd]);
+  }, [showRewarded, noteAdWatched]);
 
   const handleHome = useCallback(() => {
+    startRun('attract', { newTerrain: true });
     setScreen('start');
-  }, []);
+  }, [startRun]);
 
-  const handleBoost = useCallback((boostType: 'shield' | 'slowmo') => {
-    showAd(() => {
-      setPendingBoost(boostType);
-      setIsResuming(false);
-      setScreen('playing');
-    });
-  }, [showAd]);
+  // Boosted runs are always regular courses so today's course stays a fair comparison
+  const handleBoost = useCallback(
+    (boost: 'shield' | 'slowmo') => {
+      showRewarded(() => {
+        noteAdWatched();
+        beginPlaying({ newTerrain: true, boost });
+      });
+    },
+    [showRewarded, noteAdWatched, beginPlaying],
+  );
 
-  const handleSkinUnlock = useCallback((skinId: string) => {
-    showAd(() => {
-      selectSkin(skinId);
-    });
-  }, [showAd, selectSkin]);
+  const handleShare = useCallback(() => {
+    if (!lastStats) return;
+    const rank = getRank(lastStats.meters);
+    const course = summary?.daily ? `today's course (${summary.daily.day})` : 'a wobbly walk';
+    Share.share({
+      message: `I scored ${lastStats.score.toLocaleString('en-US')} and walked ${lastStats.meters} m on ${course} in Wobby! ${rank.emoji} ${rank.name}`,
+    }).catch(() => undefined);
+  }, [lastStats, summary]);
 
-  if (!loaded || !firstPlayLoaded || !skinLoaded) return null;
+  const handleBuySkin = useCallback(
+    (skinId: string) => {
+      if (buySkin(skinId, SKIN_PRICES[skinId] ?? 0)) selectSkin(skinId, true);
+    },
+    [buySkin, selectSkin],
+  );
+
+  const handleEquipSkin = useCallback((skinId: string) => selectSkin(skinId, true), [selectSkin]);
+
+  const handleRentSkin = useCallback(
+    (skinId: string) => {
+      showRewarded(() => {
+        noteAdWatched();
+        selectSkin(skinId);
+      });
+    },
+    [showRewarded, noteAdWatched, selectSkin],
+  );
+
+  if (!loaded || !firstPlayLoaded || !skinLoaded || !progressLoaded) return null;
 
   return (
     <View style={styles.container}>
-      {/* Game screen is always mounted but only runs physics when playing */}
-      {(screen === 'playing' || screen === 'gameover') && (
-        <GameScreen
-          width={width}
-          height={height}
-          isPlaying={screen === 'playing'}
-          isResuming={isResuming}
-          onGameOver={handleGameOver}
-          pendingBoost={pendingBoost}
-          skinPalette={activeSkin}
-          onPlaySfx={playSfx}
+      <GameScreen
+        width={width}
+        height={height}
+        showBanner={screen !== 'start'}
+        controlsEnabled={screen === 'playing'}
+        runId={run.id}
+        runMode={run.mode}
+        terrainKey={run.terrainKey}
+        keepScroll={run.keepScroll}
+        resumeId={resumeId}
+        boost={run.boost}
+        bestScore={runBestScore}
+        skin={activeSkin}
+        courseSeed={run.courseSeed}
+        showTutorial={run.mode === 'playing' && progress.runs < TUTORIAL_RUNS}
+        onGameOver={handleGameOver}
+        onFx={handleFx}
+      />
+
+      {screen === 'start' && (
+        <StartScreen
+          bestScore={bestScore}
+          bestDistance={bestDistance}
+          wallet={progress.wallet}
+          missions={progress.missions}
+          dailyBest={progress.daily.best}
+          onPlay={handlePlay}
+          onDaily={handleDaily}
+          onOpenSkins={() => setShowSkins(true)}
         />
       )}
 
-      {/* Start screen overlay */}
-      {screen === 'start' && (
-        <StartScreen highScore={highScore} onPlay={handlePlay} skinPalette={activeSkin} />
-      )}
-
-      {/* Game over overlay */}
-      {screen === 'gameover' && (
+      {screen === 'gameover' && lastStats && summary && (
         <GameOverScreen
-          score={lastScore}
-          distance={lastDistance}
-          coins={lastCoins}
-          highScore={highScore}
-          isNewHighScore={isNewHighScore}
+          stats={lastStats}
+          summary={summary}
+          bestScore={bestScore}
+          isNewBest={isNewBest}
+          canContinue={!hasContinued}
           onRetry={handleRetry}
           onHome={handleHome}
           onContinue={handleContinue}
-          canContinue={!hasContinued}
           onBoost={handleBoost}
-          onSkinUnlock={handleSkinUnlock}
+          onOpenSkins={() => setShowSkins(true)}
+          onShare={handleShare}
+        />
+      )}
+
+      {showSkins && (
+        <SkinPreview
           activeSkinId={activeSkin.id}
+          ownedSkins={progress.ownedSkins}
+          wallet={progress.wallet}
+          onBuy={handleBuySkin}
+          onEquip={handleEquipSkin}
+          onRent={handleRentSkin}
+          onClose={() => setShowSkins(false)}
         />
       )}
     </View>

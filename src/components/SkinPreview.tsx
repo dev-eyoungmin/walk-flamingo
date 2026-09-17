@@ -1,282 +1,238 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  useWindowDimensions,
-} from 'react-native';
-import { SKINS } from '../lib/skins';
+import React, { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Canvas } from '@shopify/react-native-skia';
+import { useFrameCallback, useSharedValue } from 'react-native-reanimated';
+import { SKIN_PRICES, SKINS, SkinPalette } from '../lib/skins';
+import { StorkPose, StorkRenderer } from '../game/render/StorkRenderer';
+import { GameButton } from '../ui/GameButton';
+import { CoinGlyph } from '../ui/MissionList';
+import { FONT_DISPLAY, titleShadow, UI } from '../ui/theme';
 
 interface SkinPreviewProps {
   activeSkinId: string;
-  onSelect: (skinId: string) => void;
+  ownedSkins: string[];
+  wallet: number;
+  /** Buy a skin forever with coins */
+  onBuy: (skinId: string) => void;
+  /** Wear an owned skin */
+  onEquip: (skinId: string) => void;
+  /** Wear a skin for 24 hours (rewarded ad) */
+  onRent: (skinId: string) => void;
   onClose: () => void;
 }
 
+const CARD_W = 112;
+const STORK_CANVAS_H = 92;
+
+/** Small idle-walking stork for the skin cards. */
+const MiniStork: React.FC<{ skin: SkinPalette; active: boolean }> = ({ skin, active }) => {
+  const unit = 2.6;
+  const pose = useSharedValue<StorkPose>({
+    mode: 1,
+    // Start past the first blink so idle previews have open eyes
+    t: 1,
+    angle: 0,
+    omega: 0,
+    walkPhase: 0,
+    danger: 0,
+    fallT: 0,
+    feetY: STORK_CANVAS_H - 6,
+    camY: 0,
+    slope: 0,
+    invulnT: 0,
+    happyT: 0,
+    hurtT: 0,
+    cheerT: 0,
+    lookX: 0.4,
+    lookY: 0,
+  });
+  const frame = useFrameCallback((info) => {
+    'worklet';
+    const dt = (info.timeSincePreviousFrame ?? 16) / 1000;
+    pose.modify((p) => {
+      'worklet';
+      const beat = Math.floor((p.t + dt) / 2.6) > Math.floor(p.t / 2.6);
+      p.t += dt;
+      p.walkPhase += dt * 1.1;
+      p.angle = Math.sin(p.t * 1.7) * 0.08;
+      // Show off the skin with a happy wing wave now and then
+      if (beat) {
+        p.happyT = 1.0;
+        p.cheerT = 0.7;
+      }
+      p.happyT = Math.max(0, p.happyT - dt);
+      p.cheerT = Math.max(0, p.cheerT - dt);
+      p.lookX = Math.sin(p.t * 0.9) * 0.6;
+      return p;
+    }, true);
+  }, false);
+  useEffect(() => {
+    frame.setActive(active);
+  }, [active, frame]);
+
+  return (
+    <Canvas style={{ width: CARD_W - 12, height: STORK_CANVAS_H }} pointerEvents="none">
+      <StorkRenderer pose={pose} unit={unit} x={(CARD_W - 12) / 2 - unit * 1.5} skin={skin} />
+    </Canvas>
+  );
+};
+
 export const SkinPreview: React.FC<SkinPreviewProps> = ({
   activeSkinId,
-  onSelect,
+  ownedSkins,
+  wallet,
+  onBuy,
+  onEquip,
+  onRent,
   onClose,
 }) => {
   const { height } = useWindowDimensions();
-  const scale = Math.min(1, height / 400);
-  const s = (v: number) => Math.round(v * scale);
 
   return (
-    <View style={styles.overlay}>
-      <View
-        style={[
-          styles.modal,
-          {
-            paddingHorizontal: s(24),
-            paddingVertical: s(20),
-            borderRadius: s(20),
-          },
-        ]}
-      >
-        {/* Header */}
-        <Text style={[styles.title, { fontSize: s(18), marginBottom: s(4) }]}>
-          SKINS
-        </Text>
-        <Text style={[styles.subtitle, { fontSize: s(11), marginBottom: s(16) }]}>
-          Watch an ad to unlock a skin for 24 hours
-        </Text>
+    <View style={styles.scrim}>
+      <View style={[styles.modal, { maxHeight: height - 16 }]}>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>SKINS</Text>
+          <View style={styles.wallet}>
+            <CoinGlyph size={15} />
+            <Text style={styles.walletText}>{wallet.toLocaleString('en-US')}</Text>
+          </View>
+        </View>
+        <Text style={styles.subtitle}>Buy with coins to keep forever, or watch an ad to wear one for 24 hours</Text>
 
-        {/* Skin Cards */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, { gap: s(12) }]}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
           {SKINS.map((skin) => {
             const isActive = skin.id === activeSkinId;
-            const isDefault = skin.id === 'default';
-
+            const owned = ownedSkins.includes(skin.id) || skin.id === 'default';
+            const price = SKIN_PRICES[skin.id] ?? 0;
+            const affordable = wallet >= price;
             return (
-              <Pressable
-                key={skin.id}
-                style={({ pressed }) => [
-                  styles.skinCard,
-                  {
-                    width: s(80),
-                    height: s(130),
-                    paddingVertical: s(10),
-                    paddingHorizontal: s(6),
-                    borderRadius: s(12),
-                    borderWidth: isActive ? 2 : 1,
-                    borderColor: isActive ? skin.body : 'rgba(0,0,0,0.1)',
-                  },
-                  pressed && styles.cardPressed,
-                  isActive && { backgroundColor: `${skin.body}18` },
-                ]}
-                onPress={() => {
-                  if (!isActive) {
-                    onSelect(skin.id);
-                  }
-                }}
-              >
-                {/* Flamingo silhouette */}
-                <View style={[styles.silhouette, { height: s(60) }]}>
-                  {/* Body (large circle) */}
-                  <View
-                    style={[
-                      styles.bodyCircle,
-                      {
-                        width: s(32),
-                        height: s(32),
-                        borderRadius: s(16),
-                        backgroundColor: skin.body,
-                        top: s(14),
-                        alignSelf: 'center',
-                      },
-                    ]}
-                  />
-                  {/* Head (small circle) */}
-                  <View
-                    style={[
-                      styles.headCircle,
-                      {
-                        width: s(16),
-                        height: s(16),
-                        borderRadius: s(8),
-                        backgroundColor: skin.bodyLight,
-                        top: s(4),
-                        alignSelf: 'center',
-                      },
-                    ]}
-                  />
-                  {/* Leg */}
-                  <View
-                    style={[
-                      styles.leg,
-                      {
-                        width: s(5),
-                        height: s(16),
-                        borderRadius: s(2),
-                        backgroundColor: skin.legs,
-                        bottom: s(0),
-                        alignSelf: 'center',
-                      },
-                    ]}
-                  />
-                </View>
-
-                {/* Skin name */}
-                <Text
-                  style={[
-                    styles.skinName,
-                    { fontSize: s(9), marginTop: s(4), color: skin.body },
-                  ]}
-                  numberOfLines={1}
-                >
+              <View key={skin.id} style={[styles.card, isActive && { borderColor: skin.body, backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+                <MiniStork skin={skin} active={isActive} />
+                <Text style={[styles.name, { color: skin.bodyLight }]} numberOfLines={1}>
                   {skin.name.toUpperCase()}
                 </Text>
-
-                {/* Status label */}
-                <View
-                  style={[
-                    styles.labelBadge,
-                    {
-                      backgroundColor: isActive
-                        ? skin.body
-                        : isDefault
-                        ? '#4CAF50'
-                        : 'rgba(0,0,0,0.08)',
-                      borderRadius: s(8),
-                      paddingHorizontal: s(4),
-                      paddingVertical: s(2),
-                      marginTop: s(4),
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.labelText,
-                      {
-                        fontSize: s(9),
-                        color: isActive || isDefault ? '#fff' : '#666',
-                      },
-                    ]}
-                  >
-                    {isActive ? 'ACTIVE' : isDefault ? 'FREE' : 'Watch Ad'}
-                  </Text>
-                </View>
-              </Pressable>
+                {isActive ? (
+                  <View style={[styles.badge, { backgroundColor: skin.body }]}>
+                    <Text style={styles.badgeText}>WEARING</Text>
+                  </View>
+                ) : owned ? (
+                  <GameButton label="WEAR" size="sm" color={UI.mint} shade={UI.mintDark} onPress={() => onEquip(skin.id)} style={styles.cardButton} />
+                ) : (
+                  <View style={styles.buyOptions}>
+                    <GameButton
+                      label={`${price} COINS`}
+                      size="sm"
+                      color={UI.gold}
+                      shade={UI.goldDark}
+                      onPress={() => onBuy(skin.id)}
+                      disabled={!affordable}
+                      style={styles.cardButton}
+                    />
+                    <GameButton label="24H" ad size="sm" color={UI.slate} shade={UI.slateDark} onPress={() => onRent(skin.id)} style={styles.cardButton} />
+                  </View>
+                )}
+              </View>
             );
           })}
         </ScrollView>
 
-        {/* Close Button */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.closeButton,
-            {
-              paddingHorizontal: s(40),
-              paddingVertical: s(10),
-              borderRadius: s(24),
-              marginTop: s(16),
-            },
-            pressed && styles.cardPressed,
-          ]}
-          onPress={onClose}
-        >
-          <Text style={[styles.closeButtonText, { fontSize: s(13) }]}>
-            CLOSE
-          </Text>
-        </Pressable>
+        <GameButton label="CLOSE" size="sm" color={UI.slate} shade={UI.slateDark} onPress={onClose} style={styles.close} />
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(20,10,30,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
   },
   modal: {
-    backgroundColor: '#FFF8F0',
-    alignItems: 'center',
+    backgroundColor: UI.panel,
+    borderRadius: 22,
     borderWidth: 3,
-    borderColor: '#9C27B0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
+    borderColor: UI.purple,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    maxWidth: '96%',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   title: {
-    fontWeight: '900',
-    color: '#9C27B0',
-    letterSpacing: 2,
+    fontFamily: FONT_DISPLAY,
+    fontSize: 26,
+    color: UI.text,
+    ...titleShadow,
+  },
+  wallet: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  walletText: {
+    fontFamily: FONT_DISPLAY,
+    fontSize: 16,
+    color: UI.gold,
   },
   subtitle: {
-    color: '#888',
-    fontWeight: '600',
-    textAlign: 'center',
+    fontSize: 11,
+    color: UI.textDim,
+    marginBottom: 8,
   },
-  scrollContent: {
-    paddingHorizontal: 4,
-    alignItems: 'flex-start',
+  cards: {
+    gap: 8,
+    paddingHorizontal: 2,
   },
-  skinCard: {
-    backgroundColor: '#fff',
+  card: {
+    width: CARD_W,
+    borderRadius: 14,
+    borderWidth: 2.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingTop: 2,
+    paddingBottom: 8,
+    paddingHorizontal: 6,
   },
-  cardPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.96 }],
+  name: {
+    fontFamily: FONT_DISPLAY,
+    fontSize: 14,
   },
-  silhouette: {
-    width: '100%',
-    position: 'relative',
-    justifyContent: 'flex-end',
+  badge: {
+    marginTop: 6,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  bodyCircle: {
-    position: 'absolute',
+  badgeText: {
+    fontFamily: FONT_DISPLAY,
+    fontSize: 12,
+    color: UI.text,
   },
-  headCircle: {
-    position: 'absolute',
+  buyOptions: {
+    gap: 4,
+    marginTop: 4,
+    alignSelf: 'stretch',
   },
-  leg: {
-    position: 'absolute',
+  cardButton: {
+    alignSelf: 'stretch',
+    marginTop: 4,
+    paddingHorizontal: 6,
   },
-  skinName: {
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  labelBadge: {
-    alignItems: 'center',
-  },
-  labelText: {
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  closeButton: {
-    backgroundColor: '#9C27B0',
-    borderWidth: 2,
-    borderColor: '#BA68C8',
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontWeight: '800',
-    letterSpacing: 2,
+  close: {
+    marginTop: 8,
+    minWidth: 120,
   },
 });

@@ -9,15 +9,21 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   const initialize = useCallback(async () => {
-    // Lock to landscape
-    await ScreenOrientation.lockAsync(
-      ScreenOrientation.OrientationLock.LANDSCAPE,
-    );
+    // Lock to landscape (not supported everywhere, e.g. web)
+    try {
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    } catch (e) {
+      console.warn('[Orientation] Lock failed:', e);
+    }
 
-    // Load fonts
-    await Font.loadAsync({
-      'pixel': require('./assets/fonts/pixel.ttf'),
-    });
+    // Load the display font shared by menus (the in-game HUD loads it through Skia)
+    try {
+      await Font.loadAsync({
+        LilitaOne: require('./assets/fonts/LilitaOne-Regular.ttf'),
+      });
+    } catch (e) {
+      console.warn('[Font] Failed to load LilitaOne:', e);
+    }
 
     // Initialize AdMob SDK (required for production builds)
     if (!IS_EXPO_GO) {
@@ -56,6 +62,6 @@ const styles = StyleSheet.create({
   },
   loading: {
     flex: 1,
-    backgroundColor: '#87CEEB',
+    backgroundColor: '#94D2F3',
   },
 });

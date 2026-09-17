@@ -3,11 +3,12 @@ import { DEFAULT_SKIN, loadActiveSkin, unlockSkin, SkinPalette } from '../lib/sk
 
 interface UseSkinResult {
   activeSkin: SkinPalette;
-  selectSkin: (skinId: string) => Promise<void>;
+  /** Wear a skin; `permanent` for owned skins, otherwise a 24h rental */
+  selectSkin: (skinId: string, permanent?: boolean) => Promise<void>;
   loaded: boolean;
 }
 
-export function useSkin(): UseSkinResult {
+export function useSkin(ownedSkins?: string[]): UseSkinResult {
   const [activeSkin, setActiveSkin] = useState<SkinPalette>(DEFAULT_SKIN);
   const [loaded, setLoaded] = useState(false);
 
@@ -18,8 +19,15 @@ export function useSkin(): UseSkinResult {
     });
   }, []);
 
-  const selectSkin = useCallback(async (skinId: string): Promise<void> => {
-    const skin = await unlockSkin(skinId);
+  // A skin bought after it was rented should not expire
+  useEffect(() => {
+    if (loaded && ownedSkins?.includes(activeSkin.id) && activeSkin.id !== DEFAULT_SKIN.id) {
+      unlockSkin(activeSkin.id, true).catch(() => undefined);
+    }
+  }, [loaded, ownedSkins, activeSkin.id]);
+
+  const selectSkin = useCallback(async (skinId: string, permanent = false): Promise<void> => {
+    const skin = await unlockSkin(skinId, permanent);
     setActiveSkin(skin);
   }, []);
 

@@ -1,253 +1,125 @@
-import React, { useCallback, useMemo, useRef } from 'react';
-import { View, Pressable, StyleSheet, Animated } from 'react-native';
-import { Canvas, Path, Skia, LinearGradient, vec, RoundedRect } from '@shopify/react-native-skia';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GestureResponderEvent, Platform, StyleSheet, View } from 'react-native';
+import { Canvas, Path, RoundedRect, Skia } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 
 interface TouchControlsProps {
-  onLeftPress: () => void;
-  onLeftRelease: () => void;
-  onRightPress: () => void;
-  onRightRelease: () => void;
-  disabled?: boolean;
-  safeLeft?: number;
-  safeRight?: number;
+  width: number;
+  height: number;
+  /** Called with a bitmask: 1 = left held, 2 = right held */
+  onInputChange: (mask: number) => void;
+  enabled: boolean;
+  bottomInset?: number;
 }
 
-const BUTTON_W = 160;
-const BUTTON_H = 80;
-const BORDER_R = 40;
+const HINT_W = 92;
+const HINT_H = 56;
+const SAFE_X = Platform.OS === 'ios' ? 44 : 12;
 
-// Custom arrow paths drawn with Skia
-const makeLeftArrow = () => {
+function makeArrow(dir: 1 | -1) {
   const p = Skia.Path.Make();
-  const cx = BUTTON_W / 2;
-  const cy = BUTTON_H / 2;
-  const sz = 16;
-  p.moveTo(cx + sz * 0.5, cy - sz);
-  p.lineTo(cx - sz * 0.7, cy);
-  p.lineTo(cx + sz * 0.5, cy + sz);
-  p.moveTo(cx - sz * 0.5, cy);
-  p.lineTo(cx + sz, cy);
+  const cx = HINT_W / 2;
+  const cy = HINT_H / 2;
+  const s = 13;
+  p.moveTo(cx - dir * s * 0.45, cy - s);
+  p.lineTo(cx + dir * s * 0.65, cy);
+  p.lineTo(cx - dir * s * 0.45, cy + s);
   return p;
+}
+
+const Hint: React.FC<{ dir: 1 | -1; pressed: boolean }> = ({ dir, pressed }) => {
+  const arrow = useMemo(() => makeArrow(dir), [dir]);
+  return (
+    <Canvas style={styles.hint} pointerEvents="none">
+      <RoundedRect x={1} y={1} width={HINT_W - 2} height={HINT_H - 2} r={HINT_H / 2} color={pressed ? 'rgba(255,255,255,0.42)' : 'rgba(43,22,48,0.28)'} />
+      <RoundedRect
+        x={1.5}
+        y={1.5}
+        width={HINT_W - 3}
+        height={HINT_H - 3}
+        r={HINT_H / 2}
+        color={pressed ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)'}
+        style="stroke"
+        strokeWidth={2.5}
+      />
+      <Path path={arrow} color="#FFFFFF" style="stroke" strokeWidth={5} strokeCap="round" strokeJoin="round" opacity={pressed ? 1 : 0.8} />
+    </Canvas>
+  );
 };
 
-const makeRightArrow = () => {
-  const p = Skia.Path.Make();
-  const cx = BUTTON_W / 2;
-  const cy = BUTTON_H / 2;
-  const sz = 16;
-  p.moveTo(cx - sz * 0.5, cy - sz);
-  p.lineTo(cx + sz * 0.7, cy);
-  p.lineTo(cx - sz * 0.5, cy + sz);
-  p.moveTo(cx + sz * 0.5, cy);
-  p.lineTo(cx - sz, cy);
-  return p;
-};
+/**
+ * Whole-screen input: the left half leans left, the right half leans right. Multi-touch aware,
+ * so holding both sides cancels out instead of getting stuck.
+ */
+export const TouchControls: React.FC<TouchControlsProps> = ({ width, height, onInputChange, enabled, bottomInset = 0 }) => {
+  const [mask, setMask] = useState(0);
+  const maskRef = useRef(0);
 
-export const TouchControls: React.FC<TouchControlsProps> = ({
-  onLeftPress,
-  onLeftRelease,
-  onRightPress,
-  onRightRelease,
-  disabled = false,
-  safeLeft = 0,
-  safeRight = 0,
-}) => {
-  const leftArrowPath = useMemo(() => makeLeftArrow(), []);
-  const rightArrowPath = useMemo(() => makeRightArrow(), []);
-
-  const leftScale = useRef(new Animated.Value(1)).current;
-  const rightScale = useRef(new Animated.Value(1)).current;
-  const leftRipple = useRef(new Animated.Value(0)).current;
-  const rightRipple = useRef(new Animated.Value(0)).current;
-
-  const containerStyle = useMemo(
-    () => [
-      styles.container,
-      {
-        paddingLeft: safeLeft + 24,
-        paddingRight: safeRight + 24,
-      },
-    ],
-    [safeLeft, safeRight],
+  const apply = useCallback(
+    (next: number) => {
+      if (next === maskRef.current) return;
+      const newlyPressed = next & ~maskRef.current;
+      maskRef.current = next;
+      setMask(next);
+      onInputChange(next);
+      if (newlyPressed) Haptics.selectionAsync().catch(() => undefined);
+    },
+    [onInputChange],
   );
 
-  const handleLeftPress = useCallback(() => {
-    if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Press animation
-    Animated.spring(leftScale, { toValue: 0.92, friction: 8, tension: 200, useNativeDriver: true }).start();
-    // Ripple effect
-    leftRipple.setValue(0);
-    Animated.timing(leftRipple, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    onLeftPress();
-  }, [disabled, onLeftPress, leftScale, leftRipple]);
+  const fromEvent = useCallback(
+    (e: GestureResponderEvent, ended: boolean) => {
+      const touches = e.nativeEvent.touches ?? [];
+      let next = 0;
+      for (let i = 0; i < touches.length; i++) {
+        next |= touches[i].pageX < width / 2 ? 1 : 2;
+      }
+      if (touches.length === 0 && !ended) {
+        next = e.nativeEvent.pageX < width / 2 ? 1 : 2;
+      }
+      apply(enabled ? next : 0);
+    },
+    [apply, enabled, width],
+  );
 
-  const handleLeftRelease = useCallback(() => {
-    Animated.spring(leftScale, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }).start();
-    onLeftRelease();
-  }, [onLeftRelease, leftScale]);
-
-  const handleRightPress = useCallback(() => {
-    if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.spring(rightScale, { toValue: 0.92, friction: 8, tension: 200, useNativeDriver: true }).start();
-    rightRipple.setValue(0);
-    Animated.timing(rightRipple, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    onRightPress();
-  }, [disabled, onRightPress, rightScale, rightRipple]);
-
-  const handleRightRelease = useCallback(() => {
-    Animated.spring(rightScale, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }).start();
-    onRightRelease();
-  }, [onRightRelease, rightScale]);
-
-  const leftRippleOpacity = leftRipple.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.4, 0],
-  });
-  const leftRippleScale = leftRipple.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 1.3],
-  });
-  const rightRippleOpacity = rightRipple.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.4, 0],
-  });
-  const rightRippleScale = rightRipple.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 1.3],
-  });
+  // Drop input when controls get disabled mid-press
+  useEffect(() => {
+    if (!enabled) apply(0);
+  }, [enabled, apply]);
 
   return (
-    <View style={containerStyle} pointerEvents="box-none">
-      {/* Left Button */}
-      <Animated.View style={{ transform: [{ scale: leftScale }], opacity: disabled ? 0.3 : 1 }}>
-        {/* Ripple effect */}
-        <Animated.View
-          style={[
-            styles.ripple,
-            {
-              opacity: leftRippleOpacity,
-              transform: [{ scale: leftRippleScale }],
-            },
-          ]}
-        />
-        <Pressable
-          onPressIn={handleLeftPress}
-          onPressOut={handleLeftRelease}
-          disabled={disabled}
-          style={styles.touchTarget}
-        >
-          <Canvas style={styles.buttonCanvas} pointerEvents="none">
-            {/* Button background with gradient */}
-            <RoundedRect x={1} y={1} width={BUTTON_W - 2} height={BUTTON_H - 2} r={BORDER_R}>
-              <LinearGradient
-                start={vec(0, BUTTON_H)}
-                end={vec(0, 0)}
-                colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.08)']}
-              />
-            </RoundedRect>
-            {/* Border */}
-            <RoundedRect
-              x={1} y={1} width={BUTTON_W - 2} height={BUTTON_H - 2} r={BORDER_R}
-              color="transparent"
-              style="stroke"
-              strokeWidth={2}
-            >
-              <LinearGradient
-                start={vec(0, BUTTON_H)}
-                end={vec(0, 0)}
-                colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.15)']}
-              />
-            </RoundedRect>
-            {/* Custom arrow */}
-            <Path
-              path={leftArrowPath}
-              color="rgba(255,255,255,0.9)"
-              style="stroke"
-              strokeWidth={3.5}
-              strokeCap="round"
-              strokeJoin="round"
-            />
-          </Canvas>
-        </Pressable>
-      </Animated.View>
-
-      {/* Right Button */}
-      <Animated.View style={{ transform: [{ scale: rightScale }], opacity: disabled ? 0.3 : 1 }}>
-        <Animated.View
-          style={[
-            styles.ripple,
-            {
-              opacity: rightRippleOpacity,
-              transform: [{ scale: rightRippleScale }],
-            },
-          ]}
-        />
-        <Pressable
-          onPressIn={handleRightPress}
-          onPressOut={handleRightRelease}
-          disabled={disabled}
-          style={styles.touchTarget}
-        >
-          <Canvas style={styles.buttonCanvas} pointerEvents="none">
-            <RoundedRect x={1} y={1} width={BUTTON_W - 2} height={BUTTON_H - 2} r={BORDER_R}>
-              <LinearGradient
-                start={vec(0, BUTTON_H)}
-                end={vec(0, 0)}
-                colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.08)']}
-              />
-            </RoundedRect>
-            <RoundedRect
-              x={1} y={1} width={BUTTON_W - 2} height={BUTTON_H - 2} r={BORDER_R}
-              color="transparent"
-              style="stroke"
-              strokeWidth={2}
-            >
-              <LinearGradient
-                start={vec(0, BUTTON_H)}
-                end={vec(0, 0)}
-                colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.15)']}
-              />
-            </RoundedRect>
-            <Path
-              path={rightArrowPath}
-              color="rgba(255,255,255,0.9)"
-              style="stroke"
-              strokeWidth={3.5}
-              strokeCap="round"
-              strokeJoin="round"
-            />
-          </Canvas>
-        </Pressable>
-      </Animated.View>
+    <View
+      style={[StyleSheet.absoluteFill, { width, height }]}
+      onStartShouldSetResponder={() => enabled}
+      onMoveShouldSetResponder={() => enabled}
+      onResponderGrant={(e) => fromEvent(e, false)}
+      onResponderStart={(e) => fromEvent(e, false)}
+      onResponderMove={(e) => fromEvent(e, false)}
+      onResponderEnd={(e) => fromEvent(e, true)}
+      onResponderRelease={() => apply(0)}
+      onResponderTerminate={() => apply(0)}
+      onResponderTerminationRequest={() => false}
+    >
+      {enabled && (
+        <>
+          <View style={[styles.hintWrap, { left: SAFE_X, bottom: 10 + bottomInset }]} pointerEvents="none">
+            <Hint dir={-1} pressed={(mask & 1) !== 0} />
+          </View>
+          <View style={[styles.hintWrap, { right: SAFE_X, bottom: 10 + bottomInset }]} pointerEvents="none">
+            <Hint dir={1} pressed={(mask & 2) !== 0} />
+          </View>
+        </>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  hintWrap: {
     position: 'absolute',
-    bottom: 70,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
-  touchTarget: {
-    width: BUTTON_W,
-    height: BUTTON_H,
-  },
-  buttonCanvas: {
-    width: BUTTON_W,
-    height: BUTTON_H,
-  },
-  ripple: {
-    position: 'absolute',
-    width: BUTTON_W,
-    height: BUTTON_H,
-    borderRadius: BORDER_R,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+  hint: {
+    width: HINT_W,
+    height: HINT_H,
   },
 });

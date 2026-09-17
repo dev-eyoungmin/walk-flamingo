@@ -4,20 +4,37 @@ export interface Rank {
   minDistance: number;
 }
 
-const RANKS: Rank[] = [
+/** Single source of truth for ranks (distance in meters). The simulation reads RANK_THRESHOLDS_M. */
+export const RANKS: readonly Rank[] = [
   { emoji: '🥚', name: 'Egg', minDistance: 0 },
-  { emoji: '🐣', name: 'Chick', minDistance: 10 },
-  { emoji: '🐥', name: 'Fledgling', minDistance: 50 },
-  { emoji: '🦩', name: 'Flamingo', minDistance: 100 },
-  { emoji: '🦅', name: 'Eagle', minDistance: 200 },
-  { emoji: '👑', name: 'King of Birds', minDistance: 500 },
+  { emoji: '🐣', name: 'Chick', minDistance: 25 },
+  { emoji: '🐥', name: 'Fledgling', minDistance: 75 },
+  { emoji: '🦩', name: 'Flamingo', minDistance: 150 },
+  { emoji: '🦅', name: 'Eagle', minDistance: 300 },
+  { emoji: '👑', name: 'King of Birds', minDistance: 600 },
   { emoji: '⭐', name: 'Legendary Bird', minDistance: 1000 },
 ];
 
-export function getRank(distanceM: number): Rank {
-  let rank = RANKS[0];
-  for (const r of RANKS) {
-    if (distanceM >= r.minDistance) rank = r;
+export const RANK_THRESHOLDS_M: readonly number[] = RANKS.map((r) => r.minDistance);
+export const RANK_NAMES: readonly string[] = RANKS.map((r) => r.name);
+
+export function getRankIndex(distanceM: number): number {
+  let idx = 0;
+  for (let i = 0; i < RANKS.length; i++) {
+    if (distanceM >= RANKS[i].minDistance) idx = i;
   }
-  return rank;
+  return idx;
+}
+
+export function getRank(distanceM: number): Rank {
+  return RANKS[getRankIndex(distanceM)];
+}
+
+/** Progress toward the next rank: ratio 0..1 plus the next rank (or null at max). */
+export function getRankProgress(distanceM: number): { ratio: number; next: Rank | null } {
+  const idx = getRankIndex(distanceM);
+  if (idx >= RANKS.length - 1) return { ratio: 1, next: null };
+  const cur = RANKS[idx].minDistance;
+  const next = RANKS[idx + 1];
+  return { ratio: Math.min(1, Math.max(0, (distanceM - cur) / (next.minDistance - cur))), next };
 }

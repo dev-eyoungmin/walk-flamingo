@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { GameCanvas } from '../game/GameCanvas';
+import { StyleSheet, View } from 'react-native';
+import { GameCanvas, GameStats, BoostType, RunMode } from '../game/GameCanvas';
 import { IS_EXPO_GO, BANNER_AD_UNIT_ID } from '../lib/adConfig';
+import type { SkinPalette } from '../lib/skins';
 
 // Conditionally import BannerAd (not available in Expo Go)
 let BannerAd: any = null;
@@ -16,72 +17,62 @@ if (!IS_EXPO_GO) {
   }
 }
 
+/** Space reserved at the bottom for the banner; the ground keeps drawing underneath it. */
+export const BANNER_HEIGHT = 60;
+
 interface GameScreenProps {
   width: number;
   height: number;
-  isPlaying: boolean;
-  isResuming?: boolean;
-  onGameOver: (data: { score: number; distance: number; coins?: number }) => void;
-  pendingBoost?: 'shield' | 'slowmo' | null;
-  skinPalette?: { body: string; bodyLight: string; legs: string; legsDark: string; wing: string; neck: string; cheek: string; };
-  onPlaySfx?: (name: string) => void;
+  showBanner: boolean;
+  controlsEnabled: boolean;
+  runId: number;
+  runMode: RunMode;
+  terrainKey: number;
+  keepScroll: boolean;
+  resumeId: number;
+  boost: BoostType;
+  bestScore: number;
+  skin: SkinPalette;
+  /** Seed of today's course, or null for a random course */
+  courseSeed: number | null;
+  showTutorial: boolean;
+  onGameOver: (stats: GameStats) => void;
+  onFx: (code: number, value: number) => void;
 }
 
-export const GameScreen: React.FC<GameScreenProps> = ({
-  width,
-  height,
-  isPlaying,
-  isResuming,
-  onGameOver,
-  pendingBoost,
-  skinPalette,
-  onPlaySfx,
-}) => {
-  const showBanner = BannerAd && BANNER_AD_UNIT_ID;
+export const GameScreen: React.FC<GameScreenProps> = ({ width, height, showBanner, ...canvasProps }) => {
+  const bannerAvailable = showBanner && BannerAd && BANNER_AD_UNIT_ID;
 
   return (
-    <View style={styles.container}>
-      <GameCanvas
-        width={width}
-        height={height}
-        onGameOver={onGameOver}
-        isPlaying={isPlaying}
-        isResuming={isResuming}
-        pendingBoost={pendingBoost}
-        skinPalette={skinPalette}
-        onPlaySfx={onPlaySfx}
-      />
+    <View style={[styles.container, { width, height }]}>
+      <GameCanvas width={width} height={height - BANNER_HEIGHT} canvasHeight={height} {...canvasProps} />
 
-      {showBanner ? (
-        <View style={styles.bannerContainer}>
+      {bannerAvailable ? (
+        <View style={styles.banner}>
           <BannerAd
             unitId={BANNER_AD_UNIT_ID}
             size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
             requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-            onAdLoaded={() => console.log('[Banner] Ad loaded successfully')}
             onAdFailedToLoad={(error: any) => console.warn('[Banner] Ad failed to load:', error?.message, error?.code)}
           />
         </View>
-      ) : (
-        <View style={styles.bannerPlaceholder} />
-      )}
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#000',
   },
-  bannerContainer: {
-    height: 60,
+  banner: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: BANNER_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000',
-  },
-  bannerPlaceholder: {
-    height: 60,
-    backgroundColor: '#111',
+    backgroundColor: 'rgba(20,10,30,0.85)',
   },
 });
