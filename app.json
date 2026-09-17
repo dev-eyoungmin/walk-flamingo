@@ -90,6 +90,12 @@
           ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5c113359-281b-44c1-b9a4-2fa20c99828f"
+      }
+    },
+    "owner": "leeyoungmin"
   }
 }
