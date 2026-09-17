@@ -13,11 +13,8 @@ export const AD_REQUEST_OPTIONS = {
   requestNonPersonalizedAdsOnly: true,
 };
 
-/**
- * Use test ads until AdMob app review is complete.
- * Change to false once AdMob dashboard shows app status as "Ready".
- */
-const USE_TEST_ADS = true;
+/** Test ads for development builds only; AdMob app review is complete. */
+const USE_TEST_ADS = false;
 
 // Only import ad IDs when not in Expo Go
 let BANNER_ID = '';
@@ -44,7 +41,7 @@ if (!IS_EXPO_GO && !__DEV__) {
     INTERSTITIAL_ID = USE_TEST_ADS
       ? TestIds.INTERSTITIAL
       : Platform.select({
-          ios: 'ca-app-pub-3940256099942544/4411468910', // test interstitial — replace after AdMob review
+          ios: '', // no interstitial unit yet — interstitials are skipped until one is added
           android: '',
         }) ?? TestIds.INTERSTITIAL;
   } catch (e) {
