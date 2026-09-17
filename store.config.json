@@ -1,0 +1,90 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "version": "1.2.0",
+    "copyright": "© 2026 Wobbly Games",
+    "release": {
+      "automaticRelease": true
+    },
+    "info": {
+      "en-US": {
+        "description": "Meet Wobby, the wobbliest flamingo in the world!\n\nShe loves to walk, but keeping her balance? That's your job.\n\nHOLD LEFT or RIGHT to keep Wobby upright as she strolls through meadows, beaches, snowy peaks and autumn woods. Sounds easy? Think again.\n\nHOW TO PLAY\n • Hold the left or right side to tilt Wobby back into balance\n • Tap both sides to flap your wings and steady yourself\n • Stay steady to build combos — hold a x4 combo to trigger FEVER\n • Dodge rolling rocks, crabs, snowballs and falling branches\n\nFEATURES\n • Simple controls anyone can pick up\n • Cute hand-drawn flamingo with lively expressions and animations\n • Four zones: Meadow, Beach, Snowy Peaks and Autumn Woods\n • Baby flamingos join your walk and boost your score\n • Power-ups: coin magnet, calming feather and rescue balloon\n • Daily missions with coin rewards\n • Today's Course — the same course for everyone, every day\n • Collect coins to unlock flamingo skins forever\n • Day-to-night transitions with rain, wind and snow\n • 7-tier rank system from Egg to Legendary Bird\n\nEvery game is different. Every step counts. Every fall makes you hit retry.\n\nHow far can Wobby walk? Find out now.",
+        "keywords": [
+          "flamingo",
+          "balance",
+          "walking",
+          "wobble",
+          "casual",
+          "one-tap",
+          "arcade",
+          "funny",
+          "bird",
+          "tilt",
+          "hill",
+          "wind",
+          "combo",
+          "endless",
+          "cute"
+        ],
+        "releaseNotes": "Wobby's biggest update yet!\n\n• FEVER mode — hold a x4 combo to double your score\n• Baby flamingos join your walk and boost your score\n• Four zones: Meadow, Beach, Snowy Peaks and Autumn Woods\n• Power-ups: coin magnet, calming feather and rescue balloon\n• Flap your wings — tap both sides to steady Wobby\n• Daily missions with coin rewards\n• Today's Course — the same course for everyone, every day\n• Spend coins to unlock skins forever\n• All-new look, smoother animations and a cuter Wobby",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "title": "Wobbly Flamingo",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      }
+    },
+    "categories": [
+      [
+        "GAMES",
+        "GAMES_CASUAL"
+      ]
+    ],
+    "advisory": {
+      "ageRatingOverride": "NONE",
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gambling": false,
+      "gamblingSimulated": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "kidsAgeBand": null,
+      "koreaAgeRatingOverride": "NONE",
+      "lootBox": false,
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "unrestrictedWebAccess": false,
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "advertising": true,
+      "ageAssurance": false,
+      "ageRatingOverrideV2": "NONE",
+      "developerAgeRatingInfoUrl": null,
+      "gunsOrOtherWeapons": "NONE",
+      "healthOrWellnessTopics": false,
+      "messagingAndChat": false,
+      "parentalControls": false,
+      "userGeneratedContent": false
+    },
+    "review": {
+      "firstName": "Youngmin",
+      "lastName": "Lee",
+      "email": "be.onn.corp@gmail.com",
+      "phone": "+82 10-4707-0144",
+      "demoRequired": false
+    }
+  }
+}

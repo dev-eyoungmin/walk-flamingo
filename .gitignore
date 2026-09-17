@@ -36,8 +36,7 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
+# generated native folders (ios/ is committed and must be uploaded to EAS Build)
 /android
 
 # asset generation tools
