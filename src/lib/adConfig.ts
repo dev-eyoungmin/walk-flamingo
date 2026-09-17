@@ -41,7 +41,7 @@ if (!IS_EXPO_GO && !__DEV__) {
     INTERSTITIAL_ID = USE_TEST_ADS
       ? TestIds.INTERSTITIAL
       : Platform.select({
-          ios: '', // no interstitial unit yet — interstitials are skipped until one is added
+          ios: 'ca-app-pub-7783064858826225/5021999563',
           android: '',
         }) ?? TestIds.INTERSTITIAL;
   } catch (e) {
