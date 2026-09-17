@@ -5,10 +5,7 @@
   },
   "build": {
     "production": {
-      "pnpm": "10.21.0",
-      "ios": {
-        "image": "latest"
-      }
+      "pnpm": "10.21.0"
     }
   },
   "submit": {
