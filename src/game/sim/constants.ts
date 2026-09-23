@@ -59,14 +59,14 @@ export const PHYSICS = {
 } as const;
 
 export const DIFFICULTY = {
-  GRAVITY_EARLY_START: 1.4,
+  GRAVITY_EARLY_START: 1.25,
   GRAVITY_EARLY_END: 2.6,
   GRAVITY_EARLY_TIME: 40,
   GRAVITY_LATE_RATE: 0.008,
   GRAVITY_MAX: 5.0,
   SURGE_AMOUNT: 0.2,
   SURGE_FREQ: 1.2,
-  WIND_START: 1.0,
+  WIND_START: 0.8,
   WIND_EARLY_END: 2.6,
   WIND_EARLY_TIME: 45,
   WIND_LATE_RATE: 0.01,
@@ -115,8 +115,8 @@ export const SCORE = {
 // ─── Coins ──────────────────────────────────────────────────────────────────
 export const COIN = {
   MAX: 8,
-  /** [active, worldX, worldY, value, collectT, big] */
-  SLOT: 6,
+  /** [active, worldX, worldY, value, collectT, big, fallVy] (fallVy > 0 only for coin rain) */
+  SLOT: 7,
   RADIUS_U: 2.1,
   MAGNET_U: 0.5,
   VALUE: 10,
@@ -134,6 +134,8 @@ export const TEXT_KIND_BONUS = 1;
 export const TEXT_KIND_DODGE = 2;
 export const TEXT_KIND_BRACE = 3;
 export const TEXT_KIND_BONK = 4;
+export const TEXT_KIND_NICE = 5;
+export const TEXT_KIND_SHOO = 6;
 
 export const FLOAT_TEXT = {
   MAX: 5,
@@ -152,6 +154,8 @@ export const EVT_SPEED = 3;
 
 export const OBS_ROCK = 0;
 export const OBS_BRANCH = 1;
+/** A seagull lands on the head or back and weighs that side down until shooed with a flap */
+export const OBS_GULL = 2;
 
 export const ENV_GUST = 0;
 export const ENV_QUAKE = 1;
@@ -163,6 +167,8 @@ export const CHL_LEAN = 2;
 
 export const SPD_SPRINT = 0;
 export const SPD_SLOW = 1;
+/** Positive event: big coins rain down around the flamingo */
+export const SPD_COIN_RAIN = 2;
 
 export const STAGE_IDLE = 0;
 export const STAGE_WARNING = 1;
@@ -170,8 +176,8 @@ export const STAGE_ACTIVE = 2;
 
 export const EVENTS = {
   /** First event warning starts this long after the grace period */
-  FIRST_DELAY: 4.5,
-  GAP_START: 4.5,
+  FIRST_DELAY: 6.0,
+  GAP_START: 5.5,
   GAP_END: 2.0,
   GAP_RANDOM: 1.5,
   WARN_OBSTACLE: 1.4,
@@ -221,6 +227,30 @@ export const EVENTS = {
   SLOW_MULT: 0.6,
   SLOW_DURATION: 3.5,
   SPEED_SMOOTH_TAU: 0.35,
+  /** No sprints this early: a sprint plus the first rocks is the most common early fall */
+  SPRINT_MIN_T: 25,
+
+  GULL_MIN_T: 15,
+  GULL_CHANCE: 0.2,
+  /** Seconds to fly in and land */
+  GULL_FLY_TIME: 1.0,
+  GULL_PERCH_TIME: 4.5,
+  /** Lean torque while perched (start → late game) */
+  GULL_WEIGHT_START: 2.2,
+  GULL_WEIGHT_END: 3.2,
+  /** Perch points relative to the feet pivot, in stork units: head top and back */
+  GULL_HEAD_X: 4.3,
+  GULL_HEAD_Y: -32.2,
+  GULL_BACK_X: -2.5,
+  GULL_BACK_Y: -21.2,
+
+  COIN_RAIN_MIN_T: 20,
+  COIN_RAIN_CHANCE: 0.2,
+  COIN_RAIN_DURATION: 4.0,
+  COIN_RAIN_EVERY: 0.22,
+  /** Horizontal scatter around the stork's chest, stork units */
+  COIN_RAIN_SPREAD_U: 12,
+  COIN_RAIN_FALL_U: 60,
 } as const;
 
 // ─── Environment ────────────────────────────────────────────────────────────
@@ -234,7 +264,6 @@ export const BIOME_MEADOW = 0;
 export const BIOME_BEACH = 1;
 export const BIOME_SNOW = 2;
 export const BIOME_AUTUMN = 3;
-export const BIOME_NAMES: readonly string[] = ['MEADOW', 'BEACH', 'SNOWY PEAKS', 'AUTUMN WOODS'];
 
 export const BIOMES = {
   COUNT: 4,
@@ -351,5 +380,43 @@ export const POPUP_BIOME = 4;
 export const POPUP_FEVER = 5;
 export const POPUP_ITEM = 6;
 export const POPUP_CHICK = 7;
+export const POPUP_BEST = 8;
+
+// ─── Personal best marker ───────────────────────────────────────────────────
+export const BEST = {
+  /** Bests shorter than this don't get a flag or "so close" treatment */
+  MIN_M: 20,
+  /** The "m to best" HUD appears once this share of the best is walked */
+  HUD_FROM_RATIO: 0.5,
+  /** Within this share of the best counts as close */
+  CLOSE_RATIO: 0.85,
+} as const;
+
+// ─── First-run tutorial ─────────────────────────────────────────────────────
+export const TUT_OFF = 0;
+export const TUT_HOLD_LEFT = 1;
+export const TUT_HOLD_RIGHT = 2;
+export const TUT_FLAP = 3;
+export const TUT_DONE = 4;
+
+export const TUTORIAL = {
+  /** Gravity share while learning: tilting feels real but you can't fall */
+  GRAVITY: 0.35,
+  HOLD_TIME: 0.6,
+  /** Tilt limit while learning, so the next step never starts from lying on one side */
+  MAX_ANGLE: (30 * Math.PI) / 180,
+  /** Share of the tilt kept when a step completes (the flamingo straightens up) */
+  STEP_ANGLE_KEEP: 0.3,
+  /** Never get stuck on a step */
+  AUTO_ADVANCE: 15,
+} as const;
+
+// ─── New-player ease-in ─────────────────────────────────────────────────────
+export const ROOKIE = {
+  /** Runs until the ease-in has faded out */
+  RUNS: 8,
+  /** Difficulty clock speed for a brand-new player (1 = normal) */
+  SLOWEST: 0.7,
+} as const;
 
 export const MILESTONES_M: readonly number[] = [50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000];

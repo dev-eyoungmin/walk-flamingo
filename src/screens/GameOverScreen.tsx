@@ -3,6 +3,7 @@ import { Animated, Easing, ScrollView, StyleSheet, Text, useWindowDimensions, Vi
 import type { GameStats } from '../game/GameCanvas';
 import { getRank, getRankProgress } from '../lib/ranks';
 import type { Mission } from '../lib/progress';
+import { formatNum, t } from '../i18n';
 import { GameButton } from '../ui/GameButton';
 import { CoinGlyph, MissionList } from '../ui/MissionList';
 import { FONT_DISPLAY, titleShadow, UI } from '../ui/theme';
@@ -27,15 +28,23 @@ interface GameOverScreenProps {
   onContinue: () => void;
   onBoost: (type: 'shield' | 'slowmo') => void;
   onOpenSkins: () => void;
+  onOpenUpgrades: () => void;
+  upgradeBadge: boolean;
   onShare: () => void;
+  /** Meters short of the personal best when the run ended close to it (0 = not close) */
+  metersShort: number;
+  /** The best distance this run was chasing */
+  bestMeters: number;
 }
+
+const INPUT_LOCK_MS = 700;
 
 const StatChip: React.FC<{ icon: string; value: string; label: string }> = ({ icon, value, label }) => (
   <View style={styles.chip}>
     <Text style={styles.chipIcon}>{icon}</Text>
-    <View>
+    <View style={styles.chipBody}>
       <Text style={styles.chipValue}>{value}</Text>
-      <Text style={styles.chipLabel} numberOfLines={1}>
+      <Text style={styles.chipLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {label}
       </Text>
     </View>
@@ -53,8 +62,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   onContinue,
   onBoost,
   onOpenSkins,
+  onOpenUpgrades,
+  upgradeBadge,
   onShare,
+  metersShort,
+  bestMeters,
 }) => {
+  const close = metersShort > 0 && !isNewBest;
   const daily = summary.daily;
   const { width, height } = useWindowDimensions();
   const compact = height < 360;
@@ -62,6 +76,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   const countUp = useRef(new Animated.Value(0)).current;
   const badge = useRef(new Animated.Value(0)).current;
   const [shownScore, setShownScore] = useState(0);
+  // Players are still tapping frantically when they fall; ignore touches briefly so a late tap
+  // doesn't hit RETRY or start a CONTINUE ad by accident.
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setArmed(true), INPUT_LOCK_MS);
+    return () => clearTimeout(id);
+  }, []);
 
   const rank = getRank(stats.meters);
   const progress = getRankProgress(stats.meters);
@@ -77,7 +98,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       useNativeDriver: false,
     }).start();
     let loop: Animated.CompositeAnimation | null = null;
-    if (isNewBest) {
+    if (isNewBest || close) {
       loop = Animated.loop(
         Animated.sequence([
           Animated.timing(badge, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -90,12 +111,12 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       countUp.removeListener(id);
       loop?.stop();
     };
-  }, [enter, countUp, badge, stats.score, isNewBest]);
+  }, [enter, countUp, badge, stats.score, isNewBest, close]);
 
   const panelWidth = Math.min(width - 32, 640);
 
   return (
-    <View style={styles.scrim}>
+    <View style={styles.scrim} pointerEvents={armed ? 'auto' : 'none'}>
       <Animated.View
         style={[
           styles.panel,
@@ -108,10 +129,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         ]}
       >
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces={false}>
-          {daily && <Text style={styles.dailyTag}>TODAY'S COURSE · {daily.day}</Text>}
+          {daily && <Text style={styles.dailyTag}>{t('over.dailyTag', { day: daily.day })}</Text>}
           <View style={styles.header}>
-            <Text style={[styles.headerText, compact && { fontSize: 24 }]}>
-              {isNewBest ? 'NEW BEST!' : daily?.newBest ? "TODAY'S BEST!" : 'GAME OVER'}
+            <Text style={[styles.headerText, compact && { fontSize: 24 }, close && { color: UI.pink }]}>
+              {isNewBest ? t('over.newBest') : close ? t('over.soClose') : daily?.newBest ? t('over.dailyBest') : t('over.gameOver')}
             </Text>
             {isNewBest && (
               <Animated.Text style={[styles.headerStar, { transform: [{ scale: badge.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }] }]}>
@@ -122,9 +143,18 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 
           <View style={styles.columns}>
             <View style={styles.left}>
-              <Text style={styles.scoreLabel}>SCORE</Text>
-              <Text style={[styles.score, compact && { fontSize: 40 }]}>{shownScore.toLocaleString('en-US')}</Text>
-              <Text style={styles.best}>BEST {Math.max(bestScore, stats.score).toLocaleString('en-US')}</Text>
+              <Text style={styles.scoreLabel}>{t('over.score')}</Text>
+              <Text style={[styles.score, compact && { fontSize: 40 }]}>{formatNum(shownScore)}</Text>
+              {close ? (
+                <View style={styles.closeBox}>
+                  <Text style={styles.closeText}>{t('over.metersShort', { n: metersShort })}</Text>
+                  <View style={styles.progressTrack}>
+                    <View style={[styles.closeFill, { width: `${Math.round((stats.meters / Math.max(1, bestMeters)) * 100)}%` }]} />
+                  </View>
+                </View>
+              ) : (
+                <Text style={styles.best}>{t('over.best', { n: formatNum(Math.max(bestScore, stats.score)) })}</Text>
+              )}
 
               <View style={styles.rankRow}>
                 <Text style={styles.rankEmoji}>{rank.emoji}</Text>
@@ -136,58 +166,77 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                     <View style={[styles.progressFill, { width: `${Math.round(progress.ratio * 100)}%` }]} />
                   </View>
                   <Text style={styles.progressLabel}>
-                    {progress.next ? `${progress.next.minDistance - stats.meters} m to ${progress.next.name}` : 'Top rank reached!'}
+                    {progress.next ? t('over.toNextRank', { n: progress.next.minDistance - stats.meters, name: progress.next.name }) : t('over.topRank')}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.chips}>
-                <StatChip icon="🔥" value={`x${stats.bestCombo}`} label="COMBO" />
-                <StatChip icon="🌈" value={String(stats.fevers)} label="FEVER" />
-                <StatChip icon="💨" value={String(stats.dodges)} label="DODGES" />
-                <StatChip icon="🐣" value={String(stats.chicksMax)} label="BABIES" />
+                <StatChip icon="🔥" value={`x${stats.bestCombo}`} label={t('over.combo')} />
+                <StatChip icon="🌈" value={String(stats.fevers)} label={t('over.fever')} />
+                <StatChip icon="💨" value={String(stats.dodges)} label={t('over.dodges')} />
+                <StatChip icon="🐣" value={String(stats.chicksMax)} label={t('over.babies')} />
               </View>
 
               <View style={styles.coinsRow}>
                 <CoinGlyph size={16} />
                 <Text style={styles.coinsEarned}>+{summary.coinsEarned + summary.missionCoins}</Text>
                 <Text style={styles.coinsWallet}>
-                  {summary.missionCoins > 0 ? `(${summary.missionCoins} from missions) · ` : ''}
-                  wallet {summary.wallet.toLocaleString('en-US')}
+                  {summary.missionCoins > 0 ? `${t('over.fromMissions', { n: summary.missionCoins })} · ` : ''}
+                  {t('over.wallet', { n: formatNum(summary.wallet) })}
                 </Text>
               </View>
 
               {daily && (
                 <View style={styles.dailyBox}>
-                  <Text style={styles.dailyBest}>TODAY'S BEST {daily.best.toLocaleString('en-US')}</Text>
+                  <Text style={styles.dailyBest}>{t('over.todaysBest', { n: formatNum(daily.best) })}</Text>
                   <Text style={styles.dailyTop}>
-                    Your top runs: {daily.top.map((v) => v.toLocaleString('en-US')).join(' · ')}
+                    {t('over.topRuns', { list: daily.top.map(formatNum).join(' · ') })}
                   </Text>
                 </View>
               )}
             </View>
 
             <View style={styles.right}>
-              <GameButton label="RETRY" size="lg" onPress={onRetry} style={styles.fullWidth} />
+              <Animated.View
+                style={[
+                  styles.fullWidth,
+                  close && { transform: [{ scale: badge.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] }) }] },
+                ]}
+              >
+                <GameButton label={t('over.retry')} size="lg" onPress={onRetry} style={styles.fullWidth} />
+              </Animated.View>
               {daily && (
-                <GameButton label="SHARE SCORE" size="sm" color={UI.sky} shade={UI.skyDark} onPress={onShare} style={[styles.fullWidth, styles.gap]} />
+                <GameButton label={t('over.share')} size="sm" color={UI.sky} shade={UI.skyDark} onPress={onShare} style={[styles.fullWidth, styles.gap]} />
               )}
-              <GameButton label="HOME" size="sm" color={UI.slate} shade={UI.slateDark} onPress={onHome} style={[styles.fullWidth, styles.gap]} />
+              <GameButton label={t('over.home')} size="sm" color={UI.slate} shade={UI.slateDark} onPress={onHome} style={[styles.fullWidth, styles.gap]} />
 
-              <Text style={styles.adHeading}>BONUS</Text>
+              <Text style={styles.adHeading}>{t('over.bonus')}</Text>
               {canContinue && (
-                <GameButton label="CONTINUE" ad size="md" color={UI.gold} shade={UI.goldDark} onPress={onContinue} style={styles.fullWidth} />
+                <GameButton label={t('over.continue')} ad size="md" color={UI.gold} shade={UI.goldDark} onPress={onContinue} style={styles.fullWidth} />
               )}
               <View style={[styles.row, styles.gap]}>
-                <GameButton label="SHIELD" ad size="sm" color={UI.sky} shade={UI.skyDark} onPress={() => onBoost('shield')} style={styles.half} />
-                <GameButton label="SLOW-MO" ad size="sm" color={UI.mint} shade={UI.mintDark} onPress={() => onBoost('slowmo')} style={styles.half} />
+                <GameButton label={t('over.shield')} ad size="sm" color={UI.sky} shade={UI.skyDark} onPress={() => onBoost('shield')} style={styles.half} />
+                <GameButton label={t('over.slowmo')} ad size="sm" color={UI.mint} shade={UI.mintDark} onPress={() => onBoost('slowmo')} style={styles.half} />
               </View>
-              <GameButton label="SKINS" size="sm" color={UI.purple} shade={UI.purpleDark} onPress={onOpenSkins} style={[styles.fullWidth, styles.gap]} />
+              <View style={[styles.row, styles.gap]}>
+                <GameButton
+                  label={t('common.upgrades')}
+                  size="sm"
+                  color={UI.mint}
+                  shade={UI.mintDark}
+                  onPress={onOpenUpgrades}
+                  badge={upgradeBadge}
+                  style={styles.half}
+                />
+                <GameButton label={t('common.skins')} size="sm" color={UI.purple} shade={UI.purpleDark} onPress={onOpenSkins} style={styles.half} />
+              </View>
             </View>
           </View>
 
           <Text style={styles.missionsHeading}>
-            TODAY'S MISSIONS {summary.completedIds.length > 0 ? `· ${summary.completedIds.length} COMPLETED!` : ''}
+            {t('over.missions')}
+            {summary.completedIds.length > 0 ? ` · ${t('over.completed', { n: summary.completedIds.length })}` : ''}
           </Text>
           <MissionList missions={summary.missions} justCompleted={summary.completedIds} compact />
         </ScrollView>
@@ -311,6 +360,19 @@ const styles = StyleSheet.create({
     color: UI.gold,
     marginBottom: 8,
   },
+  closeBox: {
+    marginBottom: 8,
+  },
+  closeText: {
+    fontFamily: FONT_DISPLAY,
+    fontSize: 14,
+    color: UI.pink,
+  },
+  closeFill: {
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: UI.gold,
+  },
   rankRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -357,6 +419,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 4,
+  },
+  chipBody: {
+    flexShrink: 1,
+    minWidth: 0,
   },
   chipIcon: {
     fontSize: 14,

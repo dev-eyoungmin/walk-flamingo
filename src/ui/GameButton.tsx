@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { FONT_DISPLAY, UI } from './theme';
+import { t } from '../i18n';
+import { CoinGlyph } from './CoinGlyph';
 
 interface GameButtonProps {
   label: string;
@@ -12,6 +14,10 @@ interface GameButtonProps {
   ad?: boolean;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  /** Small red dot: something new to do behind this button */
+  badge?: boolean;
+  /** Price button: a coin icon before the label (the label is just the number) */
+  coin?: boolean;
 }
 
 const SIZES = {
@@ -29,6 +35,8 @@ export const GameButton: React.FC<GameButtonProps> = ({
   ad = false,
   style,
   disabled = false,
+  badge = false,
+  coin = false,
 }) => {
   const s = SIZES[size];
   return (
@@ -36,7 +44,7 @@ export const GameButton: React.FC<GameButtonProps> = ({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={ad ? `${label}, watch an ad` : label}
+      accessibilityLabel={ad ? t('common.watchAd', { label }) : label}
       style={({ pressed }) => [
         styles.base,
         {
@@ -55,12 +63,18 @@ export const GameButton: React.FC<GameButtonProps> = ({
       {ad && (
         <View style={[styles.adBadge, { height: s.font * 0.9, borderRadius: s.font * 0.45, paddingHorizontal: s.font * 0.3 }]}>
           <View style={[styles.play, { borderLeftWidth: s.font * 0.32, borderTopWidth: s.font * 0.2, borderBottomWidth: s.font * 0.2 }]} />
-          <Text style={[styles.adText, { fontSize: s.font * 0.48 }]}>AD</Text>
+          {size !== 'sm' && <Text style={[styles.adText, { fontSize: s.font * 0.48 }]}>{t('common.ad')}</Text>}
         </View>
       )}
-      <Text style={[styles.label, { fontSize: s.font }]} numberOfLines={1}>
+      {coin && (
+        <View style={styles.coin}>
+          <CoinGlyph size={s.font * 0.95} />
+        </View>
+      )}
+      <Text style={[styles.label, { fontSize: s.font }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
         {label}
       </Text>
+      {badge && <View style={styles.badge} />}
     </Pressable>
   );
 };
@@ -94,6 +108,20 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
     marginRight: 3,
+  },
+  coin: {
+    marginRight: 5,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: '#FF3B55',
+    borderWidth: 2,
+    borderColor: UI.ink,
   },
   adText: {
     fontFamily: FONT_DISPLAY,

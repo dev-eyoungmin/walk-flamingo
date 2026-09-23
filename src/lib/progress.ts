@@ -3,6 +3,9 @@
  * a small local run log for tuning. Pure functions only — storage lives in useProgress.
  */
 import type { GameStats } from '../game/GameCanvas';
+import { t, TKey } from '../i18n';
+import { BEST } from '../game/sim/constants';
+import { NO_UPGRADES, upgradeCost, UpgradeId, UpgradeLevels, upgradeValue } from './upgrades';
 
 export type MissionKind =
   | 'coins_run'
@@ -55,8 +58,15 @@ export interface DailyRecord {
   top: number[];
 }
 
+export interface StreakRecord {
+  /** Day of the last claimed gift ('' = never) */
+  lastDay: string;
+  /** Consecutive days claimed, as of lastDay */
+  count: number;
+}
+
 export interface ProgressData {
-  version: 1;
+  version: 2;
   wallet: number;
   lifetimeCoins: number;
   ownedSkins: string[];
@@ -65,7 +75,15 @@ export interface ProgressData {
   missions: Mission[];
   daily: DailyRecord;
   runLog: RunLogEntry[];
+  /** Added in v2 */
+  upgrades: UpgradeLevels;
+  /** Starter balloons used today (reset daily) */
+  balloonsUsed: number;
+  streak: StreakRecord;
 }
+
+/** Daily gift coins for days 1..7 of a streak (then it starts over). */
+export const STREAK_REWARDS: readonly number[] = [20, 30, 40, 60, 80, 100, 200];
 
 export const MISSION_REWARDS = [60, 120, 200] as const;
 const RUN_LOG_MAX = 40;
@@ -93,37 +111,19 @@ const TEMPLATES: readonly Template[] = [
   { kind: 'items_run', targets: [1, 2, 4], perRun: true },
 ];
 
-const ZONE_NAMES = ['Meadow', 'Beach', 'Snowy Peaks', 'Autumn Woods'];
-
 export function missionLabel(m: Pick<Mission, 'kind' | 'target'>): string {
   const n = m.target;
   switch (m.kind) {
-    case 'coins_run':
-      return `Collect ${n} coins in one run`;
-    case 'coins_day':
-      return `Collect ${n} coins today`;
-    case 'meters_run':
-      return `Walk ${n} m in one run`;
-    case 'dodges_run':
-      return `Dodge or brace ${n} times in one run`;
     case 'fever_run':
-      return n > 1 ? `Trigger FEVER ${n} times in one run` : 'Trigger FEVER';
-    case 'survive_run':
-      return `Survive ${n} seconds`;
-    case 'challenges_run':
-      return `Clear ${n} challenges in one run`;
-    case 'runs_day':
-      return `Play ${n} runs today`;
-    case 'flaps_day':
-      return `Flap ${n} times today`;
+      return n > 1 ? t('mission.fever_run', { n }) : t('mission.fever_one');
     case 'chicks_run':
-      return n > 1 ? `Have ${n} baby flamingos at once` : 'Get a baby flamingo';
-    case 'zone_run':
-      return `Reach the ${ZONE_NAMES[Math.min(n, ZONE_NAMES.length - 1)]}`;
-    case 'daily_play':
-      return "Play today's course";
+      return n > 1 ? t('mission.chicks_run', { n }) : t('mission.chicks_one');
     case 'items_run':
-      return n > 1 ? `Grab ${n} items in one run` : 'Grab an item';
+      return n > 1 ? t('mission.items_run', { n }) : t('mission.items_one');
+    case 'zone_run':
+      return t('mission.zone_run', { zone: t(`biome.${Math.min(n, 3)}` as TKey) });
+    default:
+      return t(`mission.${m.kind}` as TKey, { n });
   }
 }
 
@@ -180,7 +180,7 @@ export function missionsForDay(day: string): Mission[] {
 export function emptyProgress(now: Date): ProgressData {
   const day = dayKey(now);
   return {
-    version: 1,
+    version: 2,
     wallet: 0,
     lifetimeCoins: 0,
     ownedSkins: ['default'],
@@ -189,6 +189,48 @@ export function emptyProgress(now: Date): ProgressData {
     missions: missionsForDay(day),
     daily: { day, best: 0, bestMeters: 0, attempts: 0, top: [] },
     runLog: [],
+    upgrades: { ...NO_UPGRADES },
+    balloonsUsed: 0,
+    streak: { lastDay: '', count: 0 },
+  };
+}
+
+function num(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback;
+}
+
+/**
+ * Load saved progress from any version. v1 saves keep their wallet, skins, missions and today's
+ * record and get the v2 defaults; anything unreadable starts fresh.
+ */
+export function migrateProgress(raw: unknown, now: Date): ProgressData {
+  const fresh = emptyProgress(now);
+  if (!raw || typeof raw !== 'object') return fresh;
+  const d = raw as Partial<Omit<ProgressData, 'version'>> & { version?: number };
+  if (d.version !== 1 && d.version !== 2) return fresh;
+  const up = (d.upgrades ?? {}) as Partial<UpgradeLevels>;
+  return {
+    ...fresh,
+    ...d,
+    version: 2,
+    wallet: num(d.wallet, 0),
+    lifetimeCoins: num(d.lifetimeCoins, 0),
+    ownedSkins: Array.isArray(d.ownedSkins) ? d.ownedSkins : fresh.ownedSkins,
+    runs: num(d.runs, 0),
+    missions: Array.isArray(d.missions) ? d.missions : fresh.missions,
+    daily: d.daily && typeof d.daily === 'object' ? d.daily : fresh.daily,
+    runLog: Array.isArray(d.runLog) ? d.runLog : [],
+    upgrades: {
+      magnet: num(up.magnet, 0),
+      fever: num(up.fever, 0),
+      luck: num(up.luck, 0),
+      balloon: num(up.balloon, 0),
+    },
+    balloonsUsed: num(d.balloonsUsed, 0),
+    streak:
+      d.streak && typeof d.streak.lastDay === 'string'
+        ? { lastDay: d.streak.lastDay, count: num(d.streak.count, 0) }
+        : fresh.streak,
   };
 }
 
@@ -201,6 +243,7 @@ export function ensureDay(data: ProgressData, now: Date): ProgressData {
     day,
     missions: missionsForDay(day),
     daily: { day, best: 0, bestMeters: 0, attempts: 0, top: [] },
+    balloonsUsed: 0,
   };
 }
 
@@ -349,4 +392,77 @@ export function summarizeRunLog(log: RunLogEntry[]): {
     medianTime: times[Math.floor(times.length / 2)],
     causes: [...counts.entries()].map(([cause, count]) => ({ cause, count })).sort((a, b) => b.count - a.count),
   };
+}
+
+/** Spend coins on the next level of an upgrade. Returns null when maxed or unaffordable. */
+export function purchaseUpgrade(data: ProgressData, id: UpgradeId): ProgressData | null {
+  const level = data.upgrades[id] ?? 0;
+  const cost = upgradeCost(id, level);
+  if (cost === null || data.wallet < cost) return null;
+  return { ...data, wallet: data.wallet - cost, upgrades: { ...data.upgrades, [id]: level + 1 } };
+}
+
+/** Starter balloons left today from the balloon upgrade. */
+export function balloonsLeft(data: ProgressData): number {
+  return Math.max(0, upgradeValue('balloon', data.upgrades.balloon) - data.balloonsUsed);
+}
+
+/** Use one starter balloon. Returns null when none are left today. */
+export function takeStarterBalloon(data: ProgressData, now: Date): ProgressData | null {
+  const current = ensureDay(data, now);
+  if (balloonsLeft(current) <= 0) return null;
+  return { ...current, balloonsUsed: current.balloonsUsed + 1 };
+}
+
+/** The calendar day before a YYYY-MM-DD key (built from the date parts, so DST shifts don't matter). */
+export function prevDayKey(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return dayKey(new Date(y, m - 1, d - 1));
+}
+
+export interface StreakStatus {
+  /** Streak day (1..7) that is claimable today, or was claimed today */
+  day: number;
+  reward: number;
+  canClaim: boolean;
+  /** Reward for tomorrow if the streak continues */
+  nextReward: number;
+}
+
+export function streakStatus(data: ProgressData, now: Date): StreakStatus {
+  const today = dayKey(now);
+  const { lastDay, count } = data.streak;
+  const n = STREAK_REWARDS.length;
+  if (lastDay === today) {
+    const day = ((Math.max(1, count) - 1) % n) + 1;
+    return { day, reward: STREAK_REWARDS[day - 1], canClaim: false, nextReward: STREAK_REWARDS[day % n] };
+  }
+  const continues = lastDay !== '' && lastDay === prevDayKey(today);
+  const day = continues ? (count % n) + 1 : 1;
+  return { day, reward: STREAK_REWARDS[day - 1], canClaim: true, nextReward: STREAK_REWARDS[day % n] };
+}
+
+/** Claim today's gift. Returns null when it was already claimed today. */
+export function claimStreak(data: ProgressData, now: Date): { data: ProgressData; reward: number } | null {
+  const status = streakStatus(data, now);
+  if (!status.canClaim) return null;
+  const continues = data.streak.lastDay !== '' && data.streak.lastDay === prevDayKey(dayKey(now));
+  return {
+    reward: status.reward,
+    data: {
+      ...data,
+      wallet: data.wallet + status.reward,
+      lifetimeCoins: data.lifetimeCoins + status.reward,
+      streak: { lastDay: dayKey(now), count: continues ? data.streak.count + 1 : 1 },
+    },
+  };
+}
+
+/**
+ * "So close" check for the game-over screen: the run ended short of a meaningful best, but within
+ * CLOSE_RATIO of it. Returns the meters missing, or 0 when it doesn't apply.
+ */
+export function metersShortOfBest(meters: number, best: number): number {
+  if (best < BEST.MIN_M || meters >= best || meters < best * BEST.CLOSE_RATIO) return 0;
+  return Math.max(1, Math.ceil(best - meters));
 }

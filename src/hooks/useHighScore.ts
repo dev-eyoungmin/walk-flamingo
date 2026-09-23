@@ -29,8 +29,8 @@ export function useHighScore() {
       .finally(() => setLoaded(true));
   }, []);
 
-  /** Saves the run and returns whether it set a new best score. */
-  const submitRun = useCallback(async (run: RunRecord): Promise<boolean> => {
+  /** Saves the run and returns which records it set. */
+  const submitRun = useCallback(async (run: RunRecord): Promise<{ newScore: boolean; newDistance: boolean }> => {
     const score = Math.floor(run.score);
     const meters = Math.floor(run.meters);
     const isNewScore = score > bestRef.current.score;
@@ -51,7 +51,7 @@ export function useHighScore() {
     } catch {
       // Keep the in-memory record even if storage fails
     }
-    return isNewScore;
+    return { newScore: isNewScore, newDistance: isNewDistance };
   }, []);
 
   return { bestScore, bestDistance, submitRun, loaded };

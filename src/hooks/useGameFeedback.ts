@@ -28,6 +28,11 @@ import {
   FX_SHIELD_SAVE,
   FX_SPEED_CHANGE,
   FX_WARNING,
+  FX_BEST_PASSED,
+  FX_COIN_RAIN,
+  FX_GULL_LAND,
+  FX_GULL_SHOO,
+  FX_TUTORIAL_STEP,
 } from '../game/sim/fx';
 
 const impact = (style: Haptics.ImpactFeedbackStyle) => Haptics.impactAsync(style).catch(() => undefined);
@@ -131,6 +136,26 @@ export function useGameFeedback(playSfx: (name: SfxName) => void, setMusicRate?:
         case FX_SHIELD_SAVE:
           playSfx('nearMiss');
           notify(Haptics.NotificationFeedbackType.Success);
+          break;
+        case FX_BEST_PASSED:
+          playSfx('comboUp');
+          notify(Haptics.NotificationFeedbackType.Success);
+          break;
+        case FX_TUTORIAL_STEP:
+          playSfx('challengeSuccess');
+          impact(Haptics.ImpactFeedbackStyle.Light);
+          break;
+        case FX_GULL_LAND:
+          playSfx('obstacleHit');
+          impact(Haptics.ImpactFeedbackStyle.Medium);
+          break;
+        case FX_GULL_SHOO:
+          playSfx('obstacleSwipe');
+          notify(Haptics.NotificationFeedbackType.Success);
+          break;
+        case FX_COIN_RAIN:
+          playSfx('challengeStart');
+          impact(Haptics.ImpactFeedbackStyle.Medium);
           break;
         case FX_FALL:
           playSfx('gameOver');

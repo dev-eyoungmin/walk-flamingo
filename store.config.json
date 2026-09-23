@@ -1,14 +1,14 @@
 {
   "configVersion": 0,
   "apple": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "copyright": "© 2026 Wobbly Games",
     "release": {
       "automaticRelease": true
     },
     "info": {
       "en-US": {
-        "description": "Meet Wobby, the wobbliest flamingo in the world!\n\nShe loves to walk, but keeping her balance? That's your job.\n\nHOLD LEFT or RIGHT to keep Wobby upright as she strolls through meadows, beaches, snowy peaks and autumn woods. Sounds easy? Think again.\n\nHOW TO PLAY\n • Hold the left or right side to tilt Wobby back into balance\n • Tap both sides to flap your wings and steady yourself\n • Stay steady to build combos — hold a x4 combo to trigger FEVER\n • Dodge rolling rocks, crabs, snowballs and falling branches\n\nFEATURES\n • Simple controls anyone can pick up\n • Cute hand-drawn flamingo with lively expressions and animations\n • Four zones: Meadow, Beach, Snowy Peaks and Autumn Woods\n • Baby flamingos join your walk and boost your score\n • Power-ups: coin magnet, calming feather and rescue balloon\n • Daily missions with coin rewards\n • Today's Course — the same course for everyone, every day\n • Collect coins to unlock flamingo skins forever\n • Day-to-night transitions with rain, wind and snow\n • 7-tier rank system from Egg to Legendary Bird\n\nEvery game is different. Every step counts. Every fall makes you hit retry.\n\nHow far can Wobby walk? Find out now.",
+        "description": "Meet Wobby, the wobbliest flamingo in the world!\n\nShe loves to walk, but keeping her balance? That's your job.\n\nHOLD LEFT or RIGHT to keep Wobby upright as she strolls through meadows, beaches, snowy peaks and autumn woods. Sounds easy? Think again.\n\nHOW TO PLAY\n • Hold the left or right side to tilt Wobby back into balance\n • Tap both sides to flap your wings and steady yourself\n • Stay steady to build combos — hold a x4 combo to trigger FEVER\n • Dodge rolling rocks, crabs, snowballs and falling branches\n\nFEATURES\n • Simple controls anyone can pick up\n • Cute hand-drawn flamingo with lively expressions and animations\n • Four zones: Meadow, Beach, Snowy Peaks and Autumn Woods\n • Baby flamingos join your walk and boost your score\n • Power-ups: coin magnet, calming feather and rescue balloon\n • Daily missions with coin rewards\n • Today's Course — the same course for everyone, every day\n • Collect coins to unlock flamingo skins forever\n • Day-to-night transitions with rain, wind and snow\n • 7-tier rank system from Egg to Legendary Bird\n • Chase your record — a BEST flag marks your best distance\n • Upgrades: spend coins on magnet, fever, luck and a starter balloon\n • Daily gift: come back every day for bigger rewards\n • New events: a cheeky seagull and coin rain\n • Available in 13 languages\n\nEvery game is different. Every step counts. Every fall makes you hit retry.\n\nHow far can Wobby walk? Find out now.",
         "keywords": [
           "flamingo",
           "balance",
@@ -26,10 +26,540 @@
           "endless",
           "cute"
         ],
-        "releaseNotes": "Wobby's biggest update yet!\n\n• FEVER mode — hold a x4 combo to double your score\n• Baby flamingos join your walk and boost your score\n• Four zones: Meadow, Beach, Snowy Peaks and Autumn Woods\n• Power-ups: coin magnet, calming feather and rescue balloon\n• Flap your wings — tap both sides to steady Wobby\n• Daily missions with coin rewards\n• Today's Course — the same course for everyone, every day\n• Spend coins to unlock skins forever\n• All-new look, smoother animations and a cuter Wobby",
+        "releaseNotes": "Wobby now speaks your language!\n\n• Chase your record: a BEST flag marks your best distance\n• Upgrades: spend coins on magnet, fever, luck and a starter balloon\n• Daily gift: come back every day for bigger rewards\n• New events: a cheeky seagull and coin rain\n• Friendlier first run with a quick tutorial",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "title": "Wobbly Flamingo",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        },
+        "subtitle": "Balance the wobbly flamingo"
+      },
+      "de-DE": {
+        "title": "Wobbly Flamingo: Balance",
+        "subtitle": "Balanciere den Wackel-Flamingo",
+        "description": "Das ist Wobby, der wackeligste Flamingo der Welt!\n\nSie liebt Spaziergänge, aber das Gleichgewicht halten? Das ist dein Job.\n\nHalte LINKS oder RECHTS gedrückt, damit Wobby aufrecht bleibt, während sie über Wiesen, Strände, verschneite Gipfel und durch Herbstwälder spaziert. Klingt leicht? Denkste!\n\nSO WIRD GESPIELT\n • Halte die linke oder rechte Seite, um Wobby zurück ins Gleichgewicht zu neigen\n • Tippe auf beide Seiten, um mit den Flügeln zu flattern und dich zu fangen\n • Bleib stabil für Combos – halte eine x4-Combo, um FEVER auszulösen\n • Weiche rollenden Steinen, Krabben, Schneebällen und fallenden Ästen aus\n\nFEATURES\n • Einfache Steuerung für alle\n • Süßer, handgezeichneter Flamingo mit lebendiger Mimik und Animationen\n • Vier Gebiete: Wiese, Strand, Schneegipfel und Herbstwald\n • Flamingo-Küken begleiten dich und erhöhen deine Punkte\n • Power-ups: Münzmagnet, Ruhefeder und Rettungsballon\n • Jag deinen Rekord – eine REKORD-Flagge markiert deine Bestweite\n • Upgrades: Investiere Münzen in Magnet, Fever, Glück und Startballon\n • Tägliche Missionen mit Münzbelohnungen\n • Tagesgeschenk: Komm jeden Tag wieder für größere Belohnungen\n • Tagesstrecke – jeden Tag die gleiche Strecke für alle\n • Sammle Münzen und schalte Flamingo-Skins dauerhaft frei\n • Neue Events: eine freche Möwe und Münzregen\n • Tag-Nacht-Wechsel mit Regen, Wind und Schnee\n • 7 Ränge vom Ei bis zum Legendären Vogel\n • Verfügbar in 13 Sprachen\n\nJede Runde ist anders. Jeder Schritt zählt. Jeder Sturz schreit nach „Nochmal!“.\n\nWie weit schafft es Wobby? Finde es jetzt heraus.",
+        "keywords": [
+          "Gleichgewicht",
+          "Vogel",
+          "laufen",
+          "wackeln",
+          "Spiel",
+          "casual",
+          "arcade",
+          "lustig",
+          "süß",
+          "Geschick",
+          "offline",
+          "Reflex",
+          "rosa"
+        ],
+        "releaseNotes": "Wobby spricht jetzt deine Sprache!\n\n• Jag deinen Rekord: Eine REKORD-Flagge markiert deine Bestweite\n• Upgrades: Investiere Münzen in Magnet, Fever, Glück und Startballon\n• Tagesgeschenk: Komm jeden Tag wieder für größere Belohnungen\n• Neue Events: eine freche Möwe und Münzregen\n• Einsteigerfreundlicher Start mit kurzem Tutorial",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "en-AU": {
+        "title": "Wobbly Flamingo",
+        "subtitle": "Balance the wobbly flamingo",
+        "description": "Meet Wobby, the wobbliest flamingo in the world!\n\nShe loves to walk, but keeping her balance? That's your job.\n\nHOLD LEFT or RIGHT to keep Wobby upright as she strolls through meadows, beaches, snowy peaks and autumn woods. Sounds easy? Think again.\n\nHOW TO PLAY\n • Hold the left or right side to tilt Wobby back into balance\n • Tap both sides to flap your wings and steady yourself\n • Stay steady to build combos — hold a x4 combo to trigger FEVER\n • Dodge rolling rocks, crabs, snowballs and falling branches\n\nFEATURES\n • Simple controls anyone can pick up\n • Cute hand-drawn flamingo with lively expressions and animations\n • Four zones: Meadow, Beach, Snowy Peaks and Autumn Woods\n • Baby flamingos join your walk and boost your score\n • Power-ups: coin magnet, calming feather and rescue balloon\n • Chase your record — a BEST flag marks your best distance\n • Upgrades: spend coins on magnet, fever, luck and a starter balloon\n • Daily missions with coin rewards\n • Daily gift: come back every day for bigger rewards\n • Today's Course — the same course for everyone, every day\n • Collect coins to unlock flamingo skins forever\n • New events: a cheeky seagull and coin rain\n • Day-to-night transitions with rain, wind and snow\n • 7-tier rank system from Egg to Legendary Bird\n • Available in 13 languages\n\nEvery game is different. Every step counts. Every fall makes you hit retry.\n\nHow far can Wobby walk? Find out now.",
+        "keywords": [
+          "tap",
+          "physics",
+          "ragdoll",
+          "pink",
+          "reflex",
+          "offline",
+          "hyper casual",
+          "skill",
+          "runner",
+          "animal",
+          "stickman",
+          "timing",
+          "party",
+          "silly"
+        ],
+        "releaseNotes": "Wobby now speaks your language!\n\n• Chase your record: a BEST flag marks your best distance\n• Upgrades: spend coins on magnet, fever, luck and a starter balloon\n• Daily gift: come back every day for bigger rewards\n• New events: a cheeky seagull and coin rain\n• Friendlier first run with a quick tutorial",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "en-GB": {
+        "title": "Wobbly Flamingo",
+        "subtitle": "Balance the wobbly flamingo",
+        "description": "Meet Wobby, the wobbliest flamingo in the world!\n\nShe loves to walk, but keeping her balance? That's your job.\n\nHOLD LEFT or RIGHT to keep Wobby upright as she strolls through meadows, beaches, snowy peaks and autumn woods. Sounds easy? Think again.\n\nHOW TO PLAY\n • Hold the left or right side to tilt Wobby back into balance\n • Tap both sides to flap your wings and steady yourself\n • Stay steady to build combos — hold a x4 combo to trigger FEVER\n • Dodge rolling rocks, crabs, snowballs and falling branches\n\nFEATURES\n • Simple controls anyone can pick up\n • Cute hand-drawn flamingo with lively expressions and animations\n • Four zones: Meadow, Beach, Snowy Peaks and Autumn Woods\n • Baby flamingos join your walk and boost your score\n • Power-ups: coin magnet, calming feather and rescue balloon\n • Chase your record — a BEST flag marks your best distance\n • Upgrades: spend coins on magnet, fever, luck and a starter balloon\n • Daily missions with coin rewards\n • Daily gift: come back every day for bigger rewards\n • Today's Course — the same course for everyone, every day\n • Collect coins to unlock flamingo skins forever\n • New events: a cheeky seagull and coin rain\n • Day-to-night transitions with rain, wind and snow\n • 7-tier rank system from Egg to Legendary Bird\n • Available in 13 languages\n\nEvery game is different. Every step counts. Every fall makes you hit retry.\n\nHow far can Wobby walk? Find out now.",
+        "keywords": [
+          "balancing",
+          "bird game",
+          "tap",
+          "physics",
+          "ragdoll",
+          "pink",
+          "reflex",
+          "offline",
+          "hyper casual",
+          "platformer",
+          "stickman",
+          "kids"
+        ],
+        "releaseNotes": "Wobby now speaks your language!\n\n• Chase your record: a BEST flag marks your best distance\n• Upgrades: spend coins on magnet, fever, luck and a starter balloon\n• Daily gift: come back every day for bigger rewards\n• New events: a cheeky seagull and coin rain\n• Friendlier first run with a quick tutorial",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "es-ES": {
+        "title": "Wobbly Flamingo: Equilibrio",
+        "subtitle": "Mantén al flamenco en pie",
+        "description": "¡Te presentamos a Wobby, la flamenca más patosa del mundo!\n\nLe encanta pasear, pero ¿mantener el equilibrio? Eso es cosa tuya.\n\nMANTÉN IZQUIERDA o DERECHA para que Wobby no se caiga mientras recorre praderas, playas, cumbres nevadas y bosques otoñales. ¿Parece fácil? Ya verás.\n\nCÓMO SE JUEGA\n • Mantén pulsado el lado izquierdo o derecho para inclinar a Wobby y recuperar el equilibrio\n • Toca ambos lados para aletear y estabilizarte\n • Aguanta firme para encadenar combos: llega a x4 y activa la FEVER\n • Esquiva rocas, cangrejos, bolas de nieve y ramas que caen\n\nCARACTERÍSTICAS\n • Controles sencillos para todo el mundo\n • Flamenca dibujada a mano, con expresiones y animaciones monísimas\n • Cuatro zonas: Pradera, Playa, Cumbres Nevadas y Bosque Otoñal\n • Las crías de flamenco se unen al paseo y suben tu puntuación\n • Potenciadores: imán de monedas, pluma calmante y globo de rescate\n • Bate tu récord: una bandera de RÉCORD marca tu mejor distancia\n • Mejoras: gasta monedas en imán, fever, suerte y un globo inicial\n • Misiones diarias con monedas de recompensa\n • Regalo diario: vuelve cada día a por premios mayores\n • Ruta de hoy: la misma ruta para todos, cada día\n • Reúne monedas para desbloquear aspectos para siempre\n • Nuevos eventos: una gaviota descarada y lluvia de monedas\n • Del día a la noche, con lluvia, viento y nieve\n • 7 rangos, de Huevo a Ave Legendaria\n • Disponible en 13 idiomas\n\nCada partida es distinta. Cada paso cuenta. Cada caída te pide otra más.\n\n¿Hasta dónde llegará Wobby? Descúbrelo ya.",
+        "keywords": [
+          "flamenco",
+          "pájaro",
+          "ave",
+          "andar",
+          "juego",
+          "casual",
+          "arcade",
+          "un toque",
+          "gracioso",
+          "mono",
+          "rosa",
+          "reflejos",
+          "sin conexión"
+        ],
+        "releaseNotes": "¡Wobby ya habla tu idioma!\n\n• Bate tu récord: una bandera de RÉCORD marca tu mejor distancia\n• Mejoras: gasta monedas en imán, fever, suerte y un globo inicial\n• Regalo diario: vuelve cada día a por premios mayores\n• Nuevos eventos: una gaviota descarada y lluvia de monedas\n• Primera partida más sencilla con un tutorial rápido",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "es-MX": {
+        "title": "Wobbly Flamingo: Equilibrio",
+        "subtitle": "Mantén al flamenco en pie",
+        "description": "¡Conoce a Wobby, la flamenca más tambaleante del mundo!\n\nLe encanta caminar, pero ¿mantener el equilibrio? Eso te toca a ti.\n\nMANTÉN IZQUIERDA o DERECHA para que Wobby no se caiga mientras pasea por praderas, playas, cumbres nevadas y bosques otoñales. ¿Suena fácil? Piénsalo otra vez.\n\nCÓMO JUGAR\n • Mantén presionado el lado izquierdo o derecho para inclinar a Wobby y recuperar el equilibrio\n • Toca ambos lados para aletear y estabilizarte\n • Mantente firme para hacer combos: llega a x4 y activa la FEVER\n • Esquiva rocas rodantes, cangrejos, bolas de nieve y ramas que caen\n\nCARACTERÍSTICAS\n • Controles sencillos para todos\n • Flamenca dibujada a mano, con expresiones y animaciones adorables\n • Cuatro zonas: Pradera, Playa, Cumbres Nevadas y Bosque Otoñal\n • Crías de flamenco se unen a tu paseo y suben tu puntuación\n • Potenciadores: imán de monedas, pluma calmante y globo de rescate\n • Supera tu récord: una bandera de RÉCORD marca tu mejor distancia\n • Mejoras: gasta monedas en imán, fever, suerte y un globo inicial\n • Misiones diarias con monedas de premio\n • Regalo diario: vuelve cada día por premios más grandes\n • Ruta de hoy: la misma ruta para todos, cada día\n • Junta monedas para desbloquear aspectos para siempre\n • Nuevos eventos: una gaviota traviesa y lluvia de monedas\n • Del día a la noche, con lluvia, viento y nieve\n • 7 rangos, de Huevo a Ave Legendaria\n • Disponible en 13 idiomas\n\nCada partida es distinta. Cada paso cuenta. Cada caída te hace volver a intentarlo.\n\n¿Hasta dónde llegará Wobby? Descúbrelo ya.",
+        "keywords": [
+          "flamenco",
+          "pájaro",
+          "caminar",
+          "juego",
+          "tap",
+          "physics",
+          "ragdoll",
+          "stickman",
+          "pink",
+          "reflex",
+          "offline",
+          "hyper casual",
+          "skill"
+        ],
+        "releaseNotes": "¡Wobby ya habla tu idioma!\n\n• Supera tu récord: una bandera de RÉCORD marca tu mejor distancia\n• Mejoras: gasta monedas en imán, fever, suerte y un globo inicial\n• Regalo diario: vuelve cada día por premios más grandes\n• Nuevos eventos: una gaviota traviesa y lluvia de monedas\n• Primera partida más amigable con un tutorial rápido",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "fr-FR": {
+        "title": "Wobbly Flamingo : Équilibre",
+        "subtitle": "Garde le flamant en équilibre",
+        "description": "Voici Wobby, le flamant rose le plus bancal du monde !\n\nElle adore marcher, mais garder l’équilibre ? Ça, c’est ton boulot.\n\nMAINTIENS à GAUCHE ou à DROITE pour garder Wobby debout pendant qu’elle se balade dans les prairies, sur les plages, les sommets enneigés et les forêts d’automne. Facile ? Pas si sûr.\n\nCOMMENT JOUER\n • Maintiens le côté gauche ou droit pour pencher Wobby et retrouver l’équilibre\n • Touche les deux côtés pour battre des ailes et te stabiliser\n • Reste stable pour enchaîner les combos : tiens un combo x4 pour déclencher la FEVER\n • Esquive les rochers qui roulent, les crabes, les boules de neige et les branches qui tombent\n\nFONCTIONNALITÉS\n • Des commandes simples, accessibles à tous\n • Un adorable flamant dessiné à la main, plein d’expressions et d’animations\n • Quatre zones : Prairie, Plage, Sommets enneigés et Forêt d’automne\n • Des bébés flamants te suivent et boostent ton score\n • Bonus : aimant à pièces, plume apaisante et ballon de secours\n • Bats ton record : un drapeau RECORD marque ta meilleure distance\n • Améliorations : dépense tes pièces en aimant, fever, chance et ballon de départ\n • Missions quotidiennes avec des pièces à la clé\n • Cadeau du jour : reviens chaque jour pour des récompenses plus grosses\n • Parcours du jour : le même parcours pour tout le monde, chaque jour\n • Ramasse des pièces pour débloquer des tenues pour toujours\n • Nouveaux événements : une mouette effrontée et une pluie de pièces\n • Du jour à la nuit, avec pluie, vent et neige\n • 7 rangs, de l’Œuf à l’Oiseau légendaire\n • Disponible en 13 langues\n\nChaque partie est différente. Chaque pas compte. Chaque chute donne envie de rejouer.\n\nJusqu’où ira Wobby ? À toi de le découvrir.",
+        "keywords": [
+          "flamant rose",
+          "oiseau",
+          "marcher",
+          "jeu",
+          "casual",
+          "arcade",
+          "drôle",
+          "mignon",
+          "adresse",
+          "réflexe",
+          "hors ligne",
+          "rose",
+          "vent"
+        ],
+        "releaseNotes": "Wobby parle enfin ta langue !\n\n• Bats ton record : un drapeau RECORD marque ta meilleure distance\n• Améliorations : dépense tes pièces en aimant, fever, chance et ballon de départ\n• Cadeau du jour : reviens chaque jour pour des récompenses plus grosses\n• Nouveaux événements : une mouette effrontée et une pluie de pièces\n• Premier lancement plus simple avec un petit tutoriel",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "id": {
+        "title": "Wobbly Flamingo: Keseimbangan",
+        "subtitle": "Jaga si flamingo tetap tegak",
+        "description": "Kenalan dengan Wobby, flamingo paling goyang sedunia!\n\nDia suka jalan-jalan, tapi menjaga keseimbangannya? Itu tugasmu.\n\nTAHAN KIRI atau KANAN agar Wobby tetap tegak saat berjalan melewati padang rumput, pantai, puncak salju, dan hutan musim gugur. Kelihatannya gampang? Coba dulu!\n\nCARA BERMAIN\n • Tahan sisi kiri atau kanan untuk memiringkan Wobby kembali seimbang\n • Ketuk kedua sisi untuk mengepakkan sayap dan menstabilkan diri\n • Tetap stabil untuk membangun kombo — pertahankan kombo x4 untuk memicu FEVER\n • Hindari batu menggelinding, kepiting, bola salju, dan dahan yang jatuh\n\nFITUR\n • Kontrol sederhana, siapa pun bisa main\n • Flamingo gambar tangan yang imut dengan ekspresi dan animasi yang hidup\n • Empat zona: Padang Rumput, Pantai, Puncak Salju, dan Hutan Musim Gugur\n • Bayi flamingo ikut berjalan dan menambah skormu\n • Power-up: magnet koin, bulu penenang, dan balon penyelamat\n • Misi harian dengan hadiah koin\n • Rute Hari Ini — rute yang sama untuk semua orang, setiap hari\n • Kumpulkan koin untuk membuka skin flamingo selamanya\n • Pergantian siang ke malam dengan hujan, angin, dan salju\n • 7 tingkat peringkat dari Telur hingga Burung Legendaris\n • Kejar rekormu — bendera TERBAIK menandai jarak terbaikmu\n • Upgrade: pakai koin untuk magnet, FEVER, hoki, dan balon awal\n • Hadiah harian: kembali setiap hari untuk hadiah yang makin besar\n • Event baru: burung camar usil dan hujan koin\n • Tersedia dalam 13 bahasa\n\nSetiap permainan berbeda. Setiap langkah berarti. Setiap kali jatuh, kamu pasti ingin coba lagi.\n\nSeberapa jauh Wobby bisa berjalan? Cari tahu sekarang!",
+        "keywords": [
+          "burung",
+          "seimbang",
+          "arcade",
+          "kasual",
+          "satu ketuk",
+          "lucu",
+          "imut",
+          "jalan",
+          "santai",
+          "offline",
+          "kombo",
+          "miring",
+          "game seru"
+        ],
+        "releaseNotes": "Wobby sekarang bisa bahasamu!\n\n• Kejar rekormu: bendera TERBAIK menandai jarak terbaikmu\n• Upgrade: pakai koin untuk magnet, FEVER, hoki, dan balon awal\n• Hadiah harian: kembali setiap hari untuk hadiah yang makin besar\n• Event baru: burung camar usil dan hujan koin\n• Permainan pertama lebih ramah dengan tutorial singkat",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "it": {
+        "title": "Wobbly Flamingo: Equilibrio",
+        "subtitle": "Tieni in piedi il fenicottero",
+        "description": "Ecco Wobby, il fenicottero più traballante del mondo!\n\nAdora camminare, ma restare in equilibrio? Quello è compito tuo.\n\nTIENI PREMUTO A SINISTRA o A DESTRA per tenere Wobby in piedi mentre passeggia tra prati, spiagge, vette innevate e boschi d’autunno. Sembra facile? Ripensaci.\n\nCOME SI GIOCA\n • Tieni premuto a sinistra o a destra per riportare Wobby in equilibrio\n • Tocca entrambi i lati per sbattere le ali e stabilizzarti\n • Resta stabile per fare combo: tieni una combo x4 per attivare la FEVER\n • Schiva sassi rotolanti, granchi, palle di neve e rami che cadono\n\nCARATTERISTICHE\n • Comandi semplici, adatti a tutti\n • Un tenero fenicottero disegnato a mano, con espressioni e animazioni vivaci\n • Quattro zone: Prato, Spiaggia, Vette innevate e Bosco d’autunno\n • I piccoli fenicotteri si uniscono alla passeggiata e aumentano il punteggio\n • Power-up: calamita per monete, piuma calmante e palloncino di salvataggio\n • Missioni giornaliere con monete in premio\n • Percorso del giorno: lo stesso percorso per tutti, ogni giorno\n • Raccogli monete per sbloccare per sempre nuove skin del fenicottero\n • Passaggio dal giorno alla notte con pioggia, vento e neve\n • 7 ranghi, da Uovo a Uccello leggendario\n • Insegui il tuo record: una bandiera RECORD segna la tua distanza migliore\n • Potenziamenti: spendi monete per calamita, FEVER, fortuna e palloncino iniziale\n • Regalo del giorno: torna ogni giorno per premi sempre più grandi\n • Nuovi eventi: un gabbiano sfacciato e la pioggia di monete\n • Disponibile in 13 lingue\n\nOgni partita è diversa. Ogni passo conta. Ogni caduta ti fa premere Riprova.\n\nFin dove arriverà Wobby? Scoprilo ora!",
+        "keywords": [
+          "fenicottero",
+          "uccello",
+          "bilancia",
+          "arcade",
+          "casual",
+          "un tocco",
+          "divertente",
+          "carino",
+          "camminare",
+          "infinito",
+          "inclinare"
+        ],
+        "releaseNotes": "Wobby ora parla la tua lingua!\n\n• Insegui il tuo record: una bandiera RECORD segna la tua distanza migliore\n• Potenziamenti: spendi monete per calamita, FEVER, fortuna e palloncino iniziale\n• Regalo del giorno: torna ogni giorno per premi sempre più grandi\n• Nuovi eventi: un gabbiano sfacciato e la pioggia di monete\n• Primo avvio più semplice con un breve tutorial",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "ja": {
+        "title": "Wobbly Flamingo: バランスゲーム",
+        "subtitle": "ゆらゆらフラミンゴのバランスをとろう",
+        "description": "世界一ゆらゆらなフラミンゴ、Wobbyに会いに行こう！\n\n歩くのは大好き。でもバランスをとるのは…あなたの役目！\n\n画面の左か右を長押しして、Wobbyをまっすぐキープ。草原、ビーチ、雪山、紅葉の森をお散歩します。カンタン？…と思ったら大間違い！\n\n遊び方\n • 左右を長押ししてWobbyの傾きを立て直そう\n • 両側をタップすると、はばたいて体勢を安定\n • 安定をキープしてコンボをためよう。x4コンボでフィーバー発動！\n • 転がる岩、カニ、雪玉、落ちてくる枝をよけよう\n\n特徴\n • 誰でもすぐ遊べるシンプル操作\n • 表情豊かでかわいい手描きフラミンゴ\n • 4つのエリア：草原、ビーチ、雪山、紅葉の森\n • ヒナがお散歩に加わってスコアアップ\n • パワーアップ：コインマグネット、おちつく羽、救助風船\n • 記録に挑戦：BESTの旗が自己ベストの距離を教えてくれる\n • 強化：コインでマグネット、フィーバー、ラッキー、スタート風船をパワーアップ\n • デイリーギフト：毎日来るほど報酬がアップ\n • 新イベント：いたずらカモメとコインの雨\n • コインがもらえるデイリーミッション\n • 今日のコース：毎日、みんな同じコースで勝負\n • コインを集めてフラミンゴのスキンを永久解放\n • 昼から夜へ。雨、風、雪も\n • たまごから伝説の鳥まで、7段階のランク\n • 13言語に対応\n\n毎回ちがう展開。一歩一歩が勝負。転ぶたびに、ついリトライ。\n\nWobbyはどこまで歩ける？今すぐ試してみよう！",
+        "keywords": [
+          "フラミンゴ",
+          "鳥",
+          "カジュアル",
+          "ワンタップ",
+          "簡単",
+          "暇つぶし",
+          "かわいい",
+          "アクション",
+          "無限",
+          "歩く",
+          "傾き",
+          "コンボ",
+          "ミニゲーム",
+          "アーケード",
+          "動物"
+        ],
+        "releaseNotes": "Wobbyが日本語を話せるようになりました！\n\n• 記録に挑戦：BESTの旗が自己ベストの距離を表示\n• 強化：コインでマグネット、フィーバー、ラッキー、スタート風船をパワーアップ\n• デイリーギフト：毎日来るほど報酬がアップ\n• 新イベント：いたずらカモメとコインの雨\n• かんたんチュートリアルで、はじめてでも安心",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "pt-BR": {
+        "title": "Wobbly Flamingo: Equilíbrio",
+        "subtitle": "Mantenha o flamingo de pé",
+        "description": "Conheça a Wobby, a flamingo mais desengonçada do mundo!\n\nEla adora caminhar, mas manter o equilíbrio? Isso é com você.\n\nSEGURE à ESQUERDA ou à DIREITA para manter a Wobby de pé enquanto ela passeia por campinas, praias, picos nevados e bosques de outono. Parece fácil? Pense de novo.\n\nCOMO JOGAR\n • Segure o lado esquerdo ou direito para inclinar a Wobby e recuperar o equilíbrio\n • Toque nos dois lados para bater as asas e se firmar\n • Fique firme para fazer combos: segure um combo x4 para ativar a FEVER\n • Desvie de pedras rolando, caranguejos, bolas de neve e galhos caindo\n\nRECURSOS\n • Controles simples que qualquer um aprende\n • Flamingo fofa desenhada à mão, com expressões e animações cheias de vida\n • Quatro áreas: Campina, Praia, Picos Nevados e Bosque de Outono\n • Filhotes de flamingo entram no passeio e aumentam sua pontuação\n • Power-ups: ímã de moedas, pena calmante e balão de resgate\n • Bata seu recorde: uma bandeira de RECORDE marca sua melhor distância\n • Melhorias: gaste moedas em ímã, fever, sorte e balão inicial\n • Missões diárias com moedas de recompensa\n • Presente diário: volte todo dia para prêmios maiores\n • Percurso de hoje: o mesmo percurso para todos, todo dia\n • Junte moedas para desbloquear skins para sempre\n • Novos eventos: uma gaivota atrevida e chuva de moedas\n • Do dia para a noite, com chuva, vento e neve\n • 7 ranks, de Ovo a Ave Lendária\n • Disponível em 13 idiomas\n\nCada partida é diferente. Cada passo conta. Cada queda te faz tentar de novo.\n\nAté onde a Wobby consegue andar? Descubra agora.",
+        "keywords": [
+          "pássaro",
+          "ave",
+          "andar",
+          "jogo",
+          "casual",
+          "arcade",
+          "um toque",
+          "engraçado",
+          "fofo",
+          "rosa",
+          "reflexo",
+          "offline",
+          "vento",
+          "desafio"
+        ],
+        "releaseNotes": "A Wobby agora fala a sua língua!\n\n• Bata seu recorde: uma bandeira de RECORDE marca sua melhor distância\n• Melhorias: gaste moedas em ímã, fever, sorte e balão inicial\n• Presente diário: volte todo dia para prêmios maiores\n• Novos eventos: uma gaivota atrevida e chuva de moedas\n• Primeira partida mais amigável com um tutorial rápido",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "ru": {
+        "title": "Wobbly Flamingo: Равновесие",
+        "subtitle": "Удержи шаткого фламинго",
+        "description": "Знакомься: Wobby — самый шаткий фламинго на свете!\n\nОна обожает гулять, а вот держать равновесие — это уже твоя работа.\n\nДЕРЖИ СЛЕВА или СПРАВА, чтобы Wobby не упала, пока гуляет по лугам, пляжам, снежным пикам и осенним лесам. Кажется, это просто? Как бы не так!\n\nКАК ИГРАТЬ\n • Держи левую или правую сторону экрана, чтобы выровнять Wobby\n • Тапни по обеим сторонам — Wobby взмахнёт крыльями и удержится\n • Держись ровно и копи комбо — комбо x4 включает FEVER\n • Уворачивайся от камней, крабов, снежков и падающих веток\n\nОСОБЕННОСТИ\n • Простое управление — разберётся каждый\n • Милый рисованный фламинго с живой мимикой и анимацией\n • Четыре зоны: Луг, Пляж, Снежные пики и Осенний лес\n • Птенцы фламинго идут с тобой и увеличивают счёт\n • Бонусы: магнит для монет, успокаивающее перо и спасательный шар\n • Ежедневные задания с наградами в монетах\n • Трасса дня — одна трасса для всех, каждый день\n • Собирай монеты и открывай скины навсегда\n • Смена дня и ночи, дождь, ветер и снег\n • 7 рангов: от Яйца до Легендарной птицы\n • Бей свой рекорд — флаг РЕКОРД отмечает твою лучшую дистанцию\n • Улучшения: трать монеты на магнит, FEVER, удачу и стартовый шар\n • Подарок дня: заходи каждый день за всё более щедрыми наградами\n • Новые события: нахальная чайка и дождь из монет\n • Игра доступна на 13 языках\n\nКаждая игра не похожа на прошлую. Каждый шаг важен. После каждого падения хочется нажать «Ещё раз».\n\nКак далеко уйдёт Wobby? Проверь прямо сейчас!",
+        "keywords": [
+          "фламинго",
+          "птица",
+          "баланс",
+          "аркада",
+          "одно касание",
+          "казуальная",
+          "смешная",
+          "милая",
+          "ходьба",
+          "бесконечная",
+          "наклон",
+          "комбо"
+        ],
+        "releaseNotes": "Wobby теперь говорит на твоём языке!\n\n• Бей свой рекорд: флаг РЕКОРД отмечает твою лучшую дистанцию\n• Улучшения: трать монеты на магнит, FEVER, удачу и стартовый шар\n• Подарок дня: заходи каждый день за всё более щедрыми наградами\n• Новые события: нахальная чайка и дождь из монет\n• Первый запуск стал проще — с коротким обучением",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "th": {
+        "title": "Wobbly Flamingo: เกมทรงตัว",
+        "subtitle": "ช่วยฟลามิงโกเดินเซให้ทรงตัว",
+        "description": "มารู้จัก Wobby ฟลามิงโกที่เดินเซที่สุดในโลก!\n\nเธอชอบเดินเล่นมาก แต่เรื่องทรงตัว? เป็นหน้าที่ของคุณ!\n\nกดค้างฝั่งซ้ายหรือขวาเพื่อให้ Wobby ยืนตรง ขณะเดินผ่านทุ่งหญ้า ชายหาด ยอดเขาหิมะ และป่าฤดูใบไม้ร่วง ฟังดูง่าย? คิดใหม่ได้เลย!\n\nวิธีเล่น\n • กดค้างฝั่งซ้ายหรือขวาเพื่อเอียง Wobby กลับมาสมดุล\n • แตะสองฝั่งพร้อมกันเพื่อกระพือปีกช่วยทรงตัว\n • ทรงตัวให้นิ่งเพื่อสะสมคอมโบ ทำคอมโบ x4 เพื่อเปิดฟีเวอร์\n • หลบหินกลิ้ง ปู ก้อนหิมะ และกิ่งไม้ที่ร่วงลงมา\n\nฟีเจอร์\n • ควบคุมง่าย ใครก็เล่นได้\n • ฟลามิงโกวาดมือสุดน่ารัก พร้อมท่าทางและสีหน้าสดใส\n • 4 โซน: ทุ่งหญ้า ชายหาด ยอดเขาหิมะ และป่าฤดูใบไม้ร่วง\n • ลูกฟลามิงโกมาร่วมเดินและเพิ่มคะแนน\n • ไอเทม: แม่เหล็กดูดเหรียญ ขนนกช่วยนิ่ง และลูกโป่งช่วยชีวิต\n • ท้าทายสถิติ: ธง BEST บอกระยะทางที่ดีที่สุดของคุณ\n • อัปเกรด: ใช้เหรียญอัปแม่เหล็ก ฟีเวอร์ โชคดี และลูกโป่งเริ่มต้น\n • ของขวัญรายวัน: เข้าเล่นทุกวัน รางวัลยิ่งใหญ่ขึ้น\n • อีเวนต์ใหม่: นกนางนวลจอมป่วน และฝนเหรียญ\n • ภารกิจรายวันพร้อมรางวัลเหรียญ\n • ด่านวันนี้: ทุกคนเล่นด่านเดียวกันทุกวัน\n • เก็บเหรียญเพื่อปลดล็อกสกินฟลามิงโกถาวร\n • เปลี่ยนจากกลางวันเป็นกลางคืน พร้อมฝน ลม และหิมะ\n • แรงก์ 7 ระดับ ตั้งแต่ไข่จนถึงนกในตำนาน\n • รองรับ 13 ภาษา\n\nทุกเกมไม่ซ้ำกัน ทุกก้าวมีความหมาย ล้มทีไรก็ต้องกดเล่นใหม่ทุกที\n\nWobby จะเดินไปได้ไกลแค่ไหน? มาลองเลย!",
+        "keywords": [
+          "ฟลามิงโก",
+          "นก",
+          "ง่ายๆ",
+          "แตะ",
+          "แคชชวล",
+          "อาร์เคด",
+          "น่ารัก",
+          "เดิน",
+          "ฆ่าเวลา",
+          "มินิเกม",
+          "คอมโบ",
+          "ไม่รู้จบ",
+          "บาลานซ์"
+        ],
+        "releaseNotes": "Wobby พูดภาษาไทยได้แล้ว!\n\n• ท้าทายสถิติ: ธง BEST บอกระยะทางที่ดีที่สุดของคุณ\n• อัปเกรด: ใช้เหรียญอัปแม่เหล็ก ฟีเวอร์ โชคดี และลูกโป่งเริ่มต้น\n• ของขวัญรายวัน: เข้าเล่นทุกวัน รางวัลยิ่งใหญ่ขึ้น\n• อีเวนต์ใหม่: นกนางนวลจอมป่วน และฝนเหรียญ\n• บทสอนสั้นๆ เล่นครั้งแรกก็ง่าย",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "vi": {
+        "title": "Wobbly Flamingo: Hồng Hạc",
+        "subtitle": "Giữ thăng bằng cho hồng hạc",
+        "description": "Làm quen với Wobby, chú hồng hạc lắc lư nhất thế giới!\n\nCô nàng rất thích đi dạo, nhưng giữ thăng bằng ư? Đó là việc của bạn.\n\nGIỮ BÊN TRÁI hoặc BÊN PHẢI để Wobby đứng vững khi dạo qua đồng cỏ, bãi biển, đỉnh tuyết và rừng thu. Nghe dễ ư? Thử đi rồi biết!\n\nCÁCH CHƠI\n • Giữ bên trái hoặc bên phải để nghiêng Wobby về thế cân bằng\n • Chạm cả hai bên để vỗ cánh và lấy lại thăng bằng\n • Giữ vững để tạo combo — duy trì combo x4 để kích hoạt FEVER\n • Né đá lăn, cua, cầu tuyết và cành cây rơi\n\nTÍNH NĂNG\n • Điều khiển đơn giản, ai cũng chơi được\n • Chú hồng hạc vẽ tay dễ thương với biểu cảm và chuyển động sinh động\n • Bốn khu vực: Đồng Cỏ, Bãi Biển, Đỉnh Tuyết và Rừng Thu\n • Hồng hạc con đi cùng và giúp bạn tăng điểm\n • Vật phẩm hỗ trợ: nam châm hút xu, lông vũ êm và bóng cứu hộ\n • Nhiệm vụ hằng ngày với phần thưởng xu\n • Đường Hôm Nay — cùng một đường cho mọi người, mỗi ngày\n • Thu thập xu để mở khóa skin hồng hạc vĩnh viễn\n • Chuyển đổi ngày đêm cùng mưa, gió và tuyết\n • 7 cấp bậc từ Trứng đến Chim Huyền Thoại\n • Phá kỷ lục — lá cờ KỶ LỤC đánh dấu quãng đường xa nhất của bạn\n • Nâng cấp: dùng xu cho nam châm, FEVER, may mắn và bóng khởi đầu\n • Quà hằng ngày: quay lại mỗi ngày để nhận thưởng ngày càng lớn\n • Sự kiện mới: chú hải âu tinh nghịch và mưa xu\n • Hỗ trợ 13 ngôn ngữ\n\nMỗi lượt chơi đều khác biệt. Mỗi bước đều quan trọng. Mỗi lần ngã lại khiến bạn muốn chơi lại.\n\nWobby có thể đi xa đến đâu? Khám phá ngay!",
+        "keywords": [
+          "chim",
+          "thăng bằng",
+          "giải trí",
+          "một chạm",
+          "arcade",
+          "vui nhộn",
+          "dễ thương",
+          "đi bộ",
+          "vô tận",
+          "combo",
+          "nghiêng",
+          "trò chơi"
+        ],
+        "releaseNotes": "Wobby giờ đã nói ngôn ngữ của bạn!\n\n• Phá kỷ lục: lá cờ KỶ LỤC đánh dấu quãng đường xa nhất của bạn\n• Nâng cấp: dùng xu cho nam châm, FEVER, may mắn và bóng khởi đầu\n• Quà hằng ngày: quay lại mỗi ngày để nhận thưởng ngày càng lớn\n• Sự kiện mới: chú hải âu tinh nghịch và mưa xu\n• Lần chơi đầu dễ làm quen hơn với hướng dẫn ngắn",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "zh-Hans": {
+        "title": "Wobbly Flamingo: 摇摆火烈鸟",
+        "subtitle": "让摇摇晃晃的火烈鸟保持平衡",
+        "description": "来认识 Wobby——全世界最摇摇晃晃的火烈鸟！\n\n她超爱散步，可是保持平衡？那就交给你了。\n\n按住屏幕左侧或右侧，让 Wobby 稳稳站好，一路走过草地、海滩、雪峰和秋林。听起来很简单？再想想吧！\n\n玩法\n • 按住左侧或右侧，把 Wobby 扶回平衡\n • 同时点击两侧扇动翅膀，稳住身体\n • 保持稳定累积连击，达成 x4 连击触发狂热模式\n • 躲开滚落的石头、螃蟹、雪球和掉落的树枝\n\n特色\n • 简单操作，人人都能上手\n • 手绘可爱火烈鸟，表情和动作超生动\n • 四大区域：草地、海滩、雪峰、秋林\n • 火烈鸟宝宝加入散步，提升得分\n • 道具：金币磁铁、镇定羽毛、救援气球\n • 挑战纪录：BEST 旗帜标出你的最佳距离\n • 升级：用金币强化磁铁、狂热、好运和开局气球\n • 每日礼物：天天来，奖励越来越多\n • 全新事件：调皮的海鸥和金币雨\n • 每日任务，赢取金币奖励\n • 今日赛道：每天所有人挑战同一条赛道\n • 收集金币，永久解锁火烈鸟皮肤\n • 昼夜交替，还有雨、风和雪\n • 从鸟蛋到传说之鸟的 7 级段位\n • 支持 13 种语言\n\n每局都不一样，每一步都关键，每次摔倒都让你忍不住再来一局。\n\nWobby 能走多远？现在就来试试！",
+        "keywords": [
+          "平衡",
+          "小鸟",
+          "休闲",
+          "益智",
+          "单指",
+          "一键",
+          "街机",
+          "跑酷",
+          "可爱",
+          "无尽",
+          "走路",
+          "解压",
+          "小游戏",
+          "动物",
+          "闯关",
+          "反应"
+        ],
+        "releaseNotes": "Wobby 现在会说中文啦！\n\n• 挑战纪录：BEST 旗帜标出你的最佳距离\n• 升级：用金币强化磁铁、狂热、好运和开局气球\n• 每日礼物：天天来，奖励越来越多\n• 全新事件：调皮的海鸥和金币雨\n• 新增快速教程，新手也能轻松上手",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "store/apple/screenshot/en-US/APP_IPHONE_67/01-meadow-fever.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/02-beach-crab.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/03-snow-items.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/04-autumn-night-flap.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/05-start.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.png",
+            "store/apple/screenshot/en-US/APP_IPHONE_67/07-gameover.png"
+          ]
+        }
+      },
+      "zh-Hant": {
+        "title": "Wobbly Flamingo: 搖擺紅鶴",
+        "subtitle": "讓搖搖晃晃的紅鶴保持平衡",
+        "description": "快來認識 Wobby——全世界最搖搖晃晃的紅鶴！\n\n她超愛散步，但保持平衡？那就交給你囉。\n\n按住螢幕左側或右側，讓 Wobby 站穩腳步，一路走過草原、海灘、雪峰和秋林。聽起來很簡單？再想想吧！\n\n玩法\n • 按住左側或右側，把 Wobby 扶回平衡\n • 同時點兩側拍動翅膀，穩住身體\n • 保持穩定累積連擊，達成 x4 連擊觸發狂熱模式\n • 閃開滾落的石頭、螃蟹、雪球和掉下來的樹枝\n\n特色\n • 簡單操作，人人都能上手\n • 手繪可愛紅鶴，表情和動作超生動\n • 四大區域：草原、海灘、雪峰、秋林\n • 紅鶴寶寶加入散步，提升分數\n • 道具：金幣磁鐵、穩定羽毛、救援氣球\n • 挑戰紀錄：BEST 旗子標出你的最佳距離\n • 升級：用金幣強化磁鐵、狂熱、好運和開局氣球\n • 每日禮物：天天來，獎勵越來越多\n • 全新事件：調皮的海鷗和金幣雨\n • 每日任務，賺取金幣獎勵\n • 今日關卡：每天大家挑戰同一個關卡\n • 收集金幣，永久解鎖紅鶴造型\n • 日夜交替，還有雨、風和雪\n • 從鳥蛋到傳說之鳥的 7 階等級\n • 支援 13 種語言\n\n每局都不一樣，每一步都很關鍵，每次跌倒都讓你忍不住再玩一次。\n\nWobby 能走多遠？現在就來試試！",
+        "keywords": [
+          "平衡",
+          "火鶴",
+          "小鳥",
+          "休閒",
+          "單指",
+          "街機",
+          "跑酷",
+          "可愛",
+          "無盡",
+          "走路",
+          "紓壓",
+          "小遊戲",
+          "動物",
+          "反應",
+          "益智"
+        ],
+        "releaseNotes": "Wobby 現在會說中文囉！\n\n• 挑戰紀錄：BEST 旗子標出你的最佳距離\n• 升級：用金幣強化磁鐵、狂熱、好運和開局氣球\n• 每日禮物：天天來，獎勵越來越多\n• 全新事件：調皮的海鷗和金幣雨\n• 新增快速教學，第一次玩也超簡單",
+        "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
+        "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
         "screenshots": {
           "APP_IPHONE_67": [

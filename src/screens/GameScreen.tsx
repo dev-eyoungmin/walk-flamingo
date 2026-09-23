@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GameCanvas, GameStats, BoostType, RunMode } from '../game/GameCanvas';
+import type { RunParams } from '../game/sim/state';
 import { IS_EXPO_GO, BANNER_AD_UNIT_ID } from '../lib/adConfig';
 import type { SkinPalette } from '../lib/skins';
 
@@ -36,6 +37,7 @@ interface GameScreenProps {
   /** Seed of today's course, or null for a random course */
   courseSeed: number | null;
   showTutorial: boolean;
+  runParams?: Omit<RunParams, 'shield' | 'slowmo' | 'scrollX'>;
   onGameOver: (stats: GameStats) => void;
   onFx: (code: number, value: number) => void;
 }

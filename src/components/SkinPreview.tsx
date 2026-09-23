@@ -7,6 +7,7 @@ import { StorkPose, StorkRenderer } from '../game/render/StorkRenderer';
 import { GameButton } from '../ui/GameButton';
 import { CoinGlyph } from '../ui/MissionList';
 import { FONT_DISPLAY, titleShadow, UI } from '../ui/theme';
+import { formatNum, t, TKey } from '../i18n';
 
 interface SkinPreviewProps {
   activeSkinId: string;
@@ -92,15 +93,15 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
     <View style={styles.scrim}>
       <View style={[styles.modal, { maxHeight: height - 16 }]}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>SKINS</Text>
+          <Text style={styles.title}>{t('common.skins')}</Text>
           <View style={styles.wallet}>
             <CoinGlyph size={15} />
-            <Text style={styles.walletText}>{wallet.toLocaleString('en-US')}</Text>
+            <Text style={styles.walletText}>{formatNum(wallet)}</Text>
           </View>
         </View>
-        <Text style={styles.subtitle}>Buy with coins to keep forever, or watch an ad to wear one for 24 hours</Text>
+        <Text style={styles.subtitle}>{t('skins.subtitle')}</Text>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroller} contentContainerStyle={styles.cards}>
           {SKINS.map((skin) => {
             const isActive = skin.id === activeSkinId;
             const owned = ownedSkins.includes(skin.id) || skin.id === 'default';
@@ -110,18 +111,19 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
               <View key={skin.id} style={[styles.card, isActive && { borderColor: skin.body, backgroundColor: 'rgba(255,255,255,0.12)' }]}>
                 <MiniStork skin={skin} active={isActive} />
                 <Text style={[styles.name, { color: skin.bodyLight }]} numberOfLines={1}>
-                  {skin.name.toUpperCase()}
+                  {t(`skin.${skin.id}` as TKey).toUpperCase()}
                 </Text>
                 {isActive ? (
                   <View style={[styles.badge, { backgroundColor: skin.body }]}>
-                    <Text style={styles.badgeText}>WEARING</Text>
+                    <Text style={styles.badgeText}>{t('skins.wearing')}</Text>
                   </View>
                 ) : owned ? (
-                  <GameButton label="WEAR" size="sm" color={UI.mint} shade={UI.mintDark} onPress={() => onEquip(skin.id)} style={styles.cardButton} />
+                  <GameButton label={t('skins.wear')} size="sm" color={UI.mint} shade={UI.mintDark} onPress={() => onEquip(skin.id)} style={styles.cardButton} />
                 ) : (
                   <View style={styles.buyOptions}>
                     <GameButton
-                      label={`${price} COINS`}
+                      label={formatNum(price)}
+                      coin
                       size="sm"
                       color={UI.gold}
                       shade={UI.goldDark}
@@ -129,7 +131,7 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
                       disabled={!affordable}
                       style={styles.cardButton}
                     />
-                    <GameButton label="24H" ad size="sm" color={UI.slate} shade={UI.slateDark} onPress={() => onRent(skin.id)} style={styles.cardButton} />
+                    <GameButton label={t('skins.rent')} ad size="sm" color={UI.slate} shade={UI.slateDark} onPress={() => onRent(skin.id)} style={styles.cardButton} />
                   </View>
                 )}
               </View>
@@ -137,7 +139,7 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
           })}
         </ScrollView>
 
-        <GameButton label="CLOSE" size="sm" color={UI.slate} shade={UI.slateDark} onPress={onClose} style={styles.close} />
+        <GameButton label={t('common.close')} size="sm" color={UI.slate} shade={UI.slateDark} onPress={onClose} style={styles.close} />
       </View>
     </View>
   );
@@ -190,6 +192,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: UI.textDim,
     marginBottom: 8,
+  },
+  scroller: {
+    alignSelf: 'stretch',
+    flexGrow: 0,
   },
   cards: {
     gap: 8,

@@ -12,7 +12,10 @@
     "production": {
       "ios": {
         "ascAppId": "6760018546",
-        "appleTeamId": "KQBH77U3ZH"
+        "appleTeamId": "KQBH77U3ZH",
+        "ascApiKeyPath": "/Users/youngminlee/Desktop/AuthKey_X9N95Y5FV2.p8",
+        "ascApiKeyIssuerId": "d6ae1e5e-d1ff-4fd6-b7cd-d1bc42bf7382",
+        "ascApiKeyId": "X9N95Y5FV2"
       }
     }
   }

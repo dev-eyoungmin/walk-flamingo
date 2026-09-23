@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Mission, missionLabel } from '../lib/progress';
+import { CoinGlyph } from './CoinGlyph';
 import { FONT_DISPLAY, UI } from './theme';
 
 interface Props {
@@ -10,11 +11,7 @@ interface Props {
   compact?: boolean;
 }
 
-export const CoinGlyph: React.FC<{ size?: number }> = ({ size = 14 }) => (
-  <View style={[styles.coinOuter, { width: size, height: size, borderRadius: size / 2 }]}>
-    <View style={[styles.coinInner, { width: size * 0.62, height: size * 0.62, borderRadius: size * 0.31 }]} />
-  </View>
-);
+export { CoinGlyph };
 
 export const MissionList: React.FC<Props> = ({ missions, justCompleted = [], compact = false }) => (
   <View style={styles.list}>
@@ -25,7 +22,7 @@ export const MissionList: React.FC<Props> = ({ missions, justCompleted = [], com
         <View key={m.id} style={[styles.row, compact && styles.rowCompact, fresh && styles.rowFresh]}>
           <View style={[styles.check, m.done && styles.checkDone]}>{m.done && <Text style={styles.checkMark}>✓</Text>}</View>
           <View style={styles.body}>
-            <Text style={[styles.label, m.done && styles.labelDone]} numberOfLines={1}>
+            <Text style={[styles.label, m.done && styles.labelDone]} numberOfLines={2}>
               {missionLabel(m)}
             </Text>
             {!m.done && (
@@ -118,13 +115,5 @@ const styles = StyleSheet.create({
     fontFamily: FONT_DISPLAY,
     fontSize: 13,
     color: UI.gold,
-  },
-  coinOuter: {
-    backgroundColor: '#D08A12',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  coinInner: {
-    backgroundColor: '#FFD23F',
   },
 });

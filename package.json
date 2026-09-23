@@ -1,6 +1,6 @@
 {
   "name": "walk-the-stork",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "main": "index.ts",
   "homepage": "https://dev-eyoungmin.github.io/walk-flamingo/",
   "scripts": {
@@ -23,6 +23,7 @@
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.11",
     "expo-haptics": "~15.0.8",
+    "expo-localization": "~17.0.9",
     "expo-screen-orientation": "~9.0.8",
     "expo-status-bar": "~3.0.9",
     "jest": "~29.7.0",

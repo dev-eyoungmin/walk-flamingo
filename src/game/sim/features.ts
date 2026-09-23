@@ -39,7 +39,7 @@ export function updateFever(s: SimState, dt: number): void {
   if (s.combo >= SCORE.COMBO_MAX) {
     s.feverCharge += dt;
     if (s.feverCharge >= FEVER.CHARGE_TIME) {
-      s.feverT = FEVER.DURATION;
+      s.feverT = s.feverDuration;
       s.feverCharge = 0;
       s.fevers++;
       s.popKind = POPUP_FEVER;
@@ -82,7 +82,7 @@ export function updateItems(s: SimState, cfg: SimConfig, dt: number, canSpawn: b
       it[b + 3] = type;
       it[b + 4] = 0;
     }
-    s.nextItemAt = s.meters + ITEMS.GAP_MIN_M + randCoin(s) * ITEMS.GAP_RANGE_M;
+    s.nextItemAt = s.meters + (ITEMS.GAP_MIN_M + randCoin(s) * ITEMS.GAP_RANGE_M) * s.itemGapMult;
   }
 
   const storkWorldX = s.scrollX + cfg.storkX;
@@ -109,7 +109,7 @@ export function updateItems(s: SimState, cfg: SimConfig, dt: number, canSpawn: b
         it[b] = 0;
         it[b + 4] = ITEMS.COLLECT_ANIM;
         s.itemsCollected++;
-        if (type === ITEM_MAGNET) s.magnetT = ITEMS.MAGNET_TIME;
+        if (type === ITEM_MAGNET) s.magnetT = s.magnetTime;
         else if (type === ITEM_FEATHER) s.featherT = ITEMS.FEATHER_TIME;
         else s.shield = 1;
         s.popKind = POPUP_ITEM;

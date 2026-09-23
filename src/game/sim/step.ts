@@ -37,8 +37,17 @@ import {
   WEATHER_RAIN,
   WEATHER_SNOW,
   WEATHER_WINDY,
+  OBS_GULL,
+  POPUP_BEST,
+  ROOKIE,
+  TEXT_KIND_NICE,
+  TUT_DONE,
+  TUT_FLAP,
+  TUT_HOLD_LEFT,
+  TUT_HOLD_RIGHT,
+  TUTORIAL,
 } from './constants';
-import { updateEvents, updateObstacle } from './events';
+import { gullForce, updateEvents, updateObstacle } from './events';
 import { pullCoins, updateBiome, updateChicks, updateFever, updateFlap, updateItems } from './features';
 import {
   FX_COIN,
@@ -49,6 +58,8 @@ import {
   FX_NEAR_MISS,
   FX_RANK_UP,
   FX_SHIELD_SAVE,
+  FX_BEST_PASSED,
+  FX_TUTORIAL_STEP,
 } from './fx';
 import { addText, breakCombo, emote, partWorld, scoreMult, shake } from './helpers';
 import { OBS_SLOT, SimState } from './state';
@@ -116,6 +127,7 @@ function updateCoins(s: SimState, cfg: SimConfig, dt: number, canSpawn: boolean)
       slots[b + 3] = big ? COIN.BIG_VALUE : COIN.VALUE;
       slots[b + 4] = 0;
       slots[b + 5] = big;
+      slots[b + 6] = 0;
     }
     s.nextCoinAt = s.meters + COIN.GAP_MIN + randCoin(s) * COIN.GAP_RANGE + count * COIN.SPACING_M;
   }
@@ -131,6 +143,14 @@ function updateCoins(s: SimState, cfg: SimConfig, dt: number, canSpawn: boolean)
     const b = c * COIN.SLOT;
     if (slots[b + 4] > 0) slots[b + 4] = Math.max(0, slots[b + 4] - dt);
     if (slots[b] < 0.5) continue;
+    if (slots[b + 6] > 0) {
+      // Coin rain: falls until it lands, then disappears
+      slots[b + 2] += slots[b + 6] * dt;
+      if (slots[b + 2] > cfg.groundY + terrainOffsetAt(cfg, slots[b + 1]) - COIN.RADIUS_U * U) {
+        slots[b] = 0;
+        continue;
+      }
+    }
     const wx = slots[b + 1];
     if (wx < s.scrollX - 60) {
       slots[b] = 0;
@@ -175,6 +195,16 @@ function updateEnvironment(s: SimState, dt: number): void {
 
 function updateProgression(s: SimState): void {
   'worklet';
+  if (s.bestMeters > 0 && s.bestPassed === 0 && s.meters >= s.bestMeters) {
+    s.bestPassed = 1;
+    s.popKind = POPUP_BEST;
+    s.popValue = Math.floor(s.bestMeters);
+    s.popT = ANIM.POPUP;
+    shake(s, 0.3, 4);
+    emote(s, ANIM.HAPPY_LONG, ANIM.CHEER);
+    pushFx(s, FX_BEST_PASSED, s.popValue);
+    return;
+  }
   for (let i = 0; i < MILESTONES_M.length; i++) {
     const m = MILESTONES_M[i];
     if (s.meters >= m && s.lastMilestone < m) {
@@ -266,6 +296,42 @@ function decayAnims(s: SimState, dt: number): void {
   }
 }
 
+/** First run: hold left, hold right, then flap. Each step waits for the player (or times out). */
+function updateTutorial(s: SimState, cfg: SimConfig, input: number, dt: number): void {
+  'worklet';
+  s.tutStepT += dt;
+  let done = false;
+  if (s.tutStep === TUT_HOLD_LEFT || s.tutStep === TUT_HOLD_RIGHT) {
+    // Teaches which side to press: counts time on the right side (the tilt is the visible feedback)
+    const bit = s.tutStep === TUT_HOLD_LEFT ? 1 : 2;
+    if ((input & 3) === bit) s.tutHold += dt;
+    else s.tutHold = Math.max(0, s.tutHold - dt * 0.5);
+    done = s.tutHold >= TUTORIAL.HOLD_TIME;
+  } else if (s.tutStep === TUT_FLAP) {
+    done = s.flapAnim > 0;
+  }
+  if (!done && s.tutStepT < TUTORIAL.AUTO_ADVANCE) return;
+
+  const step = s.tutStep;
+  s.tutStep++;
+  s.tutHold = 0;
+  s.tutStepT = 0;
+  s.angle *= TUTORIAL.STEP_ANGLE_KEEP;
+  s.omega *= 0.2;
+  addText(s, cfg.storkX + 14 * cfg.unit, s.feetY - s.camY - 18 * cfg.unit, 0, TEXT_KIND_NICE);
+  emote(s, ANIM.HAPPY, ANIM.CHEER);
+  pushFx(s, FX_TUTORIAL_STEP, step);
+  if (s.tutStep === TUT_DONE) {
+    // Real play starts now: a normal grace period, then the usual first event
+    s.playStart = s.t;
+    s.graceEnd = s.t + PHYSICS.GRACE_PERIOD;
+    s.evNextAt = s.graceEnd + EVENTS.FIRST_DELAY;
+    s.nextCoinAt = s.meters + 2;
+    s.nextItemAt = Math.max(s.nextItemAt, s.meters + ITEMS.FIRST_M);
+    s.chickTimer = 0;
+  }
+}
+
 /** Input for the start-screen autopilot. */
 export function autopilotInput(s: SimState): number {
   'worklet';
@@ -310,20 +376,29 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
 
   const attract = s.mode === MODE_ATTRACT;
   const t = s.t;
+  // The tutorial keeps the run in a gentle, fall-proof grace until it's finished
+  const tutorial = !attract && s.tutStep >= TUT_HOLD_LEFT && s.tutStep < TUT_DONE;
+  if (tutorial) s.graceEnd = t + PHYSICS.GRACE_PERIOD;
   const inGrace = !attract && t < s.graceEnd;
-  const graceRatio = inGrace ? clamp((t - (s.graceEnd - PHYSICS.GRACE_PERIOD)) / PHYSICS.GRACE_PERIOD, 0, 1) : 1;
-  const effT = attract ? 0 : Math.max(0, t - PHYSICS.GRACE_PERIOD);
+  const graceRatio = tutorial
+    ? TUTORIAL.GRAVITY
+    : inGrace
+      ? clamp((t - (s.graceEnd - PHYSICS.GRACE_PERIOD)) / PHYSICS.GRACE_PERIOD, 0, 1)
+      : 1;
+  const effT = attract ? 0 : Math.max(0, t - s.playStart - PHYSICS.GRACE_PERIOD);
+  // New players get a slower difficulty clock (walk speed and scoring keep the real one)
+  const effD = effT * lerp(1, ROOKIE.SLOWEST, s.rookie);
   const slowmo = s.slowT > 0;
   const calm = s.featherT > 0 ? ITEMS.FEATHER_CALM : 1;
 
   // ── Difficulty ──
   const surge = 1 + DIFFICULTY.SURGE_AMOUNT * (Math.sin(effT * DIFFICULTY.SURGE_FREQ) + 1) * 0.5;
-  let gravity = gravityMultAt(effT) * surge * graceRatio;
+  let gravity = gravityMultAt(effD) * surge * graceRatio;
   if (slowmo) gravity *= BOOST.SLOWMO_GRAVITY_MULT;
   if (s.featherT > 0) gravity *= ITEMS.FEATHER_GRAVITY;
   if (attract) gravity = 1.2;
 
-  let damping = dampingAt(effT);
+  let damping = dampingAt(effD);
   if (s.weather === WEATHER_RAIN || s.weather === WEATHER_SNOW) {
     damping *= lerp(1, PHYSICS.RAIN_DAMPING_MULT, s.weatherAmt);
   }
@@ -332,11 +407,11 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
   // ── Wind: holds a direction for a readable stretch, then eases to the next ──
   s.windHold -= dt;
   if (s.windHold <= 0) {
-    const k = smooth01(effT / DIFFICULTY.RAMP_TIME);
+    const k = smooth01(effD / DIFFICULTY.RAMP_TIME);
     s.windHold =
       lerp(DIFFICULTY.WIND_HOLD_MIN_START, DIFFICULTY.WIND_HOLD_MIN_END, k) +
       randWind(s) * lerp(DIFFICULTY.WIND_HOLD_RANGE_START, DIFFICULTY.WIND_HOLD_RANGE_END, k);
-    let strength = windStrengthAt(effT);
+    let strength = windStrengthAt(effD);
     if (s.weather === WEATHER_WINDY) strength += ENVIRONMENT.WINDY_EXTRA_WIND * s.weatherAmt;
     if (randWind(s) < DIFFICULTY.WIND_CALM_CHANCE) {
       s.windTarget = 0;
@@ -349,7 +424,9 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
 
   // ── Input ──
   const input = attract ? autopilotInput(s) : s.input;
+  if (tutorial && s.tutStep === TUT_FLAP) s.flapCooldown = 0;
   if (!attract) updateFlap(s, input, dt);
+  if (tutorial) updateTutorial(s, cfg, input, dt);
   const dir = ((input & 2) !== 0 ? 1 : 0) - ((input & 1) !== 0 ? 1 : 0);
   const tiltRatio = Math.min(1, Math.abs(s.angle) / PHYSICS.GAME_OVER_ANGLE);
   let torque = PHYSICS.PLAYER_TORQUE * (1 + PHYSICS.RECOVERY_ASSIST * tiltRatio);
@@ -360,7 +437,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
   if (s.speedMod > 1.05) speedFeel = 1.2;
   else if (s.speedMod < 0.95) speedFeel = 0.8;
   const wobbleAmp =
-    Math.min(DIFFICULTY.WOBBLE_MAX, DIFFICULTY.WOBBLE_START + effT * DIFFICULTY.WOBBLE_RATE) *
+    Math.min(DIFFICULTY.WOBBLE_MAX, DIFFICULTY.WOBBLE_START + effD * DIFFICULTY.WOBBLE_RATE) *
     speedFeel *
     calm *
     (attract ? 0.5 : 1);
@@ -380,6 +457,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
       eventForce += Math.sin(t * 2.2) * EVENTS.STORM_GUST + Math.sin(t * 22) * EVENTS.STORM_QUAKE;
     }
   }
+  if (s.obs[0] > 0.5 && s.obs[1] === OBS_GULL) eventForce += gullForce(s, effD);
 
   const acc =
     PHYSICS.GRAVITY * Math.sin(s.angle) * gravity +
@@ -395,7 +473,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
 
   // ── Grace / invulnerability clamps ──
   if (inGrace || attract || s.invulnT > 0) {
-    const limit = s.invulnT > 0 ? PHYSICS.GAME_OVER_ANGLE * 0.85 : PHYSICS.GRACE_MAX_ANGLE;
+    const limit = s.invulnT > 0 ? PHYSICS.GAME_OVER_ANGLE * 0.85 : tutorial ? TUTORIAL.MAX_ANGLE : PHYSICS.GRACE_MAX_ANGLE;
     if (Math.abs(s.angle) > limit) {
       const sign = s.angle > 0 ? 1 : -1;
       s.angle = sign * limit;
@@ -504,10 +582,10 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
     }
 
     const obstacleBusy = s.evType === EVT_OBSTACLE && s.evStage !== STAGE_IDLE;
-    updateCoins(s, cfg, dt, !obstacleBusy);
-    updateItems(s, cfg, dt, !obstacleBusy);
+    updateCoins(s, cfg, dt, !obstacleBusy && !tutorial);
+    updateItems(s, cfg, dt, !obstacleBusy && !tutorial);
     updateBiome(s);
-    updateEvents(s, cfg, dt, effT, inGrace);
+    updateEvents(s, cfg, dt, effD, inGrace);
     updateEnvironment(s, dt);
     updateProgression(s);
     updateChicks(s, dt, !inGrace);

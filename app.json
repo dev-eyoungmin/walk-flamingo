@@ -2,7 +2,7 @@
   "expo": {
     "name": "Wobby",
     "slug": "wobbly-flamingo",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -15,9 +15,24 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wobbly.flamingo.game",
-      "buildNumber": "2",
+      "buildNumber": "1.3.0",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleLocalizations": [
+          "en",
+          "ja",
+          "zh-Hans",
+          "zh-Hant",
+          "es",
+          "pt-BR",
+          "de",
+          "fr",
+          "ru",
+          "it",
+          "id",
+          "th",
+          "vi"
+        ]
       }
     },
     "android": {
@@ -27,11 +42,17 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.wobbly.flamingo.game",
-      "versionCode": 5
+      "versionCode": 6
     },
     "plugins": [
       "expo-font",
       "expo-screen-orientation",
+      [
+        "expo-av",
+        {
+          "microphonePermission": false
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {
@@ -89,13 +110,29 @@
             "3qcr597p9d"
           ]
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {
         "projectId": "5c113359-281b-44c1-b9a4-2fa20c99828f"
       }
     },
-    "owner": "leeyoungmin"
+    "owner": "leeyoungmin",
+    "locales": {
+      "en": "./assets/locales/en.json",
+      "ja": "./assets/locales/ja.json",
+      "zh-Hans": "./assets/locales/zh-Hans.json",
+      "zh-Hant": "./assets/locales/zh-Hant.json",
+      "es": "./assets/locales/es.json",
+      "pt-BR": "./assets/locales/pt-BR.json",
+      "de": "./assets/locales/de.json",
+      "fr": "./assets/locales/fr.json",
+      "ru": "./assets/locales/ru.json",
+      "it": "./assets/locales/it.json",
+      "id": "./assets/locales/id.json",
+      "th": "./assets/locales/th.json",
+      "vi": "./assets/locales/vi.json"
+    }
   }
 }

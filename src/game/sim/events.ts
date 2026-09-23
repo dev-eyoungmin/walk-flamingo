@@ -26,6 +26,10 @@ import {
   TEXT_KIND_BRACE,
   TEXT_KIND_DODGE,
   CHL_STORM,
+  COIN,
+  OBS_GULL,
+  SPD_COIN_RAIN,
+  TEXT_KIND_SHOO,
 } from './constants';
 import {
   FX_BRANCH_DODGED,
@@ -40,12 +44,15 @@ import {
   FX_ROCK_TRIP,
   FX_SPEED_CHANGE,
   FX_WARNING,
+  FX_COIN_RAIN,
+  FX_GULL_LAND,
+  FX_GULL_SHOO,
 } from './fx';
 import { addText, breakCombo, emote, hurt, partWorld, scoreMult, shake } from './helpers';
 import type { SimState } from './state';
 import { HEAD_PART_COUNT, STORK } from './storkGeometry';
 import { SimConfig, terrainOffsetAt } from './terrain';
-import { approach, clamp, lerp, pushFx, randEvent, smooth01 } from './util';
+import { approach, clamp, lerp, pushFx, rand, randEvent, smooth01 } from './util';
 
 function pickEvent(s: SimState, effT: number): void {
   'worklet';
@@ -71,14 +78,21 @@ function pickEvent(s: SimState, effT: number): void {
       if (type !== s.evLastType) break;
     }
     const r2 = randEvent(s);
-    if (type === EVT_OBSTACLE) sub = r2 < 0.55 ? OBS_ROCK : OBS_BRANCH;
+    if (type === EVT_OBSTACLE) {
+      sub = r2 < 0.55 ? OBS_ROCK : OBS_BRANCH;
+      if (effT >= EVENTS.GULL_MIN_T && r2 >= 1 - EVENTS.GULL_CHANCE) sub = OBS_GULL;
+    }
     else if (type === EVT_ENVIRONMENT) {
       // Each zone leans toward its own hazards: icy peaks, windy beaches
       const ice = BIOMES.ICE_CHANCE[s.biome];
       const gust = BIOMES.GUST_CHANCE[s.biome];
       sub = r2 < gust ? ENV_GUST : r2 < gust + ice ? ENV_ICE : ENV_QUAKE;
     } else if (type === EVT_CHALLENGE) sub = r2 < 0.4 ? CHL_CENTERED : r2 < 0.75 ? CHL_LEAN : CHL_STORM;
-    else sub = r2 < 0.55 ? SPD_SPRINT : SPD_SLOW;
+    else {
+      sub = r2 < 0.55 ? SPD_SPRINT : SPD_SLOW;
+      if (effT >= EVENTS.COIN_RAIN_MIN_T && r2 >= 1 - EVENTS.COIN_RAIN_CHANCE) sub = SPD_COIN_RAIN;
+      if (sub === SPD_SPRINT && effT < EVENTS.SPRINT_MIN_T) sub = SPD_SLOW;
+    }
   }
   s.evType = type;
   s.evSub = sub;
@@ -109,7 +123,15 @@ function activateEvent(s: SimState, cfg: SimConfig, effT: number): void {
     o[7] = 0;
     o[8] = s.evDir;
     o[9] = s.biome;
-    if (s.evSub === OBS_ROCK) {
+    o[10] = 0;
+    if (s.evSub === OBS_GULL) {
+      // Swoops in from the top right; o[4..5] hold the start offset from the perch
+      s.evTimer = EVENTS.GULL_FLY_TIME + EVENTS.GULL_PERCH_TIME + 2.5;
+      o[4] = cfg.width * 0.55;
+      o[5] = -cfg.height * 0.5;
+      o[2] = s.scrollX + cfg.storkX + o[4];
+      o[3] = s.feetY + o[5];
+    } else if (s.evSub === OBS_ROCK) {
       const r = EVENTS.ROCK_RADIUS_U * U;
       const screenX = s.evDir > 0 ? cfg.width + r : -r;
       o[2] = s.scrollX + screenX;
@@ -149,14 +171,18 @@ function activateEvent(s: SimState, cfg: SimConfig, effT: number): void {
     }
     pushFx(s, FX_CHALLENGE_START, s.evSub);
   } else {
-    if (s.evSub === SPD_SPRINT) {
+    if (s.evSub === SPD_COIN_RAIN) {
+      s.evTimer = EVENTS.COIN_RAIN_DURATION;
+      s.rainT = 0;
+      pushFx(s, FX_COIN_RAIN, 0);
+    } else if (s.evSub === SPD_SPRINT) {
       s.speedModTarget = EVENTS.SPRINT_MULT;
       s.evTimer = EVENTS.SPRINT_DURATION;
     } else {
       s.speedModTarget = EVENTS.SLOW_MULT;
       s.evTimer = EVENTS.SLOW_DURATION;
     }
-    pushFx(s, FX_SPEED_CHANGE, s.evSub);
+    if (s.evSub !== SPD_COIN_RAIN) pushFx(s, FX_SPEED_CHANGE, s.evSub);
   }
   s.evDuration = s.evTimer;
 }
@@ -179,10 +205,116 @@ function challengeReward(s: SimState): number {
   return EVENTS.STORM_REWARD;
 }
 
+/** Lean torque from a perched seagull: +1 side is the head (tips forward), -1 the back. */
+export function gullForce(s: SimState, effT: number): number {
+  'worklet';
+  const o = s.obs;
+  if (o[7] < 0.5 || o[7] > 1.5) return 0;
+  return o[8] * lerp(EVENTS.GULL_WEIGHT_START, EVENTS.GULL_WEIGHT_END, smooth01(effT / 150));
+}
+
+function gullLeave(o: number[], U: number): void {
+  'worklet';
+  o[7] = 2;
+  o[10] = 0;
+  o[4] = 55 * U;
+  o[5] = -45 * U;
+}
+
+function updateGull(s: SimState, cfg: SimConfig, dt: number): void {
+  'worklet';
+  const o = s.obs;
+  const U = cfg.unit;
+  o[10] += dt;
+  const head = o[8] > 0;
+  const lx = head ? EVENTS.GULL_HEAD_X : EVENTS.GULL_BACK_X;
+  const ly = head ? EVENTS.GULL_HEAD_Y : EVENTS.GULL_BACK_Y;
+  const cosA = Math.cos(s.angle);
+  const sinA = Math.sin(s.angle);
+  const px = s.scrollX + cfg.storkX + (lx * cosA - ly * sinA) * U;
+  const py = s.feetY + (lx * sinA + ly * cosA) * U;
+
+  if (o[7] < 0.5) {
+    const k = smooth01(Math.min(1, o[10] / EVENTS.GULL_FLY_TIME));
+    o[2] = px + (1 - k) * o[4];
+    o[3] = py + (1 - k) * o[5] - Math.sin(k * Math.PI) * 6 * U;
+    o[6] = 0;
+    if (o[10] >= EVENTS.GULL_FLY_TIME) {
+      if (s.mode !== MODE_PLAYING) {
+        gullLeave(o, U);
+        return;
+      }
+      o[7] = 1;
+      o[10] = 0;
+      // Flaps before landing don't count
+      o[9] = s.flaps;
+      shake(s, 0.15, 2);
+      pushFx(s, FX_GULL_LAND, o[8]);
+    }
+  } else if (o[7] < 1.5) {
+    o[2] = px;
+    o[3] = py;
+    o[6] = s.angle;
+    if (s.mode === MODE_PLAYING && s.flaps > o[9]) {
+      // Shooed away with a flap
+      gullLeave(o, U);
+      s.dodges++;
+      const pts = Math.round(SCORE.DODGE_POINTS * scoreMult(s));
+      s.score += pts;
+      addText(s, cfg.storkX, s.feetY - s.camY - 36 * U, pts, TEXT_KIND_SHOO);
+      pushFx(s, FX_GULL_SHOO, 0);
+      emote(s, ANIM.HAPPY, ANIM.CHEER * 0.6);
+    } else if (o[10] >= EVENTS.GULL_PERCH_TIME || s.mode !== MODE_PLAYING) {
+      gullLeave(o, U);
+    }
+  } else {
+    o[2] += (s.speed * cfg.pxPerMeter + o[4]) * dt;
+    o[3] += o[5] * dt;
+    o[5] -= 30 * U * dt;
+    o[6] = 0;
+    if (o[3] - s.camY < -40 * U || o[2] - s.scrollX > cfg.width + 60) o[0] = 0;
+  }
+}
+
+/** Coin rain: big coins drop ahead of the flamingo so they meet it around chest height. */
+function updateCoinRain(s: SimState, cfg: SimConfig, dt: number): void {
+  'worklet';
+  s.rainT -= dt;
+  if (s.rainT > 0) return;
+  s.rainT += EVENTS.COIN_RAIN_EVERY;
+  const U = cfg.unit;
+  const slots = s.coinSlots;
+  let free = -1;
+  for (let c = 0; c < COIN.MAX; c++) {
+    const b = c * COIN.SLOT;
+    if (slots[b] < 0.5 && slots[b + 4] <= 0) {
+      free = c;
+      break;
+    }
+  }
+  if (free < 0) return;
+  const vy = EVENTS.COIN_RAIN_FALL_U * U;
+  const startY = s.camY - 4 * U;
+  const fallTime = Math.max(0.2, (s.feetY - 18 * U - startY) / vy);
+  const b = free * COIN.SLOT;
+  slots[b] = 1;
+  slots[b + 1] =
+    s.scrollX + cfg.storkX + s.speed * cfg.pxPerMeter * fallTime + (rand(s) * 2 - 1) * EVENTS.COIN_RAIN_SPREAD_U * U;
+  slots[b + 2] = startY;
+  slots[b + 3] = COIN.BIG_VALUE;
+  slots[b + 4] = 0;
+  slots[b + 5] = 1;
+  slots[b + 6] = vy;
+}
+
 export function updateObstacle(s: SimState, cfg: SimConfig, dt: number): void {
   'worklet';
   const o = s.obs;
   if (o[0] < 0.5) return;
+  if (o[1] === OBS_GULL) {
+    updateGull(s, cfg, dt);
+    return;
+  }
   const U = cfg.unit;
   const scrollSpeed = s.speed * cfg.pxPerMeter;
   const storkWorldX = s.scrollX + cfg.storkX;
@@ -342,5 +474,6 @@ export function updateEvents(s: SimState, cfg: SimConfig, dt: number, effT: numb
     return;
   }
 
+  if (s.evType === EVT_SPEED && s.evSub === SPD_COIN_RAIN && s.mode === MODE_PLAYING) updateCoinRain(s, cfg, dt);
   if (s.evTimer <= 0) finishEvent(s, effT);
 }

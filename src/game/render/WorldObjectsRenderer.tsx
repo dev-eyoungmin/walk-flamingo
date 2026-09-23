@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Circle, Group, Oval, Path, Skia, SkPath, usePathValue } from '@shopify/react-native-skia';
+import { Circle, Group, Oval, Path, RoundedRect, Skia, SkPath, Text, usePathValue, useTypeface } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 import {
   BIOME_AUTUMN,
@@ -12,11 +12,14 @@ import {
   ITEM_FEATHER,
   ITEM_MAGNET,
   ITEMS,
+  MODE_ATTRACT,
   OBS_BRANCH,
+  OBS_GULL,
   OBS_ROCK,
 } from '../sim/constants';
 import type { SimState } from '../sim/state';
-import type { SimConfig } from '../sim/terrain';
+import { SimConfig, terrainOffsetAt } from '../sim/terrain';
+import { DISPLAY_SOURCE } from '../../i18n/fonts';
 
 interface Props {
   sim: SharedValue<SimState>;
@@ -411,6 +414,140 @@ export const ItemsRenderer: React.FC<Props> = React.memo(({ sim, cfg }) => {
       {Array.from({ length: ITEMS.MAX }, (_, i) => (
         <ItemSlot key={i} sim={sim} cfg={cfg} index={i} art={art} />
       ))}
+    </Group>
+  );
+});
+
+// ─── Seagull (drawn in front of the flamingo so it can sit on its head) ──────
+
+export const GullRenderer: React.FC<Props> = React.memo(({ sim, cfg }) => {
+  const U = cfg.unit;
+  const art = useMemo(() => {
+    const body = Skia.Path.Make();
+    body.addOval(Skia.XYWHRect(-2.6 * U, -3.6 * U, 5.2 * U, 3.2 * U));
+    const tail = Skia.Path.Make();
+    tail.moveTo(-2.2 * U, -2.4 * U);
+    tail.lineTo(-3.8 * U, -3.2 * U);
+    tail.lineTo(-3.6 * U, -1.7 * U);
+    tail.close();
+    const beak = Skia.Path.Make();
+    beak.moveTo(2.8 * U, -4.6 * U);
+    beak.lineTo(4.4 * U, -4.1 * U);
+    beak.lineTo(2.8 * U, -3.7 * U);
+    beak.close();
+    const legs = Skia.Path.Make();
+    legs.moveTo(-0.5 * U, -0.6 * U);
+    legs.lineTo(-0.6 * U, 0);
+    legs.moveTo(0.6 * U, -0.6 * U);
+    legs.lineTo(0.7 * U, 0);
+    return { body, tail, beak, legs };
+  }, [U]);
+
+  const opacity = useDerivedValue(() => {
+    const o = sim.value.obs;
+    return o[0] > 0.5 && o[1] === OBS_GULL ? 1 : 0;
+  });
+  const transform = useDerivedValue(() => {
+    const s = sim.value;
+    const o = s.obs;
+    // Faces the way it's flying; perched gulls face forward
+    const flip = o[7] < 0.5 ? -1 : 1;
+    return [{ translateX: o[2] - s.scrollX }, { translateY: o[3] - s.camY }, { rotate: o[6] }, { scaleX: flip }];
+  });
+  // Wings beat while flying, folded while perched (with the odd smug flutter)
+  const wing = usePathValue((p) => {
+    'worklet';
+    const s = sim.value;
+    const o = s.obs;
+    if (o[0] < 0.5 || o[1] !== OBS_GULL) return;
+    const perched = o[7] > 0.5 && o[7] < 1.5;
+    const beat = perched ? 0.15 + 0.1 * Math.max(0, Math.sin(s.t * 3)) : Math.sin(s.t * 18);
+    const tipY = -2.6 * U - beat * 3.6 * U;
+    p.moveTo(-1.4 * U, -2.6 * U);
+    p.quadTo(-0.2 * U, tipY - 1.2 * U, 1.2 * U, -2.4 * U);
+    p.lineTo(-0.9 * U, tipY);
+    p.close();
+  });
+  const legsOpacity = useDerivedValue(() => {
+    const o = sim.value.obs;
+    return o[7] > 0.5 && o[7] < 1.5 ? 1 : 0;
+  });
+
+  return (
+    <Group transform={transform} opacity={opacity}>
+      <Group opacity={legsOpacity}>
+        <Path path={art.legs} color="#F29C1F" style="stroke" strokeWidth={U * 0.45} strokeCap="round" />
+      </Group>
+      <Path path={art.tail} color="#AEB9C6" />
+      <Path path={art.tail} color={INK} style="stroke" strokeWidth={U * 0.3} strokeJoin="round" />
+      <Path path={art.body} color="#FFFFFF" />
+      <Path path={art.body} color={INK} style="stroke" strokeWidth={U * 0.35} />
+      <Circle cx={2.1 * U} cy={-4.2 * U} r={1.35 * U} color="#FFFFFF" />
+      <Circle cx={2.1 * U} cy={-4.2 * U} r={1.35 * U} color={INK} style="stroke" strokeWidth={U * 0.3} />
+      <Path path={art.beak} color="#F2B31F" />
+      <Path path={art.beak} color={INK} style="stroke" strokeWidth={U * 0.25} strokeJoin="round" />
+      <Circle cx={2.5 * U} cy={-4.5 * U} r={0.32 * U} color={INK} />
+      <Path path={wing} color="#C9D3DE" />
+      <Path path={wing} color={INK} style="stroke" strokeWidth={U * 0.3} strokeJoin="round" />
+    </Group>
+  );
+});
+
+// ─── Personal best flag ──────────────────────────────────────────────────────────
+
+/** A flag planted where the best run ended, so you can see it coming. */
+export const BestFlagRenderer: React.FC<Props & { label: string }> = React.memo(({ sim, cfg, label }) => {
+  const U = cfg.unit;
+  const typeface = useTypeface(DISPLAY_SOURCE);
+  const font = useMemo(() => (typeface ? Skia.Font(typeface, Math.max(11, U * 2.6)) : null), [typeface, U]);
+  const poleH = 24 * U;
+
+  const worldX = useDerivedValue(() => {
+    const s = sim.value;
+    return s.scrollStart + cfg.storkX + s.bestMeters * cfg.pxPerMeter;
+  });
+  const opacity = useDerivedValue(() => {
+    const s = sim.value;
+    if (s.bestMeters <= 0 || s.mode === MODE_ATTRACT) return 0;
+    const x = worldX.value - s.scrollX;
+    return x < -40 * U || x > cfg.width + 40 * U ? 0 : 1;
+  });
+  const transform = useDerivedValue(() => {
+    const s = sim.value;
+    const wx = worldX.value;
+    return [{ translateX: wx - s.scrollX }, { translateY: cfg.groundY + terrainOffsetAt(cfg, wx) - s.camY }];
+  });
+  const flagColor = useDerivedValue<string>(() => (sim.value.bestPassed ? '#FFD23F' : '#FF6F9C'));
+  // Triangular pennant with a travelling wave along its length
+  const pennant = usePathValue((p) => {
+    'worklet';
+    const t = sim.value.t;
+    const w = 12 * U;
+    const h = 7 * U;
+    const top = -poleH;
+    const wave = (i: number) => Math.sin(t * 6 - i * 0.9) * U * 0.7 * (i / 6);
+    p.moveTo(0, top);
+    for (let i = 1; i <= 6; i++) p.lineTo((i / 6) * w, top + (h / 2) * (i / 6) + wave(i));
+    for (let i = 5; i >= 0; i--) p.lineTo((i / 6) * w, top + h - (h / 2) * (i / 6) + wave(i));
+    p.close();
+  });
+  const labelX = font ? 1.5 * U : 0;
+  const labelY = -poleH + 5 * U;
+
+  return (
+    <Group transform={transform} opacity={opacity}>
+      <Oval x={-2 * U} y={-0.6 * U} width={4 * U} height={1.2 * U} color="rgba(43,22,48,0.3)" />
+      <RoundedRect x={-0.5 * U} y={-poleH} width={U} height={poleH} r={U * 0.5} color="#FFFFFF" />
+      <RoundedRect x={-0.5 * U} y={-poleH} width={U} height={poleH} r={U * 0.5} color={INK} style="stroke" strokeWidth={U * 0.3} />
+      <Path path={pennant} color={flagColor} />
+      <Path path={pennant} color={INK} style="stroke" strokeWidth={U * 0.35} strokeJoin="round" />
+      <Circle cx={0} cy={-poleH} r={U * 0.9} color="#FFD23F" />
+      {font && (
+        <>
+          <Text x={labelX} y={labelY} text={label} font={font} color={INK} style="stroke" strokeWidth={3} strokeJoin="round" />
+          <Text x={labelX} y={labelY} text={label} font={font} color="#FFFFFF" />
+        </>
+      )}
     </Group>
   );
 });

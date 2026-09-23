@@ -1,5 +1,6 @@
+import { HUD } from './hudStrings';
 import React, { useMemo } from 'react';
-import { Circle, Group, Oval, Path, RoundedRect, Skia, SkFont, Text, usePathValue } from '@shopify/react-native-skia';
+import { Circle, Group, Oval, Path, RoundedRect, Skia, SkFont, SkTypeface, Text, usePathValue } from '@shopify/react-native-skia';
 import { SharedValue, useDerivedValue } from 'react-native-reanimated';
 import { CHICKS, FEVER, FLAP, ITEMS, MODE_PLAYING, SCORE } from '../sim/constants';
 import type { SimState } from '../sim/state';
@@ -19,6 +20,7 @@ interface Props {
   sim: SharedValue<SimState>;
   cfg: SimConfig;
   fonts: HudFonts;
+  typeface: SkTypeface | null;
   padX: number;
   meterX: number;
   meterY: number;
@@ -28,13 +30,33 @@ interface Props {
 /** HUD for fever, baby flamingos, active items, and the flap button. */
 export const TUTORIAL_Y_RATIO = 0.58;
 
+/**
+ * A copy of `font` shrunk so `text` fits in `maxW` (translations vary a lot in length).
+ * Returns the font itself when it already fits.
+ */
+export function fitFont(font: SkFont, typeface: SkTypeface | null, text: string, maxW: number, minSize = 11): SkFont {
+  // Uses the typeface from useTypeface: font.getTypeface() hands back a raw pointer on web
+  // that CanvasKit refuses to build a new font from.
+  const w = font.getTextWidth(text);
+  if (w <= maxW || !typeface) return font;
+  return Skia.Font(typeface, Math.max(minSize, (font.getSize() * maxW) / w));
+}
+
+/** Width of the right-hand HUD column (item and slow-mo timers) that hints must stay clear of. */
+const RIGHT_COLUMN_W = 72;
+
+/** Room for a hint placed right of the flamingo, left of the timers column. */
+export function tutorialMaxW(cfg: SimConfig, padX: number): number {
+  return cfg.width - padX - RIGHT_COLUMN_W - (cfg.storkX + 13 * cfg.unit) - 14;
+}
+
 /** Tutorial hints sit to the right of the flamingo so they never cover it. */
 export function tutorialTextX(cfg: SimConfig, textW: number, padX: number): number {
   'worklet';
   return Math.max(padX + 14, Math.min(cfg.storkX + 13 * cfg.unit, cfg.width - padX - textW - 14));
 }
 
-export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, padX, meterX, meterY, showTutorial }) => {
+export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, typeface, padX, meterX, meterY, showTutorial }) => {
   const { width: W, height: H } = cfg;
 
   // ── Fever ──
@@ -44,7 +66,7 @@ export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, padX, meterX, met
   });
   const feverBarW = useDerivedValue(() => {
     const s = sim.value;
-    if (s.feverT > 0) return 52 * (s.feverT / FEVER.DURATION);
+    if (s.feverT > 0) return 52 * (s.feverT / s.feverDuration);
     return 52 * Math.min(1, s.feverCharge / FEVER.CHARGE_TIME);
   });
   const feverBarColor = useDerivedValue(() => {
@@ -91,7 +113,7 @@ export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, padX, meterX, met
   const featherText = useDerivedValue<string>(() => `${Math.ceil(sim.value.featherT)}`);
   const magnetArc = usePathValue((p) => {
     'worklet';
-    const k = sim.value.magnetT / ITEMS.MAGNET_TIME;
+    const k = sim.value.magnetT / sim.value.magnetTime;
     if (k <= 0) return;
     p.addArc(Skia.XYWHRect(rightX - 32, 100, 20, 20), -90, 360 * k);
   });
@@ -141,12 +163,13 @@ export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, padX, meterX, met
   });
 
   // ── Second tutorial line ──
-  const flapHintText = 'TAP BOTH SIDES TO FLAP';
-  const flapHintW = fonts.md.getTextWidth(flapHintText);
+  const flapHintText = HUD.flapHint;
+  const flapHintFont = useMemo(() => fitFont(fonts.md, typeface, flapHintText, tutorialMaxW(cfg, padX)), [fonts, typeface, flapHintText, cfg, padX]);
+  const flapHintW = flapHintFont.getTextWidth(flapHintText);
   const flapHintX = tutorialTextX(cfg, flapHintW, padX);
   const flapHintOpacity = useDerivedValue(() => {
     const s = sim.value;
-    if (!showTutorial || s.mode !== MODE_PLAYING || s.t < 4.8 || s.t > 9.5) return 0;
+    if (!showTutorial || s.tutStep !== 0 || s.mode !== MODE_PLAYING || s.t < 4.8 || s.t > 9.5) return 0;
     return Math.min(1, (s.t - 4.8) / 0.4, (9.5 - s.t) / 0.5);
   });
 
@@ -158,8 +181,8 @@ export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, padX, meterX, met
         <RoundedRect x={padX + 5} y={129} width={feverBarW} height={5} r={2.5} color={feverBarColor} />
       </Group>
       <Group transform={feverTextTransform} opacity={feverActive}>
-        <Text x={padX + 70} y={112} text="FEVER x2" font={fonts.md} color={INK} style="stroke" strokeWidth={4} strokeJoin="round" />
-        <Text x={padX + 70} y={112} text="FEVER x2" font={fonts.md} color={feverBarColor} />
+        <Text x={padX + 70} y={112} text={HUD.fever} font={fonts.md} color={INK} style="stroke" strokeWidth={4} strokeJoin="round" />
+        <Text x={padX + 70} y={112} text={HUD.fever} font={fonts.md} color={feverBarColor} />
       </Group>
 
       {/* Baby flamingos */}
@@ -209,7 +232,7 @@ export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, padX, meterX, met
 
       <Group opacity={flapHintOpacity}>
         <RoundedRect x={flapHintX - 14} y={H * TUTORIAL_Y_RATIO - 26} width={flapHintW + 28} height={36} r={12} color="rgba(43,22,48,0.6)" />
-        <Text x={flapHintX} y={H * TUTORIAL_Y_RATIO} text={flapHintText} font={fonts.md} color="#FFFFFF" />
+        <Text x={flapHintX} y={H * TUTORIAL_Y_RATIO} text={flapHintText} font={flapHintFont} color="#FFFFFF" />
       </Group>
     </Group>
   );

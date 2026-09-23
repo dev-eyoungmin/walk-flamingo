@@ -38,7 +38,6 @@ import {
   POPUP_MILESTONE,
   POPUP_RANK,
   POPUP_SHIELD,
-  BIOME_NAMES,
   CHICKS,
   ITEM_FEATHER,
   ITEM_MAGNET,
@@ -52,12 +51,26 @@ import {
   TEXT_KIND_BRACE,
   TEXT_KIND_COIN,
   TEXT_KIND_DODGE,
+  BEST,
+  OBS_GULL,
+  POPUP_BEST,
+  SPD_COIN_RAIN,
+  TEXT_KIND_NICE,
+  TEXT_KIND_SHOO,
+  TUT_DONE,
+  TUT_FLAP,
+  TUT_HOLD_LEFT,
+  TUT_HOLD_RIGHT,
+  TUTORIAL,
 } from '../sim/constants';
 import type { SimState } from '../sim/state';
 import { STORK } from '../sim/storkGeometry';
 import type { SimConfig } from '../sim/terrain';
 import { RANK_NAMES } from '../../lib/ranks';
-import { FeatureHud, TUTORIAL_Y_RATIO, tutorialTextX } from './FeatureHud';
+import { fill } from '../../i18n';
+import { DISPLAY_SOURCE } from '../../i18n/fonts';
+import { HUD } from './hudStrings';
+import { FeatureHud, fitFont, TUTORIAL_Y_RATIO, tutorialMaxW, tutorialTextX } from './FeatureHud';
 
 interface Props {
   sim: SharedValue<SimState>;
@@ -67,7 +80,6 @@ interface Props {
   showTutorial?: boolean;
 }
 
-const FONT_SOURCE = require('../../../assets/fonts/LilitaOne-Regular.ttf');
 const INK = '#2B1630';
 const PAD_X = Platform.OS === 'ios' ? 50 : 18;
 
@@ -123,28 +135,32 @@ function bannerInfo(s: SimState): { text: string; color: string; arrow: number }
   const t = s.evType;
   const sub = s.evSub;
   if (t === EVT_OBSTACLE) {
-    return { text: sub === OBS_ROCK ? 'ROCK! LEAN' : 'HEADS UP! LEAN', color: '#E8475F', arrow: -s.evDir };
+    if (sub === OBS_GULL) {
+      return { text: s.evStage === STAGE_ACTIVE ? HUD.gullPerched : HUD.gull, color: '#E8475F', arrow: 0 };
+    }
+    return { text: sub === OBS_ROCK ? HUD.rock : HUD.branch, color: '#E8475F', arrow: -s.evDir };
   }
   if (t === EVT_ENVIRONMENT) {
-    if (sub === ENV_GUST) return { text: 'GUST! PUSH BACK', color: '#3D8BFF', arrow: -s.evDir };
-    if (sub === ENV_ICE) return { text: 'ICE! SLIPPERY', color: '#35B4E6', arrow: 0 };
-    return { text: 'QUAKE!', color: '#C98A3D', arrow: 0 };
+    if (sub === ENV_GUST) return { text: HUD.gust, color: '#3D8BFF', arrow: -s.evDir };
+    if (sub === ENV_ICE) return { text: HUD.ice, color: '#35B4E6', arrow: 0 };
+    return { text: HUD.quake, color: '#C98A3D', arrow: 0 };
   }
   if (t === EVT_CHALLENGE) {
-    if (sub === CHL_CENTERED) return { text: 'STAY CENTERED', color: '#F29C1F', arrow: 0 };
-    if (sub === CHL_LEAN) return { text: 'LEAN AND HOLD', color: '#F29C1F', arrow: s.evDir };
-    return { text: 'SURVIVE THE STORM', color: '#F29C1F', arrow: 0 };
+    if (sub === CHL_CENTERED) return { text: HUD.centered, color: '#F29C1F', arrow: 0 };
+    if (sub === CHL_LEAN) return { text: HUD.lean, color: '#F29C1F', arrow: s.evDir };
+    return { text: HUD.storm, color: '#F29C1F', arrow: 0 };
   }
   if (t === EVT_SPEED) {
+    if (sub === SPD_COIN_RAIN) return { text: HUD.coinRain, color: '#E0A10E', arrow: 0 };
     return sub === SPD_SPRINT
-      ? { text: 'SPRINT! x1.5 POINTS', color: '#8E5BFF', arrow: 0 }
-      : { text: 'SLOW DOWN', color: '#6C7BD9', arrow: 0 };
+      ? { text: HUD.sprint, color: '#8E5BFF', arrow: 0 }
+      : { text: HUD.slow, color: '#6C7BD9', arrow: 0 };
   }
   return { text: '', color: '#000000', arrow: 0 };
 }
 
 export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, showTutorial = false }) => {
-  const typeface = useTypeface(FONT_SOURCE);
+  const typeface = useTypeface(DISPLAY_SOURCE);
   const fonts = useMemo(() => {
     if (!typeface) return null;
     return {
@@ -167,7 +183,7 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
   const scoreText = useDerivedValue<string>(() => formatNumber(sim.value.score));
   const isNewBest = useDerivedValue(() => (bestScore > 0 && sim.value.score > bestScore ? 1 : 0));
   const bestText = useDerivedValue<string>(() =>
-    isNewBest.value ? 'NEW BEST!' : bestScore > 0 ? `BEST ${formatNumber(bestScore)}` : '',
+    isNewBest.value ? HUD.newBest : bestScore > 0 ? fill(HUD.best, { n: formatNumber(bestScore) }) : '',
   );
   const bestColor = useDerivedValue<string>(() =>
     isNewBest.value ? (Math.sin(sim.value.t * 8) > 0 ? '#FFE14D' : '#FFB020') : 'rgba(255,255,255,0.9)',
@@ -205,12 +221,32 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
 
   // ── Distance & coins (top-right) ──
   const distText = useDerivedValue<string>(() => `${Math.floor(sim.value.meters)} m`);
-  const distX = useDerivedValue(() => (fonts ? W - PAD_X - textWidth(fonts.lg, distText.value) : 0));
+  const distW = useDerivedValue(() => (fonts ? textWidth(fonts.lg, distText.value) : 0));
+  const distX = useDerivedValue(() => W - PAD_X - distW.value);
+  const distColor = useDerivedValue<string>(() => (sim.value.bestPassed ? '#FFE14D' : '#FFFFFF'));
+
+  // ── Chasing the personal best: "42 m TO BEST" and a thin bar under the distance ──
+  const toBestText = useDerivedValue<string>(() => {
+    const s = sim.value;
+    if (s.mode !== MODE_PLAYING || s.bestMeters <= 0 || s.bestPassed || s.meters < s.bestMeters * BEST.HUD_FROM_RATIO) return '';
+    return fill(HUD.toBest, { n: Math.max(1, Math.ceil(s.bestMeters - s.meters)) });
+  });
+  const toBestOpacity = useDerivedValue(() => (toBestText.value === '' ? 0 : 1));
+  const toBestX = useDerivedValue(() => (fonts ? distX.value - 10 - textWidth(fonts.sm, toBestText.value) : 0));
+  const toBestColor = useDerivedValue<string>(() => {
+    const s = sim.value;
+    if (s.meters < s.bestMeters * BEST.CLOSE_RATIO) return 'rgba(255,255,255,0.92)';
+    return Math.sin(s.t * 9) > 0 ? '#FFE14D' : '#FF9EC4';
+  });
+  const toBestFill = useDerivedValue(() => {
+    const s = sim.value;
+    return s.bestMeters > 0 ? distW.value * Math.min(1, s.meters / s.bestMeters) : 0;
+  });
   const coinText = useDerivedValue<string>(() => formatNumber(sim.value.coins));
   const coinTextX = useDerivedValue(() => (fonts ? W - PAD_X - textWidth(fonts.md, coinText.value) : 0));
   const coinIconX = useDerivedValue(() => coinTextX.value - 13);
 
-  const slowText = useDerivedValue<string>(() => (sim.value.slowT > 0 ? `SLOW-MO ${Math.ceil(sim.value.slowT)}` : ''));
+  const slowText = useDerivedValue<string>(() => (sim.value.slowT > 0 ? fill(HUD.slowmo, { n: Math.ceil(sim.value.slowT) }) : ''));
   const slowX = useDerivedValue(() => (fonts ? W - PAD_X - textWidth(fonts.sm, slowText.value) : 0));
 
   // ── Balance meter (bottom-center) ──
@@ -250,16 +286,32 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
   const bannerOpacity = useDerivedValue(() => {
     const s = sim.value;
     if (s.mode !== MODE_PLAYING || s.evStage === STAGE_IDLE || s.evType === EVT_NONE) return 0;
-    if (s.evStage === STAGE_ACTIVE && s.evType === EVT_OBSTACLE) return 0;
+    if (s.evStage === STAGE_ACTIVE && s.evType === EVT_OBSTACLE) {
+      // A perched seagull keeps its "FLAP!" banner up
+      return s.evSub === OBS_GULL && s.obs[0] > 0.5 && s.obs[7] > 0.5 && s.obs[7] < 1.5 ? 1 : 0;
+    }
     return 1;
+  });
+  const bannerChrome = useDerivedValue(() => (banner.value.arrow !== 0 ? 44 : 24) + 12);
+  // Longest banner that fits between the stork's head and the right edge
+  const bannerMaxText = useDerivedValue(() => W - PAD_X * 0.5 - (storkX + 11 * U) - bannerChrome.value);
+  const bannerScale = useDerivedValue(() => {
+    if (!fonts) return 1;
+    const w = textWidth(fonts.md, banner.value.text);
+    return w > bannerMaxText.value ? Math.max(0.6, bannerMaxText.value / w) : 1;
   });
   const bannerW = useDerivedValue(() => {
     if (!fonts) return 200;
-    return textWidth(fonts.md, banner.value.text) + (banner.value.arrow !== 0 ? 44 : 24) + 12;
+    return textWidth(fonts.md, banner.value.text) * bannerScale.value + bannerChrome.value;
   });
   // Sits right of the stork's head so falling branches and their markers stay visible
   const bannerX = useDerivedValue(() => Math.max(W * 0.66 - bannerW.value / 2, storkX + 11 * U));
   const bannerTextX = useDerivedValue(() => bannerX.value + 18);
+  const bannerTextTransform = useDerivedValue(() => [
+    { translateX: bannerTextX.value },
+    { translateY: 37 - (1 - bannerScale.value) * 6 },
+    { scale: bannerScale.value },
+  ]);
   const bannerArrowTransform = useDerivedValue(() => {
     const dir = banner.value.arrow;
     const pulse = 1 + 0.15 * Math.sin(sim.value.t * 12);
@@ -286,7 +338,7 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
     return (bannerW.value - 16) * Math.min(1, s.chNeed > 0 ? s.chProgress / s.chNeed : 0);
   });
   const resultOpacity = useDerivedValue(() => Math.min(1, Math.abs(sim.value.chResultT) / 0.4));
-  const resultText = useDerivedValue<string>(() => (sim.value.chResultT >= 0 ? 'CHALLENGE CLEAR!' : 'MISSED IT'));
+  const resultText = useDerivedValue<string>(() => (sim.value.chResultT >= 0 ? HUD.challengeClear : HUD.missed));
   const resultColor = useDerivedValue<string>(() => (sim.value.chResultT >= 0 ? '#7CFF8A' : '#FF8A96'));
   const resultX = useDerivedValue(() =>
     fonts ? Math.max(W * 0.66, storkX + 11 * U + 100) - textWidth(fonts.md, resultText.value) / 2 : 0,
@@ -333,23 +385,25 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
   const popText = useDerivedValue<string>(() => {
     const s = sim.value;
     const k = s.popKind;
-    if (k === POPUP_MILESTONE) return `${s.popValue} m!`;
+    if (k === POPUP_BEST) return HUD.record;
+    if (k === POPUP_MILESTONE) return fill(HUD.milestone, { n: s.popValue });
     if (k === POPUP_RANK) return RANK_NAMES[s.popValue] ?? '';
-    if (k === POPUP_BIOME) return BIOME_NAMES[s.popValue] ?? '';
-    if (k === POPUP_FEVER) return 'x2 POINTS!';
-    if (k === POPUP_ITEM) return s.popValue === ITEM_MAGNET ? 'MAGNET!' : s.popValue === ITEM_FEATHER ? 'FEATHER CALM!' : 'BALLOON!';
-    if (k === POPUP_CHICK) return `+${Math.round(s.popValue * CHICKS.SCORE_BONUS * 100)}% POINTS`;
-    return 'SHIELD SAVE!';
+    if (k === POPUP_BIOME) return HUD.biomes[s.popValue] ?? '';
+    if (k === POPUP_FEVER) return HUD.feverPop;
+    if (k === POPUP_ITEM) return s.popValue === ITEM_MAGNET ? HUD.magnet : s.popValue === ITEM_FEATHER ? HUD.feather : HUD.balloon;
+    if (k === POPUP_CHICK) return fill(HUD.chick, { n: Math.round(s.popValue * CHICKS.SCORE_BONUS * 100) });
+    return HUD.shield;
   });
   const popLabel = useDerivedValue<string>(() => {
     const k = sim.value.popKind;
-    if (k === POPUP_RANK) return 'RANK UP';
-    if (k === POPUP_MILESTONE) return 'MILESTONE';
-    if (k === POPUP_BIOME) return 'NEW AREA';
-    if (k === POPUP_FEVER) return 'COMBO FEVER';
-    if (k === POPUP_ITEM) return 'ITEM';
-    if (k === POPUP_CHICK) return 'A BABY JOINED YOU';
-    return 'SAVED';
+    if (k === POPUP_BEST) return HUD.recordLabel;
+    if (k === POPUP_RANK) return HUD.rankLabel;
+    if (k === POPUP_MILESTONE) return HUD.milestoneLabel;
+    if (k === POPUP_BIOME) return HUD.areaLabel;
+    if (k === POPUP_FEVER) return HUD.feverLabel;
+    if (k === POPUP_ITEM) return HUD.itemLabel;
+    if (k === POPUP_CHICK) return HUD.chickLabel;
+    return HUD.shieldLabel;
   });
   const popCx = W * 0.74;
   const popCy = H * 0.36;
@@ -367,7 +421,7 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
   const popColor = useDerivedValue<string>(() => {
     const k = sim.value.popKind;
     if (k === POPUP_RANK || k === POPUP_FEVER) return '#FFB3D1';
-    if (k === POPUP_MILESTONE || k === POPUP_ITEM) return '#FFE14D';
+    if (k === POPUP_MILESTONE || k === POPUP_ITEM || k === POPUP_BEST) return '#FFE14D';
     if (k === POPUP_BIOME) return '#9EE7FF';
     if (k === POPUP_CHICK) return '#FFFFFF';
     return '#7FDBFF';
@@ -383,12 +437,56 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
   // ── Tutorial ──
   const tutorialOpacity = useDerivedValue(() => {
     const s = sim.value;
-    if (!showTutorial || s.mode !== MODE_PLAYING || s.t > 4.5) return 0;
+    if (!showTutorial || s.tutStep !== 0 || s.mode !== MODE_PLAYING || s.t > 4.5) return 0;
     return Math.min(1, (4.5 - s.t) / 0.6);
   });
-  const tutorialText = 'HOLD LEFT OR RIGHT SIDE TO BALANCE';
-  const tutorialX = useDerivedValue(() => (fonts ? tutorialTextX(cfg, textWidth(fonts.md, tutorialText), PAD_X) : 0));
+  const tutorialText = HUD.tutorial;
+  const tutorialFont = useMemo(() => (fonts ? fitFont(fonts.md, typeface, tutorialText, tutorialMaxW(cfg, PAD_X)) : null), [fonts, typeface, tutorialText, cfg]);
+  const tutorialX = useDerivedValue(() => (tutorialFont ? tutorialTextX(cfg, textWidth(tutorialFont, tutorialText), PAD_X) : 0));
   const tutorialBoxX = useDerivedValue(() => tutorialX.value - 14);
+  // Interactive first-run steps: high up and centered so a leaning flamingo never hides them
+  const TUT_STEP_Y = Math.max(84, H * 0.26);
+  const tutStepText = useDerivedValue<string>(() => {
+    const s = sim.value;
+    if (s.tutStep === TUT_HOLD_LEFT) return HUD.tutHoldLeft;
+    if (s.tutStep === TUT_HOLD_RIGHT) return HUD.tutHoldRight;
+    if (s.tutStep === TUT_FLAP) return HUD.tutFlap;
+    if (s.tutStep === TUT_DONE && s.t - s.playStart < 1.6) return HUD.tutReady;
+    return '';
+  });
+  const tutStepOpacity = useDerivedValue(() => (sim.value.mode === MODE_PLAYING && tutStepText.value !== '' ? 1 : 0));
+  const tutStepW = useDerivedValue(() => (fonts ? textWidth(fonts.md, tutStepText.value) : 0));
+  const tutStepX = useDerivedValue(() => Math.max(PAD_X + 14, W / 2 - tutStepW.value / 2));
+  const tutStepBoxX = useDerivedValue(() => tutStepX.value - 14);
+  const tutStepBoxW = useDerivedValue(() => tutStepW.value + 28);
+  const tutHoldW = useDerivedValue(() => {
+    const s = sim.value;
+    const holding = s.tutStep === TUT_HOLD_LEFT || s.tutStep === TUT_HOLD_RIGHT;
+    return holding ? (tutStepBoxW.value - 16) * Math.min(1, s.tutHold / TUTORIAL.HOLD_TIME) : 0;
+  });
+  const tutHoldX = useDerivedValue(() => tutStepBoxX.value + 8);
+  // Big pulsing arrows at the screen edge(s) to press
+  const tutArrowPulse = useDerivedValue(() => 1 + 0.18 * Math.sin(sim.value.t * 8));
+  const tutLeftOpacity = useDerivedValue(() => {
+    const st = sim.value.tutStep;
+    return st === TUT_HOLD_LEFT || st === TUT_FLAP ? 1 : 0;
+  });
+  const tutRightOpacity = useDerivedValue(() => {
+    const st = sim.value.tutStep;
+    return st === TUT_HOLD_RIGHT || st === TUT_FLAP ? 1 : 0;
+  });
+  const tutLeftTransform = useDerivedValue(() => [
+    { translateX: PAD_X + 50 },
+    { translateY: H * 0.66 },
+    { scaleX: -tutArrowPulse.value },
+    { scaleY: tutArrowPulse.value },
+  ]);
+  const tutRightTransform = useDerivedValue(() => [
+    { translateX: W - PAD_X - 50 },
+    { translateY: H * 0.66 },
+    { scaleX: tutArrowPulse.value },
+    { scaleY: tutArrowPulse.value },
+  ]);
   const bannerInnerX = useDerivedValue(() => bannerX.value + 8);
   const bannerInnerW = useDerivedValue(() => bannerW.value - 16);
   const branchBangX = useDerivedValue(() => branchMarkX.value - 5);
@@ -398,7 +496,7 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
   return (
     <Group opacity={visible}>
       {/* Score */}
-      <OutlinedText x={PAD_X} y={22} text="SCORE" font={fonts.xs} color="rgba(255,255,255,0.9)" stroke={3} />
+      <OutlinedText x={PAD_X} y={22} text={HUD.score} font={fonts.xs} color="rgba(255,255,255,0.9)" stroke={3} />
       <OutlinedText x={PAD_X} y={56} text={scoreText} font={fonts.xl} color="#FFFFFF" stroke={5} />
       <OutlinedText x={PAD_X} y={76} text={bestText} font={fonts.sm} color={bestColor} stroke={3} />
 
@@ -412,7 +510,12 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
       </Group>
 
       {/* Distance / coins / boosts */}
-      <OutlinedText x={distX} y={38} text={distText} font={fonts.lg} color="#FFFFFF" stroke={4} />
+      <OutlinedText x={distX} y={38} text={distText} font={fonts.lg} color={distColor} stroke={4} />
+      <Group opacity={toBestOpacity}>
+        <OutlinedText x={toBestX} y={36} text={toBestText} font={fonts.sm} color={toBestColor} stroke={3} />
+        <RoundedRect x={distX} y={42} width={distW} height={4} r={2} color="rgba(43,22,48,0.55)" />
+        <RoundedRect x={distX} y={42} width={toBestFill} height={4} r={2} color={toBestColor} />
+      </Group>
       <Circle cx={coinIconX} cy={57} r={7.5} color="#D08A12" />
       <Circle cx={coinIconX} cy={57} r={5} color="#FFD23F" />
       <OutlinedText x={coinTextX} y={64} text={coinText} font={fonts.md} color="#FFE14D" stroke={3} />
@@ -422,6 +525,7 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
         sim={sim}
         cfg={cfg}
         fonts={fonts}
+        typeface={typeface}
         padX={PAD_X}
         meterX={meterX}
         meterY={meterY}
@@ -453,7 +557,9 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
       <Group opacity={bannerOpacity}>
         <RoundedRect x={bannerX} y={10} width={bannerW} height={40} r={12} color={bannerColor} />
         <RoundedRect x={bannerX} y={10} width={bannerW} height={40} r={12} color={INK} style="stroke" strokeWidth={3} />
-        <OutlinedText x={bannerTextX} y={37} text={bannerText} font={fonts.md} color="#FFFFFF" stroke={3} />
+        <Group transform={bannerTextTransform}>
+          <OutlinedText x={0} y={0} text={bannerText} font={fonts.md} color="#FFFFFF" stroke={3} />
+        </Group>
         <Group transform={bannerArrowTransform} opacity={bannerArrowOpacity}>
           <Path path={arrow} color="#FFFFFF" />
           <Path path={arrow} color={INK} style="stroke" strokeWidth={2.5} strokeJoin="round" />
@@ -489,8 +595,8 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
 
       {/* Near miss */}
       <Group transform={nearMissTransform} opacity={nearMissOpacity}>
-        <RoundedRect x={-4} y={-22} width={textWidthStatic(fonts.md, 'NICE SAVE!') + 12} height={30} r={10} color="rgba(43,22,48,0.7)" />
-        <OutlinedText x={2} y={0} text="NICE SAVE!" font={fonts.md} color="#5EE6C9" stroke={3} />
+        <RoundedRect x={-4} y={-22} width={textWidthStatic(fonts.md, HUD.niceSave) + 12} height={30} r={10} color="rgba(43,22,48,0.7)" />
+        <OutlinedText x={2} y={0} text={HUD.niceSave} font={fonts.md} color="#5EE6C9" stroke={3} />
       </Group>
 
       {/* Milestone / rank / shield popups */}
@@ -499,17 +605,32 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
         <OutlinedText x={popTextX} y={popCy + 4} text={popText} font={fonts.xl} color={popColor} stroke={5} />
       </Group>
 
+      {/* Interactive first-run tutorial */}
+      <Group opacity={tutStepOpacity}>
+        <RoundedRect x={tutStepBoxX} y={TUT_STEP_Y - 26} width={tutStepBoxW} height={36} r={12} color="rgba(43,22,48,0.7)" />
+        <Text x={tutStepX} y={TUT_STEP_Y} text={tutStepText} font={fonts.md} color="#FFFFFF" />
+        <RoundedRect x={tutHoldX} y={TUT_STEP_Y + 14} width={tutHoldW} height={5} r={2.5} color="#7CFF8A" />
+      </Group>
+      <Group transform={tutLeftTransform} opacity={tutLeftOpacity}>
+        <Path path={bigArrow} color="rgba(255,255,255,0.95)" />
+        <Path path={bigArrow} color={INK} style="stroke" strokeWidth={3} strokeJoin="round" />
+      </Group>
+      <Group transform={tutRightTransform} opacity={tutRightOpacity}>
+        <Path path={bigArrow} color="rgba(255,255,255,0.95)" />
+        <Path path={bigArrow} color={INK} style="stroke" strokeWidth={3} strokeJoin="round" />
+      </Group>
+
       {/* Tutorial */}
       <Group opacity={tutorialOpacity}>
         <RoundedRect
           x={tutorialBoxX}
           y={H * TUTORIAL_Y_RATIO - 26}
-          width={textWidthStatic(fonts.md, tutorialText) + 28}
+          width={textWidthStatic(tutorialFont ?? fonts.md, tutorialText) + 28}
           height={36}
           r={12}
           color="rgba(43,22,48,0.6)"
         />
-        <Text x={tutorialX} y={H * TUTORIAL_Y_RATIO} text={tutorialText} font={fonts.md} color="#FFFFFF" />
+        <Text x={tutorialX} y={H * TUTORIAL_Y_RATIO} text={tutorialText} font={tutorialFont ?? fonts.md} color="#FFFFFF" />
       </Group>
     </Group>
   );
@@ -533,9 +654,11 @@ const FloatingText: React.FC<{ sim: SharedValue<SimState>; index: number; font: 
     if (tx[b] < 0.5) return '';
     const kind = tx[b + 5];
     const v = Math.floor(tx[b + 4]);
-    if (kind === TEXT_KIND_DODGE) return `DODGE +${v}`;
-    if (kind === TEXT_KIND_BRACE) return `STEADY +${v}`;
-    if (kind === TEXT_KIND_BONK) return 'BONK!';
+    if (kind === TEXT_KIND_DODGE) return fill(HUD.dodge, { n: v });
+    if (kind === TEXT_KIND_BRACE) return fill(HUD.steady, { n: v });
+    if (kind === TEXT_KIND_BONK) return HUD.bonk;
+    if (kind === TEXT_KIND_NICE) return HUD.nice;
+    if (kind === TEXT_KIND_SHOO) return fill(HUD.shoo, { n: v });
     return `+${v}`;
   });
   const color = useDerivedValue<string>(() => {
@@ -543,6 +666,7 @@ const FloatingText: React.FC<{ sim: SharedValue<SimState>; index: number; font: 
     if (kind === TEXT_KIND_COIN) return '#FFE14D';
     if (kind === TEXT_KIND_BONUS) return '#5EE6C9';
     if (kind === TEXT_KIND_BONK) return '#FF6B7E';
+    if (kind === TEXT_KIND_NICE) return '#7CFF8A';
     return '#B8F27A';
   });
   const transform = useDerivedValue(() => {

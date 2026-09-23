@@ -41,3 +41,6 @@ yarn-error.*
 
 # asset generation tools
 assets/*.html
+
+# Font sources for scripts/subset-fonts.py
+scripts/.font-cache/

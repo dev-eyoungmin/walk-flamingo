@@ -2,11 +2,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Font from 'expo-font';
-import { AppNavigator } from './src/navigation/AppNavigator';
 import { IS_EXPO_GO } from './src/lib/adConfig';
+import { initLocale } from './src/i18n';
+import { loadLanguageChoice } from './src/i18n/preference';
 
 export default function App() {
-  const [ready, setReady] = useState(false);
+  // Screens are loaded only after the language is known: their labels, fonts and HUD text are
+  // fixed when their modules first load (changing language restarts the app).
+  const [Root, setRoot] = useState<React.ComponentType | null>(null);
 
   const initialize = useCallback(async () => {
     // Lock to landscape (not supported everywhere, e.g. web)
@@ -16,13 +19,15 @@ export default function App() {
       console.warn('[Orientation] Lock failed:', e);
     }
 
-    // Load the display font shared by menus (the in-game HUD loads it through Skia)
+    initLocale(await loadLanguageChoice());
+
+    // Load the display font shared by menus for this language (the in-game HUD loads it through Skia)
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { DISPLAY_FAMILY, DISPLAY_SOURCE } = require('./src/i18n/fonts');
     try {
-      await Font.loadAsync({
-        LilitaOne: require('./assets/fonts/LilitaOne-Regular.ttf'),
-      });
+      await Font.loadAsync({ [DISPLAY_FAMILY]: DISPLAY_SOURCE });
     } catch (e) {
-      console.warn('[Font] Failed to load LilitaOne:', e);
+      console.warn(`[Font] Failed to load ${DISPLAY_FAMILY}:`, e);
     }
 
     // Initialize AdMob SDK (required for production builds)
@@ -36,21 +41,23 @@ export default function App() {
       }
     }
 
-    setReady(true);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { AppNavigator } = require('./src/navigation/AppNavigator');
+    setRoot(() => AppNavigator);
   }, []);
 
   useEffect(() => {
     initialize();
   }, [initialize]);
 
-  if (!ready) {
+  if (!Root) {
     return <View style={styles.loading} />;
   }
 
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      <AppNavigator />
+      <Root />
     </View>
   );
 }

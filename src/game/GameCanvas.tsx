@@ -5,7 +5,8 @@ import { runOnJS, runOnUI, useDerivedValue, useFrameCallback, useSharedValue } f
 import { BackgroundRenderer } from './render/BackgroundRenderer';
 import { GroundRenderer } from './render/GroundRenderer';
 import { StorkRenderer } from './render/StorkRenderer';
-import { CoinRenderer, ItemsRenderer, ObstacleRenderer } from './render/WorldObjectsRenderer';
+import { BestFlagRenderer, CoinRenderer, GullRenderer, ItemsRenderer, ObstacleRenderer } from './render/WorldObjectsRenderer';
+import { HUD } from './render/hudStrings';
 import { ChicksRenderer, StorkExtrasRenderer } from './render/CompanionRenderer';
 import { ScreenEffectsRenderer, WorldEffectsRenderer } from './render/EffectsRenderer';
 import { HudRenderer } from './render/HudRenderer';
@@ -21,7 +22,7 @@ import {
   STAGE_ACTIVE,
 } from './sim/constants';
 import { FX_CHICK_JOIN } from './sim/fx';
-import { createSimState, SimState } from './sim/state';
+import { createSimState, RunParams, SimState } from './sim/state';
 import { advanceSim, resumeSim } from './sim/step';
 import { generateTerrainRatios, makeSimConfig, SimConfig } from './sim/terrain';
 import type { SkinPalette } from '../lib/skins';
@@ -74,6 +75,8 @@ interface GameCanvasProps {
   /** When set, terrain and the event sequence come from this seed (today's course) */
   courseSeed?: number | null;
   showTutorial?: boolean;
+  /** Upgrades, onboarding and the best-distance flag for the next run */
+  runParams?: Omit<RunParams, 'shield' | 'slowmo' | 'scrollX'>;
   onGameOver: (stats: GameStats) => void;
   onFx: (code: number, value: number) => void;
 }
@@ -104,6 +107,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   controlsEnabled,
   courseSeed = null,
   showTutorial = false,
+  runParams,
   onGameOver,
   onFx,
 }) => {
@@ -162,7 +166,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         items: s.itemsCollected,
         flaps: s.flaps,
         chicksMax: s.chicksMax,
-        time: Math.floor(s.t),
+        time: Math.floor(s.t - s.playStart),
         zones: Math.floor(s.meters / BIOMES.LENGTH_M),
         fallEvent: s.fallEvent,
         fallWeather: s.fallWeather,
@@ -186,13 +190,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (first && runMode === 'attract') return;
     const mode = runMode === 'playing' ? MODE_PLAYING : MODE_ATTRACT;
     const seed = courseSeed ? courseSeed >>> 0 : (Date.now() ^ Math.imul(runId + 1, 2654435761)) >>> 0;
-    const shield = boost === 'shield';
-    const slowmo = boost === 'slowmo';
-    runOnUI((c: SimConfig, m: number, sd: number, keep: boolean, sh: boolean, sl: boolean) => {
+    const params: RunParams = {
+      ...(mode === MODE_PLAYING ? runParams : null),
+      shield: boost === 'shield',
+      slowmo: boost === 'slowmo',
+    };
+    runOnUI((c: SimConfig, m: number, sd: number, keep: boolean, p: RunParams) => {
       'worklet';
       const prevScroll = sim.value.scrollX;
-      sim.value = createSimState(c, m, sd, { shield: sh, slowmo: sl, scrollX: keep ? prevScroll : 0 });
-    })(cfg, mode, seed, keepScroll, shield, slowmo);
+      sim.value = createSimState(c, m, sd, { ...p, scrollX: keep ? prevScroll : 0 });
+    })(cfg, mode, seed, keepScroll, params);
     // Only runId and cfg drive restarts; the other props are read at the moment of the restart
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg, runId]);
@@ -276,6 +283,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         <Group transform={shake}>
           <BackgroundRenderer sim={sim} palette={palette} width={width} height={height} />
           <GroundRenderer sim={sim} palette={palette} cfg={cfg} />
+          <BestFlagRenderer sim={sim} cfg={cfg} label={HUD.flag} />
           <ObstacleRenderer sim={sim} cfg={cfg} />
           <CoinRenderer sim={sim} cfg={cfg} />
           <ItemsRenderer sim={sim} cfg={cfg} />
@@ -283,6 +291,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           <StorkExtrasRenderer sim={sim} cfg={cfg} layer="back" />
           <StorkRenderer pose={sim} unit={cfg.unit} x={cfg.storkX} skin={skin} />
           <StorkExtrasRenderer sim={sim} cfg={cfg} layer="front" />
+          <GullRenderer sim={sim} cfg={cfg} />
           <WorldEffectsRenderer sim={sim} palette={palette} cfg={cfg} featherColor={skin.bodyLight} />
         </Group>
         <ScreenEffectsRenderer sim={sim} palette={palette} cfg={cfg} />

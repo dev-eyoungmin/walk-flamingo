@@ -1,5 +1,7 @@
-/** Shared UI tokens so the menus match the in-game HUD. */
-export const FONT_DISPLAY = 'LilitaOne';
+import { DISPLAY_FAMILY } from '../i18n/fonts';
+
+/** Shared UI tokens so the menus match the in-game HUD. The display font follows the language's script. */
+export const FONT_DISPLAY = DISPLAY_FAMILY;
 
 export const UI = {
   ink: '#2B1630',

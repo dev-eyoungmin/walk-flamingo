@@ -12,6 +12,10 @@ import {
   EVENTS,
   BOOST,
   ITEMS,
+  BEST,
+  FEVER,
+  TUT_HOLD_LEFT,
+  TUT_OFF,
 } from './constants';
 import type { SimConfig } from './terrain';
 
@@ -166,20 +170,61 @@ export interface SimState {
   fallBiome: number;
   fallAfterHit: number;
 
+  // Personal best marker: distance of the best run (0 = none) and whether it was passed
+  bestMeters: number;
+  bestPassed: number;
+
+  // Upgrades (per run)
+  magnetTime: number;
+  feverDuration: number;
+  itemGapMult: number;
+
+  /** New-player ease-in, 0..1 (slows the difficulty clock) */
+  rookie: number;
+
+  // First-run tutorial: step (TUT_*), hold progress, time on the step
+  tutStep: number;
+  tutHold: number;
+  tutStepT: number;
+  /** Time real play started (after the tutorial); difficulty and the time stat count from here */
+  playStart: number;
+
+  /** Coin rain: time until the next coin drops */
+  rainT: number;
+
   // Effects outbox drained by the frame callback: pairs of [code, value]
   fx: number[];
   fxLen: number;
 }
 
-/** [active, kind, worldX, worldY, screenVx, vy, rot, resolved, side, biome] */
-export const OBS_SLOT = 10;
+/**
+ * [active, kind, worldX, worldY, screenVx, vy, rot, resolved, side, biome, timer]
+ * For the seagull, `resolved` is its phase (0 flying in, 1 perched, 2 leaving) and `timer` counts
+ * the phase time.
+ */
+export const OBS_SLOT = 11;
+
+/** Per-run options chosen outside the simulation (boosts, upgrades, onboarding). */
+export interface RunParams {
+  shield?: boolean;
+  slowmo?: boolean;
+  scrollX?: number;
+  /** Best distance to mark on the course (0 = none) */
+  bestMeters?: number;
+  /** Play the interactive first-run tutorial */
+  tutorial?: boolean;
+  magnetTime?: number;
+  feverDuration?: number;
+  itemGapMult?: number;
+  rookie?: number;
+}
 export const FX_CAPACITY = 32;
 
 export function createSimState(
   cfg: SimConfig,
   mode: number,
   seed: number,
-  options?: { shield?: boolean; slowmo?: boolean; scrollX?: number },
+  options?: RunParams,
 ): SimState {
   'worklet';
   const coinSlots: number[] = [];
@@ -317,6 +362,22 @@ export function createSimState(
     fallWeather: 0,
     fallBiome: 0,
     fallAfterHit: 0,
+
+    bestMeters: options?.bestMeters && options.bestMeters >= BEST.MIN_M ? options.bestMeters : 0,
+    bestPassed: 0,
+
+    magnetTime: options?.magnetTime ?? ITEMS.MAGNET_TIME,
+    feverDuration: options?.feverDuration ?? FEVER.DURATION,
+    itemGapMult: options?.itemGapMult ?? 1,
+
+    rookie: options?.rookie ?? 0,
+
+    tutStep: mode === MODE_PLAYING && options?.tutorial ? TUT_HOLD_LEFT : TUT_OFF,
+    tutHold: 0,
+    tutStepT: 0,
+    playStart: 0,
+
+    rainT: 0,
 
     fx,
     fxLen: 0,
