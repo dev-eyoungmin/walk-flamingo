@@ -45,8 +45,8 @@ export const PHYSICS = {
   /** Angular damping rate (1/s) at the start. Higher = more sluggish/stable. */
   DAMPING_START: 13.0,
   /** Angular damping rate (1/s) late game. Lower = more momentum = harder. */
-  DAMPING_END: 9.5,
-  DAMPING_RAMP_TIME: 150,
+  DAMPING_END: 9.0,
+  DAMPING_RAMP_TIME: 130,
   /** Ice: very little damping (slippery) */
   ICE_DAMPING: 3.5,
   /** Rain multiplies damping */
@@ -59,17 +59,17 @@ export const PHYSICS = {
 } as const;
 
 export const DIFFICULTY = {
-  GRAVITY_EARLY_START: 1.25,
-  GRAVITY_EARLY_END: 2.6,
-  GRAVITY_EARLY_TIME: 40,
-  GRAVITY_LATE_RATE: 0.008,
+  GRAVITY_EARLY_START: 1.4,
+  GRAVITY_EARLY_END: 2.9,
+  GRAVITY_EARLY_TIME: 35,
+  GRAVITY_LATE_RATE: 0.013,
   GRAVITY_MAX: 5.0,
   SURGE_AMOUNT: 0.2,
   SURGE_FREQ: 1.2,
-  WIND_START: 0.8,
-  WIND_EARLY_END: 2.6,
-  WIND_EARLY_TIME: 45,
-  WIND_LATE_RATE: 0.01,
+  WIND_START: 1.0,
+  WIND_EARLY_END: 3.2,
+  WIND_EARLY_TIME: 40,
+  WIND_LATE_RATE: 0.013,
   WIND_MAX: 5.5,
   WIND_HOLD_MIN_START: 1.4,
   WIND_HOLD_MIN_END: 0.8,
@@ -78,7 +78,7 @@ export const DIFFICULTY = {
   WIND_SMOOTH_TAU: 0.5,
   WIND_CALM_CHANCE: 0.25,
   WOBBLE_START: 0.4,
-  WOBBLE_RATE: 0.008,
+  WOBBLE_RATE: 0.011,
   WOBBLE_MAX: 1.4,
   RAMP_TIME: 150,
 } as const;
@@ -176,9 +176,9 @@ export const STAGE_ACTIVE = 2;
 
 export const EVENTS = {
   /** First event warning starts this long after the grace period */
-  FIRST_DELAY: 6.0,
-  GAP_START: 5.5,
-  GAP_END: 2.0,
+  FIRST_DELAY: 4.5,
+  GAP_START: 4.5,
+  GAP_END: 1.8,
   GAP_RANDOM: 1.5,
   WARN_OBSTACLE: 1.4,
   WARN_ENVIRONMENT: 1.6,
@@ -228,7 +228,7 @@ export const EVENTS = {
   SLOW_DURATION: 3.5,
   SPEED_SMOOTH_TAU: 0.35,
   /** No sprints this early: a sprint plus the first rocks is the most common early fall */
-  SPRINT_MIN_T: 25,
+  SPRINT_MIN_T: 15,
 
   GULL_MIN_T: 15,
   GULL_CHANCE: 0.2,
@@ -413,10 +413,10 @@ export const TUTORIAL = {
 
 // ─── New-player ease-in ─────────────────────────────────────────────────────
 export const ROOKIE = {
-  /** Runs until the ease-in has faded out */
-  RUNS: 8,
+  /** Runs until the ease-in has faded out (kept short: v1.3.0 playtests found 8 runs too easy) */
+  RUNS: 3,
   /** Difficulty clock speed for a brand-new player (1 = normal) */
-  SLOWEST: 0.7,
+  SLOWEST: 0.85,
 } as const;
 
 export const MILESTONES_M: readonly number[] = [50, 100, 200, 300, 500, 750, 1000, 1500, 2000, 3000];

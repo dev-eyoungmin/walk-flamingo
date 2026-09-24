@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wobbly.flamingo.game",
-      "buildNumber": "1.3.0",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": [
@@ -42,7 +42,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.wobbly.flamingo.game",
-      "versionCode": 6
+      "versionCode": 7
     },
     "plugins": [
       "expo-font",
