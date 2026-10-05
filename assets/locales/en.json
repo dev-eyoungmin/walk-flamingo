@@ -1,4 +1,6 @@
 {
-  "CFBundleDisplayName": "Wobby",
-  "CFBundleName": "Wobby"
+  "ios": {
+    "CFBundleDisplayName": "Wobby",
+    "CFBundleName": "Wobby"
+  }
 }

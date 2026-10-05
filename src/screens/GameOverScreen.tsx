@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { GameStats } from '../game/GameCanvas';
 import { getRank, getRankProgress } from '../lib/ranks';
 import type { Mission } from '../lib/progress';
@@ -7,6 +7,7 @@ import { formatNum, t } from '../i18n';
 import { GameButton } from '../ui/GameButton';
 import { CoinGlyph, MissionList } from '../ui/MissionList';
 import { FONT_DISPLAY, titleShadow, UI } from '../ui/theme';
+import { useScreenDimensions } from '../hooks/useScreenDimensions';
 
 export interface RunSummary {
   coinsEarned: number;
@@ -70,7 +71,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 }) => {
   const close = metersShort > 0 && !isNewBest;
   const daily = summary.daily;
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useScreenDimensions();
   const compact = height < 360;
   const enter = useRef(new Animated.Value(0)).current;
   const countUp = useRef(new Animated.Value(0)).current;

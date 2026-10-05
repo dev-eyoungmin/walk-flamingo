@@ -6,6 +6,13 @@
   "build": {
     "production": {
       "pnpm": "10.21.0"
+    },
+    "apk": {
+      "pnpm": "10.21.0",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

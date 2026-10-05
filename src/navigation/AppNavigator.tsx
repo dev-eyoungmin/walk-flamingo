@@ -17,6 +17,7 @@ import { useInterstitialAd } from '../hooks/useInterstitialAd';
 import { useSkin } from '../hooks/useSkin';
 import { useSfx } from '../hooks/useSfx';
 import { useGameFeedback } from '../hooks/useGameFeedback';
+import { useReviewPrompt } from '../hooks/useReviewPrompt';
 import { useProgress } from '../hooks/useProgress';
 import { INTERSTITIAL_EVERY_N_GAMES, INTERSTITIAL_MIN_INTERVAL_MS } from '../lib/adConfig';
 import { balloonsLeft, courseSeedForDay, metersShortOfBest, streakStatus } from '../lib/progress';
@@ -24,6 +25,7 @@ import { anyUpgradeAffordable, runParamsFor } from '../lib/upgrades';
 import { ROOKIE } from '../game/sim/constants';
 import { getRank } from '../lib/ranks';
 import { SKIN_PRICES } from '../lib/skins';
+import { STORE_URL } from '../lib/storeLinks';
 import { formatNum, t } from '../i18n';
 
 /** New players see the flap tutorial during their first few runs. */
@@ -98,6 +100,7 @@ export const AppNavigator: React.FC = () => {
   const { activeSkin, selectSkin, loaded: skinLoaded } = useSkin(progress.ownedSkins);
   const { play: playSfx } = useSfx();
   const handleFx = useGameFeedback(playSfx, setMusicRate);
+  const { queueReview } = useReviewPrompt(screen === 'gameover');
 
   const gamesSinceAd = useRef(0);
   const lastAdAt = useRef(0);
@@ -219,9 +222,21 @@ export const AppNavigator: React.FC = () => {
         showInterstitial(show);
       } else {
         show();
+        // A record with no ad in the way is the moment to ask for a rating
+        queueReview({ newBest: records.newScore, runs: result.data.runs });
       }
     },
-    [run.courseSeed, run.bestMeters, recordRun, submitRun, isFirstPlay, consumeFirstPlay, showInterstitial, noteAdWatched],
+    [
+      run.courseSeed,
+      run.bestMeters,
+      recordRun,
+      submitRun,
+      isFirstPlay,
+      consumeFirstPlay,
+      showInterstitial,
+      noteAdWatched,
+      queueReview,
+    ],
   );
 
   // Retry stays on today's course if that's what was just played
@@ -265,7 +280,7 @@ export const AppNavigator: React.FC = () => {
       rank: `${rank.emoji} ${rank.name}`,
     };
     Share.share({
-      message: t(summary?.daily ? 'share.daily' : 'share.normal', params),
+      message: `${t(summary?.daily ? 'share.daily' : 'share.normal', params)}\n${STORE_URL}`,
     }).catch(() => undefined);
   }, [lastStats, summary]);
 

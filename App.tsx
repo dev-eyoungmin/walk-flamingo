@@ -1,10 +1,23 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
+import { AppState, Platform, View, StyleSheet, StatusBar } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Font from 'expo-font';
+import * as NavigationBar from 'expo-navigation-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { IS_EXPO_GO } from './src/lib/adConfig';
 import { initLocale } from './src/i18n';
 import { loadLanguageChoice } from './src/i18n/preference';
+import { useAndroidSafeInsets } from './src/hooks/useScreenDimensions';
+
+const SafeRoot: React.FC<{ Root: React.ComponentType }> = ({ Root }) => {
+  const { x } = useAndroidSafeInsets();
+  return (
+    <View style={[styles.container, { paddingHorizontal: x }]}>
+      <StatusBar hidden />
+      <Root />
+    </View>
+  );
+};
 
 export default function App() {
   // Screens are loaded only after the language is known: their labels, fonts and HUD text are
@@ -50,15 +63,28 @@ export default function App() {
     initialize();
   }, [initialize]);
 
+  // Android: keep the navigation bar hidden (a swipe from the edge shows it briefly). Ads and app
+  // switches can bring it back, so hide it again whenever the app returns to the foreground.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const hide = () => {
+      NavigationBar.setVisibilityAsync('hidden').catch(() => {});
+    };
+    hide();
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') hide();
+    });
+    return () => subscription.remove();
+  }, []);
+
   if (!Root) {
     return <View style={styles.loading} />;
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar hidden />
-      <Root />
-    </View>
+    <SafeAreaProvider>
+      <SafeRoot Root={Root} />
+    </SafeAreaProvider>
   );
 }
 
