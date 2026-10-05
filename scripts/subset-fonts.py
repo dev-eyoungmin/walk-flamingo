@@ -36,6 +36,8 @@ TARGETS = {
 
 # Always kept: ASCII plus symbols the UI builds around translated text
 EXTRA = ''.join(chr(c) for c in range(0x20, 0x7F)) + '·×✓★→%+–—…’‘“”«»¡¿°'
+# Thai: HarfBuzz (web, Android) splits SARA AM into NIKHAHIT + SARA AA, so the font needs NIKHAHIT too
+EXTRA += '\u0e4d'
 
 
 def locale_chars(code: str) -> str:
