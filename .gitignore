@@ -44,3 +44,6 @@ assets/*.html
 
 # Font sources for scripts/subset-fonts.py
 scripts/.font-cache/
+
+# App preview videos (~12 MB per language): rebuilt by scripts/store-media, kept on App Store Connect
+store/apple/preview/

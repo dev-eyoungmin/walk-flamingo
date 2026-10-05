@@ -1,0 +1,152 @@
+--- a/src/game/GameCanvas.tsx
++++ b/src/game/GameCanvas.tsx
+@@ -112,7 +112,14 @@
+   onFx,
+ }) => {
+   const terrainRatios = useMemo(
+-    () => generateTerrainRatios(courseSeed ? seededRandom(courseSeed) : Math.random),
++    () =>
++      generateTerrainRatios(
++        courseSeed
++          ? seededRandom(courseSeed)
++          : (globalThis as any).__wobbySeed
++            ? seededRandom((globalThis as any).__wobbySeed + terrainKey)
++            : Math.random,
++      ),
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+     [terrainKey, courseSeed],
+   );
+@@ -139,13 +146,44 @@
+     }
+   }, []);
+   const handleGameOver = useCallback((stats: GameStats) => onGameOverRef.current(stats), []);
++
++  // Capture harness: run the real simulation ahead without drawing, until `until` says stop
++  useEffect(() => {
++    const g = globalThis as any;
++    g.__wobbyFF = (maxSteps: number, until?: (s: SimState, c: SimConfig) => boolean) => {
++      const s = sim.value;
++      const c = cfgSV.value;
++      let n = 0;
++      for (; n < maxSteps; n++) {
++        if (s.mode === MODE_OVER || s.mode === MODE_ATTRACT) break;
++        if (until && until(s, c)) break;
++        s.input = g.__wobbyBot && s.mode === MODE_PLAYING ? g.__wobbyBot(s, c) : 0;
++        advanceSim(s, c, 1 / 60);
++        s.fxLen = 0;
++      }
++      if (g.__wobbyTouch) g.__wobbyTouch(s.mode === MODE_PLAYING ? s.input & 3 : 0);
++      setChicksMounted((m) => Math.max(m, s.chicksMax));
++      sim.modify(undefined, true);
++      return n;
++    };
++  }, [sim, cfgSV]);
+ 
+   useFrameCallback((info) => {
+     'worklet';
+     const dt = info.timeSincePreviousFrame == null ? 1 / 60 : info.timeSincePreviousFrame / 1000;
+     const s = sim.value;
+-    s.input = input.value;
+-    advanceSim(s, cfgSV.value, dt);
++    const g = globalThis as any;
++    // Capture harness: a bot can drive the input, and the page can read the state
++    g.__wobby = { sim, cfg: cfgSV.value };
++    if (g.__wobbyFrozen) {
++      sim.modify(undefined, true);
++      return;
++    }
++    if (g.__wobbyBot && s.mode === MODE_PLAYING) {
++      s.input = g.__wobbyBot(s, cfgSV.value);
++      if (g.__wobbyTouch) g.__wobbyTouch(s.input & 3);
++    } else s.input = input.value;
++    advanceSim(s, cfgSV.value, g.__wobbyFixedDt || dt);
+     let fx: number[] | null = null;
+     if (s.fxLen > 0) {
+       fx = s.fx.slice(0, s.fxLen * 2);
+@@ -189,7 +227,11 @@
+     setChicksMounted(0);
+     if (first && runMode === 'attract') return;
+     const mode = runMode === 'playing' ? MODE_PLAYING : MODE_ATTRACT;
+-    const seed = courseSeed ? courseSeed >>> 0 : (Date.now() ^ Math.imul(runId + 1, 2654435761)) >>> 0;
++    const seed = courseSeed
++      ? courseSeed >>> 0
++      : (globalThis as any).__wobbySeed
++        ? ((globalThis as any).__wobbySeed + runId * 7919) >>> 0
++        : (Date.now() ^ Math.imul(runId + 1, 2654435761)) >>> 0;
+     const params: RunParams = {
+       ...(mode === MODE_PLAYING ? runParams : null),
+       shield: boost === 'shield',
+--- a/src/components/TouchControls.tsx
++++ b/src/components/TouchControls.tsx
+@@ -14,7 +14,7 @@
+ 
+ const HINT_W = 92;
+ const HINT_H = 56;
+-const SAFE_X = Platform.OS === 'ios' ? 44 : 12;
++const SAFE_X = 44;
+ 
+ function makeArrow(dir: 1 | -1) {
+   const p = Skia.Path.Make();
+@@ -82,6 +82,18 @@
+     [apply, enabled, width],
+   );
+ 
++  // Capture harness: the bot presses the on-screen buttons
++  useEffect(() => {
++    (globalThis as any).__wobbyTouch = (m: number) => {
++      if (m === maskRef.current) return;
++      maskRef.current = m;
++      setMask(m);
++    };
++    return () => {
++      (globalThis as any).__wobbyTouch = null;
++    };
++  }, []);
++
+   // Drop input when controls get disabled mid-press
+   useEffect(() => {
+     if (!enabled) apply(0);
+--- a/src/game/render/HudRenderer.tsx
++++ b/src/game/render/HudRenderer.tsx
+@@ -81,7 +81,7 @@
+ }
+ 
+ const INK = '#2B1630';
+-const PAD_X = Platform.OS === 'ios' ? 50 : 18;
++const PAD_X = 50;
+ 
+ export function formatNumber(n: number): string {
+   'worklet';
+--- a/src/screens/StartScreen.tsx
++++ b/src/screens/StartScreen.tsx
+@@ -87,7 +87,7 @@
+   );
+ };
+ 
+-const SAFE_X = Platform.OS === 'ios' ? 48 : 16;
++const SAFE_X = 48;
+ 
+ export const StartScreen: React.FC<StartScreenProps> = ({
+   bestScore,
+--- /dev/null
++++ b/index.web.tsx
+@@ -0,0 +1,8 @@
++import { LoadSkiaWeb } from '@shopify/react-native-skia/lib/module/web';
++import { registerRootComponent } from 'expo';
++
++LoadSkiaWeb({ locateFile: (file: string) => `/${file}` }).then(() => {
++  // eslint-disable-next-line @typescript-eslint/no-var-requires
++  const App = require('./App').default;
++  registerRootComponent(App);
++});
+--- /dev/null
++++ b/metro.config.js
+@@ -0,0 +1,8 @@
++const { getDefaultConfig } = require('expo/metro-config');
++const config = getDefaultConfig(__dirname);
++const orig = config.resolver.resolveRequest;
++config.resolver.resolveRequest = (context, moduleName, platform) => {
++  if (platform === 'web' && moduleName === 'react-native-google-mobile-ads') return { type: 'empty' };
++  return (orig ?? context.resolveRequest)(context, moduleName, platform);
++};
++module.exports = config;
