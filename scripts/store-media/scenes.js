@@ -30,5 +30,7 @@ module.exports = {
   DEVICES: {
     iphone: { width: 956, height: 440, dsf: 3, folder: 'APP_IPHONE_67', canvas: [2868, 1320], caption: 262, frame: [2540, 1169] },
     ipad: { width: 1180, height: 885, dsf: 2, folder: 'APP_IPAD_PRO_3GEN_129', canvas: [2752, 2064], caption: 300, frame: [2400, 1800] },
+    // Google Play phone: laid out like the iPhone shots on a 16:9 canvas, saved at 1920x1080 (scale)
+    android: { width: 900, height: 450, dsf: 3, canvas: [2880, 1620], caption: 262, frame: [2800, 1400], scale: 2 / 3 },
   },
 };

@@ -5,6 +5,7 @@
 //   node scripts/store-media/make.js ja th      only these
 //   node scripts/store-media/make.js --no-video screenshots only
 //   node scripts/store-media/make.js --ipad     13" iPad screenshots (no video)
+//   node scripts/store-media/make.js --android  Google Play phone screenshots (store/google/)
 const fs = require('fs');
 const path = require('path');
 const { ROOT, WORK } = require('./paths');
@@ -19,7 +20,7 @@ const folder = (lang) => (lang === 'en' ? 'en-US' : lang);
 
 (async () => {
   const args = process.argv.slice(2);
-  const device = args.includes('--ipad') ? 'ipad' : 'iphone';
+  const device = args.includes('--ipad') ? 'ipad' : args.includes('--android') ? 'android' : 'iphone';
   const withVideo = device === 'iphone' && !args.includes('--no-video');
   const langs = args.filter((a) => !a.startsWith('--'));
   for (const lang of langs.length ? langs : Object.keys(CAPTIONS)) {
@@ -29,7 +30,10 @@ const folder = (lang) => (lang === 'en' ? 'en-US' : lang);
     const out = path.join(WORK, 'out', device, lang);
     fs.rmSync(out, { recursive: true, force: true });
     await compose([lang], device);
-    const shotDir = path.join(ROOT, 'store/apple/screenshot', folder(lang), DEVICES[device].folder);
+    const shotDir =
+      device === 'android'
+        ? path.join(ROOT, 'store/google/screenshot', lang)
+        : path.join(ROOT, 'store/apple/screenshot', folder(lang), DEVICES[device].folder);
     fs.rmSync(shotDir, { recursive: true, force: true });
     fs.mkdirSync(shotDir, { recursive: true });
     for (const f of fs.readdirSync(out)) fs.copyFileSync(path.join(out, f), path.join(shotDir, f));

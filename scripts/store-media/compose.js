@@ -63,10 +63,11 @@ function overlayHtml(lang, caption) {
  */
 async function compose(langs, device = 'iphone') {
   const [W, H] = DEVICES[device].canvas;
+  const scale = DEVICES[device].scale ?? 1;
   const browser = await playwright().chromium.launch({ executablePath: CHROME, headless: true, args: ['--allow-file-access-from-files'] });
   const tmp = path.join(WORK, `compose-${process.pid}.html`);
   for (const lang of langs) {
-    const shots = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+    const shots = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: scale });
     let page = await shots.newPage();
     const out = path.join(WORK, 'out', device, lang);
     fs.mkdirSync(out, { recursive: true });

@@ -28,21 +28,21 @@ if (!IS_EXPO_GO && !__DEV__) {
       ? TestIds.ADAPTIVE_BANNER
       : Platform.select({
           ios: 'ca-app-pub-7783064858826225/4010246083',
-          android: 'ca-app-pub-xxxxxxxxxxxxxxxx/bbbbbbbbbb',
+          android: 'ca-app-pub-7783064858826225/9630187744',
         }) ?? TestIds.ADAPTIVE_BANNER;
 
     REWARDED_ID = USE_TEST_ADS
       ? TestIds.REWARDED
       : Platform.select({
           ios: 'ca-app-pub-7783064858826225/8245004569',
-          android: 'ca-app-pub-xxxxxxxxxxxxxxxx/rrrrrrrrrr',
+          android: 'ca-app-pub-7783064858826225/2081201919',
         }) ?? TestIds.REWARDED;
 
     INTERSTITIAL_ID = USE_TEST_ADS
       ? TestIds.INTERSTITIAL
       : Platform.select({
           ios: 'ca-app-pub-7783064858826225/5021999563',
-          android: '',
+          android: 'ca-app-pub-7783064858826225/8317106073',
         }) ?? TestIds.INTERSTITIAL;
   } catch (e) {
     console.warn('[AdConfig] Ads module not available:', e);
