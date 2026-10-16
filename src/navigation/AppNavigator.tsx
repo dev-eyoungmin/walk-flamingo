@@ -1,12 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Share, StyleSheet, View } from 'react-native';
+import { Linking, Share, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RunSetup, WalkPlan } from '../components/RunSetup';
+import { DailyGhost, validGhost } from '../lib/ghost';
 import { GameScreen } from '../screens/GameScreen';
 import { StartScreen } from '../screens/StartScreen';
 import { GameOverScreen, RunSummary } from '../screens/GameOverScreen';
 import { SkinPreview } from '../components/SkinPreview';
 import { UpgradeShop } from '../components/UpgradeShop';
 import { LanguagePicker } from '../components/LanguagePicker';
+import { ShopModal } from '../components/ShopModal';
+import { LuckyWheel, SpinResult } from '../components/LuckyWheel';
+import { AchievementsModal } from '../components/AchievementsModal';
 import type { BoostType, GameStats, RunMode } from '../game/GameCanvas';
 import { useHighScore } from '../hooks/useHighScore';
 import { useScreenDimensions } from '../hooks/useScreenDimensions';
@@ -19,13 +25,16 @@ import { useSfx } from '../hooks/useSfx';
 import { useGameFeedback } from '../hooks/useGameFeedback';
 import { useReviewPrompt } from '../hooks/useReviewPrompt';
 import { useProgress } from '../hooks/useProgress';
+import { useStore } from '../hooks/useStore';
 import { INTERSTITIAL_EVERY_N_GAMES, INTERSTITIAL_MIN_INTERVAL_MS } from '../lib/adConfig';
-import { balloonsLeft, courseSeedForDay, metersShortOfBest, streakStatus } from '../lib/progress';
+import { balloonsLeft, courseSeedForDay, doubleCoinsAmount, freeCoinsLeft, metersShortOfBest, streakStatus } from '../lib/progress';
+import { allAchievements, AchievementId, claimableCount } from '../lib/achievements';
+import { adSpinsLeft, nextSpin, SpinKind } from '../lib/wheel';
 import { anyUpgradeAffordable, runParamsFor } from '../lib/upgrades';
 import { ROOKIE } from '../game/sim/constants';
 import { getRank } from '../lib/ranks';
-import { SKIN_PRICES } from '../lib/skins';
-import { STORE_URL } from '../lib/storeLinks';
+import { rentableSkins, SKIN_PRICES } from '../lib/skins';
+import { REVIEW_URL, STORE_URL } from '../lib/storeLinks';
 import { formatNum, t } from '../i18n';
 
 /** New players see the flap tutorial during their first few runs. */
@@ -35,6 +44,7 @@ type Screen = 'start' | 'playing' | 'gameover';
 
 interface RunOptions {
   newTerrain: boolean;
+  plan?: WalkPlan;
   keepScroll?: boolean;
   boost?: BoostType;
   courseSeed?: number | null;
@@ -42,6 +52,9 @@ interface RunOptions {
 
 interface RunConfig {
   id: number;
+  trait: number;
+  stage: number;
+  flapButton: boolean;
   mode: RunMode;
   terrainKey: number;
   keepScroll: boolean;
@@ -61,6 +74,9 @@ export const AppNavigator: React.FC = () => {
   const [screen, setScreen] = useState<Screen>('start');
   const [run, setRun] = useState<RunConfig>({
     id: 0,
+    trait: 0,
+    stage: 0,
+    flapButton: true,
     mode: 'attract',
     terrainKey: 0,
     keepScroll: false,
@@ -70,6 +86,9 @@ export const AppNavigator: React.FC = () => {
     tutorial: false,
     rookie: 0,
   });
+  const [showSetup, setShowSetup] = useState(false);
+  const [plan, setPlan] = useState<WalkPlan>({ trait: 1, stage: 0, flapButton: true });
+  const [ghost, setGhost] = useState<DailyGhost | null>(null);
   const [resumeId, setResumeId] = useState(0);
   const [lastStats, setLastStats] = useState<GameStats | null>(null);
   const [summary, setSummary] = useState<RunSummary | null>(null);
@@ -78,6 +97,13 @@ export const AppNavigator: React.FC = () => {
   const [showSkins, setShowSkins] = useState(false);
   const [showUpgrades, setShowUpgrades] = useState(false);
   const [showLanguage, setShowLanguage] = useState(false);
+  const [showShop, setShowShop] = useState(false);
+  const [showWheel, setShowWheel] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  // Coins collected from the game-over "x2" ad this run (0 = not yet)
+  const [doubledCoins, setDoubledCoins] = useState(0);
+  // An interstitial played before this game-over screen: offer Remove Ads
+  const [offerNoAds, setOfferNoAds] = useState(false);
   const [metersShort, setMetersShort] = useState(0);
   // Best score at the start of the run, so the HUD can announce when it is beaten
   const [runBestScore, setRunBestScore] = useState(0);
@@ -94,6 +120,10 @@ export const AppNavigator: React.FC = () => {
     buyUpgrade,
     consumeBalloon,
     claimDailyGift,
+    grantCoins,
+    collectFreeCoins,
+    spin,
+    claimAchievements,
     refreshDay,
     loaded: progressLoaded,
   } = useProgress();
@@ -101,6 +131,12 @@ export const AppNavigator: React.FC = () => {
   const { play: playSfx } = useSfx();
   const handleFx = useGameFeedback(playSfx, setMusicRate);
   const { queueReview } = useReviewPrompt(screen === 'gameover');
+  const celebrate = useCallback(() => {
+    playSfx('challengeSuccess');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+  }, [playSfx]);
+  const store = useStore({ onCoins: grantCoins, onSuccess: celebrate });
+  const { adsRemoved } = store;
 
   const gamesSinceAd = useRef(0);
   const lastAdAt = useRef(0);
@@ -121,6 +157,14 @@ export const AppNavigator: React.FC = () => {
     }
   }, [screen, startMusic, stopMusic, setMusicRate]);
 
+  useEffect(() => {
+    AsyncStorage.getItem('@wobby_walk_plan').then(raw => {
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if ([1,2,3].includes(saved.trait) && [0,1,2,3].includes(saved.stage) && typeof saved.flapButton === 'boolean') setPlan(saved);
+    }).catch(() => undefined);
+  }, []);
+
   // Missions and today's course roll over at midnight even if the app stays open
   useEffect(() => {
     if (screen === 'start') refreshDay();
@@ -130,6 +174,9 @@ export const AppNavigator: React.FC = () => {
     (mode: RunMode, options: RunOptions, extra?: Pick<RunConfig, 'bestMeters' | 'tutorial' | 'rookie'>) => {
       setRun((r) => ({
         id: r.id + 1,
+        trait: options.courseSeed != null ? 0 : options.plan?.trait ?? plan.trait,
+        stage: options.courseSeed != null ? 0 : options.plan?.stage ?? plan.stage,
+        flapButton: options.plan?.flapButton ?? plan.flapButton,
         mode,
         terrainKey: options.newTerrain ? r.terrainKey + 1 : r.terrainKey,
         keepScroll: options.keepScroll ?? false,
@@ -140,12 +187,14 @@ export const AppNavigator: React.FC = () => {
         rookie: extra?.rookie ?? 0,
       }));
     },
-    [],
+    [plan],
   );
 
   const beginPlaying = useCallback(
     (options: RunOptions) => {
       setHasContinued(false);
+      setDoubledCoins(0);
+      setOfferNoAds(false);
       recordedStats.current = null;
       recordedSummary.current = null;
       setRunBestScore(bestScore);
@@ -158,28 +207,45 @@ export const AppNavigator: React.FC = () => {
         { ...options, boost },
         {
           bestMeters: daily ? progress.daily.bestMeters : bestDistance,
-          tutorial: isFirstPlay && !daily,
+          tutorial: isFirstPlay && !daily && !(options.plan?.stage ?? plan.stage),
           // Today's course stays the same for everyone, so no ease-in there
           rookie: daily ? 0 : Math.max(0, Math.min(1, 1 - progress.runs / ROOKIE.RUNS)),
         },
       );
       setScreen('playing');
     },
-    [bestScore, bestDistance, progress, consumeBalloon, isFirstPlay, startRun],
+    [bestScore, bestDistance, progress, consumeBalloon, isFirstPlay, startRun, plan.stage],
   );
 
-  const handlePlay = useCallback(() => beginPlaying({ newTerrain: false, keepScroll: true }), [beginPlaying]);
+  const handlePlay = useCallback(() => setShowSetup(true), []);
+  const handlePlan = (next: WalkPlan) => {
+    setPlan(next);
+    AsyncStorage.setItem('@wobby_walk_plan', JSON.stringify(next)).catch(() => undefined);
+    setShowSetup(false);
+    beginPlaying({ newTerrain: true, plan: next });
+  };
 
   // Everyone gets the same course today; it always starts from the beginning
-  const handleDaily = useCallback(() => {
+  const handleDaily = useCallback(async () => {
     const today = refreshDay();
-    beginPlaying({ newTerrain: true, courseSeed: courseSeedForDay(today.day) });
+    const seed = courseSeedForDay(today.day);
+    setGhost(null);
+    try {
+      const raw = await AsyncStorage.getItem('@wobby_daily_ghost_v2');
+      const value = raw ? JSON.parse(raw) : null;
+      if (validGhost(value, seed)) setGhost(value);
+    } catch { /* A corrupt ghost never prevents playing. */ }
+    beginPlaying({ newTerrain: true, courseSeed: seed });
   }, [refreshDay, beginPlaying]);
 
   const handleGameOver = useCallback(
     async (stats: GameStats) => {
       setLastStats(stats);
       const daily = run.courseSeed !== null;
+      if (daily && stats.trace && stats.trace.length >= 2 && (!ghost || stats.meters > ghost.meters)) {
+        const nextGhost = { seed: run.courseSeed!, meters: stats.meters, trace: stats.trace };
+        await AsyncStorage.setItem('@wobby_daily_ghost_v2', JSON.stringify(nextGhost)).catch(() => undefined);
+      }
       const previous = recordedStats.current;
       const before = recordedSummary.current;
       const result = recordRun(stats, daily, previous);
@@ -215,19 +281,22 @@ export const AppNavigator: React.FC = () => {
       gamesSinceAd.current += 1;
       const now = Date.now();
       if (
+        !adsRemoved &&
         gamesSinceAd.current >= INTERSTITIAL_EVERY_N_GAMES &&
         now - lastAdAt.current >= INTERSTITIAL_MIN_INTERVAL_MS
       ) {
         noteAdWatched();
+        setOfferNoAds(true);
         showInterstitial(show);
       } else {
         show();
         // A record with no ad in the way is the moment to ask for a rating
-        queueReview({ newBest: records.newScore, runs: result.data.runs });
+        queueReview({ newBest: records.newScore || records.newDistance, meters: stats.meters, runs: result.data.runs });
       }
     },
     [
       run.courseSeed,
+      ghost,
       run.bestMeters,
       recordRun,
       submitRun,
@@ -236,14 +305,15 @@ export const AppNavigator: React.FC = () => {
       showInterstitial,
       noteAdWatched,
       queueReview,
+      adsRemoved,
     ],
   );
 
   // Retry stays on today's course if that's what was just played
   const handleRetry = useCallback(() => {
     if (run.courseSeed !== null) handleDaily();
-    else beginPlaying({ newTerrain: true });
-  }, [run.courseSeed, handleDaily, beginPlaying]);
+    else beginPlaying({ newTerrain: true, plan: { trait: run.trait, stage: run.stage, flapButton: run.flapButton } });
+  }, [run, handleDaily, beginPlaying]);
 
   const handleContinue = useCallback(() => {
     showRewarded(() => {
@@ -303,12 +373,79 @@ export const AppNavigator: React.FC = () => {
     [showRewarded, noteAdWatched, selectSkin],
   );
 
-  const handleClaimStreak = useCallback(() => {
-    if (claimDailyGift() > 0) {
-      playSfx('challengeSuccess');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
-    }
-  }, [claimDailyGift, playSfx]);
+  const handleClaimStreak = useCallback(
+    (doubled: boolean) => {
+      const claim = (mult: number) => {
+        if (claimDailyGift(mult) > 0) celebrate();
+      };
+      if (!doubled) claim(1);
+      else
+        showRewarded(() => {
+          noteAdWatched();
+          claim(2);
+        });
+    },
+    [claimDailyGift, celebrate, showRewarded, noteAdWatched],
+  );
+
+  // Game over: watch an ad for the run's coins again
+  const runCoins = summary?.coinsEarned ?? 0;
+  const handleDoubleCoins = useCallback(() => {
+    if (doubledCoins > 0) return;
+    const amount = doubleCoinsAmount(runCoins);
+    showRewarded(() => {
+      noteAdWatched();
+      grantCoins(amount);
+      setDoubledCoins(amount);
+      celebrate();
+    });
+  }, [doubledCoins, runCoins, showRewarded, noteAdWatched, grantCoins, celebrate]);
+
+  const handleFreeCoins = useCallback(() => {
+    if (freeCoinsLeft(progress) <= 0) return;
+    showRewarded(() => {
+      noteAdWatched();
+      if (collectFreeCoins()) celebrate();
+    });
+  }, [progress, showRewarded, noteAdWatched, collectFreeCoins, celebrate]);
+
+  const handleRestore = useCallback(async () => {
+    if (await store.restore()) celebrate();
+  }, [store, celebrate]);
+
+  // Lucky wheel: ad spins wait for the reward; a skin prize rents a random skin for a day
+  const handleSpin = useCallback(
+    async (kind: SpinKind): Promise<SpinResult | null> => {
+      if (kind === 'ad') {
+        const earned = await new Promise<boolean>((resolve) =>
+          showRewarded(
+            () => resolve(true),
+            () => resolve(false),
+          ),
+        );
+        if (!earned) return null;
+        noteAdWatched();
+      }
+      const candidates = rentableSkins(progress.ownedSkins);
+      const result = spin(kind, candidates.length > 0);
+      if (!result) return null;
+      if (result.prize.kind === 'skin') {
+        const skinId = candidates[Math.floor(Math.random() * candidates.length)];
+        selectSkin(skinId);
+        return { ...result, skinId };
+      }
+      return result;
+    },
+    [showRewarded, noteAdWatched, progress.ownedSkins, spin, selectSkin],
+  );
+  const handleWheelTick = useCallback(() => playSfx('coinCollect'), [playSfx]);
+
+  const handleClaimAchievement = useCallback(
+    (id?: AchievementId) => {
+      if (claimAchievements(id).coins > 0) celebrate();
+    },
+    [claimAchievements, celebrate],
+  );
 
   const handleBuyUpgrade = useCallback(
     (id: Parameters<typeof buyUpgrade>[0]) => {
@@ -320,10 +457,12 @@ export const AppNavigator: React.FC = () => {
   );
 
   const runParams = useMemo(
-    () => ({ ...runParamsFor(progress.upgrades), bestMeters: run.bestMeters, tutorial: run.tutorial, rookie: run.rookie }),
-    [progress.upgrades, run.bestMeters, run.tutorial, run.rookie],
+    () => ({ ...(run.courseSeed === null ? runParamsFor(progress.upgrades) : {}), trait: run.trait, stage: run.stage, bestMeters: run.bestMeters, tutorial: run.tutorial, rookie: run.rookie }),
+    [progress.upgrades, run],
   );
   const upgradeBadge = anyUpgradeAffordable(progress.upgrades, progress.wallet);
+  const achievementsReady = claimableCount(progress);
+  const openShop = useCallback(() => setShowShop(true), []);
 
   if (!loaded || !firstPlayLoaded || !skinLoaded || !progressLoaded) return null;
 
@@ -332,7 +471,7 @@ export const AppNavigator: React.FC = () => {
       <GameScreen
         width={width}
         height={height}
-        showBanner={screen !== 'start'}
+        showBanner={screen !== 'start' && !adsRemoved}
         controlsEnabled={screen === 'playing'}
         runId={run.id}
         runMode={run.mode}
@@ -343,6 +482,8 @@ export const AppNavigator: React.FC = () => {
         bestScore={runBestScore}
         skin={activeSkin}
         courseSeed={run.courseSeed}
+        ghostTrace={run.courseSeed === null ? undefined : ghost?.trace}
+        flapButton={run.flapButton}
         showTutorial={run.mode === 'playing' && progress.runs < TUTORIAL_RUNS}
         runParams={runParams}
         onGameOver={handleGameOver}
@@ -364,6 +505,12 @@ export const AppNavigator: React.FC = () => {
           upgradeBadge={upgradeBadge}
           streak={streakStatus(progress, new Date())}
           onClaimStreak={handleClaimStreak}
+          onOpenShop={openShop}
+          onOpenWheel={() => setShowWheel(true)}
+          onOpenAchievements={() => setShowAchievements(true)}
+          onRate={REVIEW_URL ? () => Linking.openURL(REVIEW_URL!).catch(() => undefined) : undefined}
+          wheelBadge={nextSpin(progress) === 'free'}
+          achievementBadge={achievementsReady}
         />
       )}
 
@@ -373,7 +520,7 @@ export const AppNavigator: React.FC = () => {
           summary={summary}
           bestScore={bestScore}
           isNewBest={isNewBest}
-          canContinue={!hasContinued}
+          canContinue={!hasContinued && run.courseSeed === null && !run.stage}
           onRetry={handleRetry}
           onHome={handleHome}
           onContinue={handleContinue}
@@ -384,8 +531,17 @@ export const AppNavigator: React.FC = () => {
           onShare={handleShare}
           metersShort={metersShort}
           bestMeters={run.bestMeters}
+          doubleCoins={doubledCoins || doubleCoinsAmount(summary.coinsEarned)}
+          doubled={doubledCoins > 0}
+          onDoubleCoins={handleDoubleCoins}
+          achievementsReady={achievementsReady}
+          onOpenAchievements={() => setShowAchievements(true)}
+          offerNoAds={offerNoAds && !adsRemoved && store.available}
+          onOpenShop={openShop}
         />
       )}
+
+      {showSetup && <RunSetup initial={plan} onStart={handlePlan} onClose={() => setShowSetup(false)} />}
 
       {showSkins && (
         <SkinPreview
@@ -395,6 +551,7 @@ export const AppNavigator: React.FC = () => {
           onBuy={handleBuySkin}
           onEquip={handleEquipSkin}
           onRent={handleRentSkin}
+          onOpenShop={openShop}
           onClose={() => setShowSkins(false)}
         />
       )}
@@ -406,7 +563,42 @@ export const AppNavigator: React.FC = () => {
           levels={progress.upgrades}
           wallet={progress.wallet}
           onBuy={handleBuyUpgrade}
+          onOpenShop={openShop}
           onClose={() => setShowUpgrades(false)}
+        />
+      )}
+
+      {showWheel && (
+        <LuckyWheel
+          next={nextSpin(progress)}
+          adSpinsLeft={adSpinsLeft(progress)}
+          onSpin={handleSpin}
+          onTick={handleWheelTick}
+          onPrize={celebrate}
+          onClose={() => setShowWheel(false)}
+        />
+      )}
+
+      {showAchievements && (
+        <AchievementsModal
+          list={allAchievements(progress)}
+          onClaim={handleClaimAchievement}
+          onClaimAll={() => handleClaimAchievement()}
+          onClose={() => setShowAchievements(false)}
+        />
+      )}
+
+      {showShop && (
+        <ShopModal
+          wallet={progress.wallet}
+          products={store.products}
+          adsRemoved={adsRemoved}
+          state={store.state}
+          freeCoinsLeft={freeCoinsLeft(progress)}
+          onBuy={store.buy}
+          onFreeCoins={handleFreeCoins}
+          onRestore={handleRestore}
+          onClose={() => setShowShop(false)}
         />
       )}
     </View>

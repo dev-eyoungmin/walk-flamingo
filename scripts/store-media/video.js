@@ -5,7 +5,7 @@ const { execFileSync } = require('child_process');
 const { WORK, BGM } = require('./paths');
 const { open, settle } = require('./lib');
 const { startRun } = require('./shots');
-const { SEED, CLIPS, PLAY } = require('./scenes');
+const { SEED, CLIPS } = require('./scenes');
 
 const CROSSFADE = 0.25;
 const END_CARD = 1.8;
@@ -19,7 +19,7 @@ async function capture(lang) {
   const { browser, page, errors } = await open({ lang, width: 960, height: 443, dsf: 2, seed: SEED });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${dir}/end.png` });
-  await startRun(page, [PLAY[0] + 3, PLAY[1] + 2]);
+  await startRun(page, lang);
   for (let c = 0; c < CLIPS.length; c++) {
     fs.mkdirSync(`${dir}/c${c + 1}`);
     await page.evaluate((tt) => globalThis.__wobbyFF(1e6, (s) => s.t >= tt), CLIPS[c][0]);

@@ -11,6 +11,7 @@ for screenshots and stepped frame by frame for the video. Output goes to `store/
 sh scripts/store-media/setup-web.sh      # terminal 1: builds and serves the capture build
 node scripts/store-media/make.js         # terminal 2: all 13 languages, about 3 minutes each
 node scripts/store-media/make.js ja th   # or just some of them; --no-video for screenshots only
+node scripts/store-media/make.js --ipad   # 13" iPad screenshots (APP_IPAD_PRO_3GEN_129), no video
 ```
 
 Needs `ffmpeg`, Chrome for Testing from Playwright (`npx playwright install chromium`; set

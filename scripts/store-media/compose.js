@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { WORK, CHROME, LATIN_FONT, FONT_CACHE, playwright } = require('./paths');
 const CAPTIONS = require('./captions');
-const { SHOT_NAMES, CLIPS } = require('./scenes');
+const { SHOT_NAMES, CLIPS, DEVICES } = require('./scenes');
 
 // Caption fonts are the full versions of the in-game display fonts (the bundled ones are subsets)
 const FONT = {
@@ -28,21 +28,22 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const fit = (max, size, min) =>
   `<script>document.fonts.ready.then(()=>{const t=document.getElementById('t');let s=${size};while(t.getBoundingClientRect().width>${max}&&s>${min}){s-=1;t.style.fontSize=s+'px';}document.body.dataset.ready='1'})</script>`;
 
-function shotHtml(lang, caption, img) {
+function shotHtml(lang, caption, img, device) {
   const [family, weight] = FONT[FONT_FOR[lang]];
+  const { canvas: [W, H], caption: capH, frame: [fw, fh] } = DEVICES[device];
   return `<!doctype html><html><head><meta charset="utf-8"><style>${FONT_CSS}
-  html,body{margin:0;width:2868px;height:1320px;overflow:hidden}
+  html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden}
   body{background:linear-gradient(120deg,#FF5C8F 0%,#FF86A8 45%,#FFB199 100%);position:relative}
   .dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.16) 9px,transparent 10px);background-size:120px 120px;background-position:30px 20px}
-  .cap{position:absolute;left:0;right:0;top:0;height:262px;display:flex;align-items:center;justify-content:center}
+  .cap{position:absolute;left:0;right:0;top:0;height:${capH}px;display:flex;align-items:center;justify-content:center}
   .cap span{font-family:${family};font-weight:${weight};font-size:150px;line-height:1;color:#fff;white-space:nowrap;letter-spacing:1px;
     -webkit-text-stroke:22px #3A1535;paint-order:stroke fill;text-shadow:0 12px 0 #3A1535}
   /* The frame runs off the bottom edge, which crops the empty strip under the controls */
-  .frame{position:absolute;left:164px;top:262px;width:2540px;height:1169px;border-radius:64px;overflow:hidden;
+  .frame{position:absolute;left:${(W - fw) / 2}px;top:${capH}px;width:${fw}px;height:${fh}px;border-radius:64px;overflow:hidden;
     box-shadow:0 0 0 14px #fff,0 30px 90px rgba(90,0,50,.45)}
   .frame img{width:100%;height:100%;display:block}
   </style></head><body><div class="dots"></div><div class="cap"><span id="t">${esc(caption)}</span></div>
-  <div class="frame"><img src="file://${img}"></div>${fit(2620, 150, 60)}</body></html>`;
+  <div class="frame"><img src="file://${img}"></div>${fit(fw + 80, 150, 60)}</body></html>`;
 }
 
 function overlayHtml(lang, caption) {
@@ -56,21 +57,27 @@ function overlayHtml(lang, caption) {
   </style></head><body><div class="cap"><span id="t">${esc(caption)}</span></div>${fit(1500, 62, 30)}</body></html>`;
 }
 
-/** WORK/raw/<lang>/*.png → WORK/out/<lang>/0N-name.jpg, plus WORK/ov/<lang>/N.png for the video. */
-async function compose(langs) {
+/**
+ * WORK/raw/<device>/<lang>/*.png → WORK/out/<device>/<lang>/0N-name.jpg, plus WORK/ov/<lang>/N.png
+ * for the video (iPhone only: the preview video is iPhone-sized).
+ */
+async function compose(langs, device = 'iphone') {
+  const [W, H] = DEVICES[device].canvas;
   const browser = await playwright().chromium.launch({ executablePath: CHROME, headless: true, args: ['--allow-file-access-from-files'] });
   const tmp = path.join(WORK, `compose-${process.pid}.html`);
   for (const lang of langs) {
-    const shots = await browser.newContext({ viewport: { width: 2868, height: 1320 }, deviceScaleFactor: 1 });
+    const shots = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
     let page = await shots.newPage();
-    fs.mkdirSync(path.join(WORK, 'out', lang), { recursive: true });
+    const out = path.join(WORK, 'out', device, lang);
+    fs.mkdirSync(out, { recursive: true });
     for (let i = 0; i < SHOT_NAMES.length; i++) {
-      fs.writeFileSync(tmp, shotHtml(lang, CAPTIONS[lang][i], path.join(WORK, 'raw', lang, `${SHOT_NAMES[i]}.png`)));
+      fs.writeFileSync(tmp, shotHtml(lang, CAPTIONS[lang][i], path.join(WORK, 'raw', device, lang, `${SHOT_NAMES[i]}.png`), device));
       await page.goto('file://' + tmp);
       await page.waitForFunction(() => document.body.dataset.ready === '1' && [...document.images].every((im) => im.complete && im.naturalWidth > 0));
-      await page.screenshot({ path: path.join(WORK, 'out', lang, `0${i + 1}-${SHOT_NAMES[i].slice(2)}.jpg`), type: 'jpeg', quality: 93 });
+      await page.screenshot({ path: path.join(out, `0${i + 1}-${SHOT_NAMES[i].slice(2)}.jpg`), type: 'jpeg', quality: 93 });
     }
     await shots.close();
+    if (device !== 'iphone') continue;
     const overlays = await browser.newContext({ viewport: { width: 1920, height: 886 }, deviceScaleFactor: 1 });
     page = await overlays.newPage();
     fs.mkdirSync(path.join(WORK, 'ov', lang), { recursive: true });

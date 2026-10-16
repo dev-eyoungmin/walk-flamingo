@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { GameStats } from '../game/GameCanvas';
+import { AchievementId, ACHIEVEMENTS, claimAchievement } from '../lib/achievements';
+import { SpinKind, spinWheel, WheelPrize } from '../lib/wheel';
 import {
+  addCoins,
   applyRun,
   claimStreak,
   courseSeedForDay,
@@ -13,6 +16,7 @@ import {
   purchaseUpgrade,
   RunResult,
   summarizeRunLog,
+  takeFreeCoins,
   takeStarterBalloon,
 } from '../lib/progress';
 import type { UpgradeId } from '../lib/upgrades';
@@ -91,15 +95,73 @@ export function useProgress() {
     return true;
   }, [commit]);
 
-  /** Claims today's daily gift; returns the coins received (0 if already claimed). */
-  const claimDailyGift = useCallback((): number => {
-    const result = claimStreak(dataRef.current, new Date());
+  /** Claims today's daily gift (`mult` 2 after an ad); returns the coins received (0 if already claimed). */
+  const claimDailyGift = useCallback((mult = 1): number => {
+    const result = claimStreak(dataRef.current, new Date(), mult);
     if (!result) return 0;
     commit(result.data);
     return result.reward;
   }, [commit]);
 
+  /** Coins from outside a run: ad bonuses, purchases. */
+  const grantCoins = useCallback((amount: number) => {
+    if (amount > 0) commit(addCoins(dataRef.current, amount));
+  }, [commit]);
+
+  /** Rewarded free coins (capped per day); returns false when none are left. */
+  const collectFreeCoins = useCallback((): boolean => {
+    const next = takeFreeCoins(dataRef.current, new Date());
+    if (!next) return false;
+    commit(next);
+    return true;
+  }, [commit]);
+
+  const spin = useCallback(
+    (kind: SpinKind, canRentSkin: boolean): { segment: number; prize: WheelPrize } | null => {
+      const result = spinWheel(dataRef.current, kind, Math.random(), new Date(), canRentSkin);
+      if (!result) return null;
+      commit(result.data);
+      return { segment: result.segment, prize: result.prize };
+    },
+    [commit],
+  );
+
+  /** Claim one achievement tier, or every ready tier with no id. Returns coins and unlocked skins. */
+  const claimAchievements = useCallback(
+    (id?: AchievementId): { coins: number; skins: string[] } => {
+      let data = dataRef.current;
+      let coins = 0;
+      const skins: string[] = [];
+      const ids = id ? [id] : ACHIEVEMENTS.map((a) => a.id);
+      for (const a of ids) {
+        // Claim-all takes every ready tier; a single tap takes one
+        for (let r = claimAchievement(data, a); r; r = id ? null : claimAchievement(data, a)) {
+          data = r.data;
+          coins += r.reward;
+          if (r.skin) skins.push(r.skin);
+        }
+      }
+      if (coins > 0) commit(data);
+      return { coins, skins };
+    },
+    [commit],
+  );
+
   const todaySeed = courseSeedForDay(data.day);
 
-  return { progress: data, loaded, recordRun, buySkin, buyUpgrade, consumeBalloon, claimDailyGift, refreshDay, todaySeed };
+  return {
+    progress: data,
+    loaded,
+    recordRun,
+    buySkin,
+    buyUpgrade,
+    consumeBalloon,
+    claimDailyGift,
+    grantCoins,
+    collectFreeCoins,
+    spin,
+    claimAchievements,
+    refreshDay,
+    todaySeed,
+  };
 }

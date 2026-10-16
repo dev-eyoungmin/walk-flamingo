@@ -1,7 +1,10 @@
 import { useCallback, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
-import type { SfxName } from '../lib/sfx';
+import { coinSfx, SfxName } from '../lib/sfx';
 import {
+  FX_PERFECT,
+  FX_RESCUE,
+  FX_STAGE_CLEAR,
   FX_BIOME,
   FX_CHICK_JOIN,
   FX_CHICK_LOST,
@@ -43,8 +46,14 @@ export function useGameFeedback(playSfx: (name: SfxName) => void, setMusicRate?:
   const lastCoinHaptic = useRef(0);
 
   return useCallback(
-    (code: number) => {
+    (code: number, value = 0) => {
       switch (code) {
+        case FX_PERFECT:
+        case FX_RESCUE:
+        case FX_STAGE_CLEAR:
+          playSfx('challengeSuccess');
+          notify(Haptics.NotificationFeedbackType.Success);
+          break;
         case FX_FEVER_START:
           playSfx('comboUp');
           notify(Haptics.NotificationFeedbackType.Success);
@@ -73,7 +82,12 @@ export function useGameFeedback(playSfx: (name: SfxName) => void, setMusicRate?:
           impact(Haptics.ImpactFeedbackStyle.Medium);
           break;
         case FX_COIN: {
-          playSfx('coinCollect');
+          // value = position in the pickup chain; every 5th pays bonus coins
+          playSfx(coinSfx(value));
+          if (value > 0 && value % 5 === 0) {
+            notify(Haptics.NotificationFeedbackType.Success);
+            break;
+          }
           const now = Date.now();
           if (now - lastCoinHaptic.current > 90) {
             lastCoinHaptic.current = now;
@@ -86,7 +100,13 @@ export function useGameFeedback(playSfx: (name: SfxName) => void, setMusicRate?:
           impact(Haptics.ImpactFeedbackStyle.Medium);
           break;
         case FX_NEAR_MISS:
-          playSfx('nearMiss');
+          // value 1 = CLUTCH, a save from the very edge
+          if (value === 1) {
+            playSfx('clutch');
+            impact(Haptics.ImpactFeedbackStyle.Heavy);
+          } else {
+            playSfx('nearMiss');
+          }
           notify(Haptics.NotificationFeedbackType.Success);
           break;
         case FX_MILESTONE:

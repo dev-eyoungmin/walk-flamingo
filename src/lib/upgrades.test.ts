@@ -25,7 +25,7 @@ describe('saved progress migration', () => {
     delete (v1 as Record<string, unknown>).streak;
     delete (v1 as Record<string, unknown>).balloonsUsed;
     const data = migrateProgress(JSON.parse(JSON.stringify(v1)), day1);
-    expect(data.version).toBe(2);
+    expect(data.version).toBe(3);
     expect(data.wallet).toBe(777);
     expect(data.ownedSkins).toEqual(['default', 'arctic']);
     expect(data.runs).toBe(12);

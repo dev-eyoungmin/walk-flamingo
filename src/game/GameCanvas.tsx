@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, View } from 'react-native';
 import { Canvas, Group } from '@shopify/react-native-skia';
 import { runOnJS, runOnUI, useDerivedValue, useFrameCallback, useSharedValue } from 'react-native-reanimated';
+import { AdventureHud, AdventureWorld } from './render/AdventureRenderer';
 import { BackgroundRenderer } from './render/BackgroundRenderer';
 import { GroundRenderer } from './render/GroundRenderer';
 import { StorkRenderer } from './render/StorkRenderer';
@@ -31,11 +32,20 @@ export type RunMode = 'attract' | 'playing';
 export type BoostType = 'shield' | 'slowmo' | null;
 
 export interface GameStats {
+  perfects?: number;
+  golds?: number;
+  rescued?: number;
+  stage?: number;
+  stageWon?: boolean;
+  stageExpired?: boolean;
+  trace?: number[];
   score: number;
   meters: number;
   coins: number;
   bestCombo: number;
   nearMisses: number;
+  /** Saves from the very edge (part of nearMisses) */
+  clutches?: number;
   dodges: number;
   challenges: number;
   fevers: number;
@@ -74,6 +84,8 @@ interface GameCanvasProps {
   controlsEnabled: boolean;
   /** When set, terrain and the event sequence come from this seed (today's course) */
   courseSeed?: number | null;
+  ghostTrace?: number[];
+  flapButton?: boolean;
   showTutorial?: boolean;
   /** Upgrades, onboarding and the best-distance flag for the next run */
   runParams?: Omit<RunParams, 'shield' | 'slowmo' | 'scrollX'>;
@@ -106,6 +118,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   skin,
   controlsEnabled,
   courseSeed = null,
+  ghostTrace,
+  flapButton = true,
   showTutorial = false,
   runParams,
   onGameOver,
@@ -122,6 +136,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const cfgSV = useSharedValue<SimConfig>(cfg);
   const sim = useSharedValue<SimState>(initialState);
   const input = useSharedValue(0);
+  const pulseAt = useSharedValue(0);
+  const [flapSeconds, setFlapSeconds] = useState(0);
+  const [flapReady, setFlapReady] = useState(true);
+  const updateFlapUi = useCallback((cooldown: number) => {
+    setFlapSeconds(Math.ceil(cooldown));
+    setFlapReady(cooldown <= 0);
+  }, []);
 
   // Baby flamingo renderers are mounted only once a chick has joined this run
   const [chicksMounted, setChicksMounted] = useState(0);
@@ -146,6 +167,11 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     const s = sim.value;
     s.input = input.value;
     advanceSim(s, cfgSV.value, dt);
+    pulseAt.value += dt;
+    if (s.mode === MODE_PLAYING && pulseAt.value >= 0.25) {
+      pulseAt.value = 0;
+      runOnJS(updateFlapUi)(s.flapCooldown);
+    }
     let fx: number[] | null = null;
     if (s.fxLen > 0) {
       fx = s.fx.slice(0, s.fxLen * 2);
@@ -155,11 +181,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     if (s.mode === MODE_OVER && s.gameOverSent === 0) {
       s.gameOverSent = 1;
       over = {
+        perfects: s.perfects,
+        golds: s.golds,
+        rescued: s.rescued,
+        stage: s.stage,
+        stageWon: s.stageWon > 0,
+        stageExpired: s.stageExpired > 0,
+        trace: s.trace.slice(),
         score: Math.floor(s.score),
         meters: Math.floor(s.meters),
         coins: s.coins,
         bestCombo: s.bestCombo,
         nearMisses: s.nearMisses,
+        clutches: s.clutches,
         dodges: s.dodges,
         challenges: s.challengesDone,
         fevers: s.fevers,
@@ -284,6 +318,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           <BackgroundRenderer sim={sim} palette={palette} width={width} height={height} />
           <GroundRenderer sim={sim} palette={palette} cfg={cfg} />
           <BestFlagRenderer sim={sim} cfg={cfg} label={HUD.flag} />
+          <AdventureWorld sim={sim} cfg={cfg} skin={skin} trace={ghostTrace} />
           <ObstacleRenderer sim={sim} cfg={cfg} />
           <CoinRenderer sim={sim} cfg={cfg} />
           <ItemsRenderer sim={sim} cfg={cfg} />
@@ -296,8 +331,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         </Group>
         <ScreenEffectsRenderer sim={sim} palette={palette} cfg={cfg} />
         <HudRenderer sim={sim} cfg={cfg} bestScore={bestScore} showTutorial={showTutorial} />
+        <AdventureHud sim={sim} cfg={cfg} trace={ghostTrace} />
       </Canvas>
-      <TouchControls width={width} height={height} onInputChange={setTouch} enabled={controlsEnabled} />
+      <TouchControls width={width} height={height} onInputChange={setTouch} enabled={controlsEnabled} flapButton={flapButton} flapSeconds={flapSeconds} flapReady={flapReady} />
     </View>
   );
 };

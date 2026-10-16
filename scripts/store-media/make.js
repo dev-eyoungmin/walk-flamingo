@@ -4,9 +4,11 @@
 //   node scripts/store-media/make.js            every language
 //   node scripts/store-media/make.js ja th      only these
 //   node scripts/store-media/make.js --no-video screenshots only
+//   node scripts/store-media/make.js --ipad     13" iPad screenshots (no video)
 const fs = require('fs');
 const path = require('path');
 const { ROOT, WORK } = require('./paths');
+const { DEVICES } = require('./scenes');
 const CAPTIONS = require('./captions');
 const shots = require('./shots');
 const video = require('./video');
@@ -17,18 +19,20 @@ const folder = (lang) => (lang === 'en' ? 'en-US' : lang);
 
 (async () => {
   const args = process.argv.slice(2);
-  const withVideo = !args.includes('--no-video');
+  const device = args.includes('--ipad') ? 'ipad' : 'iphone';
+  const withVideo = device === 'iphone' && !args.includes('--no-video');
   const langs = args.filter((a) => !a.startsWith('--'));
   for (const lang of langs.length ? langs : Object.keys(CAPTIONS)) {
     if (!CAPTIONS[lang]) throw new Error(`No captions for "${lang}" (see captions.js)`);
     const started = Date.now();
-    await shots.run(lang);
-    fs.rmSync(path.join(WORK, 'out', lang), { recursive: true, force: true });
-    await compose([lang]);
-    const shotDir = path.join(ROOT, 'store/apple/screenshot', folder(lang), 'APP_IPHONE_67');
+    await shots.run(lang, { device });
+    const out = path.join(WORK, 'out', device, lang);
+    fs.rmSync(out, { recursive: true, force: true });
+    await compose([lang], device);
+    const shotDir = path.join(ROOT, 'store/apple/screenshot', folder(lang), DEVICES[device].folder);
     fs.rmSync(shotDir, { recursive: true, force: true });
     fs.mkdirSync(shotDir, { recursive: true });
-    for (const f of fs.readdirSync(path.join(WORK, 'out', lang))) fs.copyFileSync(path.join(WORK, 'out', lang, f), path.join(shotDir, f));
+    for (const f of fs.readdirSync(out)) fs.copyFileSync(path.join(out, f), path.join(shotDir, f));
     if (withVideo) {
       await video.capture(lang);
       const previewDir = path.join(ROOT, 'store/apple/preview', folder(lang));

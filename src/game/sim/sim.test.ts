@@ -1,5 +1,8 @@
 import {
-  CHL_CENTERED,
+  ENV_GUST,
+  EVT_ENVIRONMENT,
+  EVT_SPEED,
+  SPD_COIN_RAIN,
   ENVIRONMENT,
   EVT_CHALLENGE,
   EVT_OBSTACLE,
@@ -177,17 +180,22 @@ describe('events', () => {
     expect(s.evCount).toBeGreaterThanOrEqual(1);
   });
 
-  it('starts with a centered challenge followed by a rock', () => {
+  it('opens with a rock, a coin shower, a gust and a branch', () => {
     const cfg = flatConfig();
     const s = createSimState(cfg, MODE_PLAYING, 12);
     const seen: number[] = [];
     const dt = 1 / 60;
-    for (let t = 0; t < 30 && seen.length < 2; t += dt) {
+    for (let t = 0; t < 30 && seen.length < 4; t += dt) {
       const prevCount = s.evCount;
       runBalanced(s, cfg, dt);
       if (s.evCount > prevCount) seen.push(s.evType * 10 + s.evSub);
     }
-    expect(seen).toEqual([EVT_CHALLENGE * 10 + CHL_CENTERED, EVT_OBSTACLE * 10 + OBS_ROCK]);
+    expect(seen).toEqual([
+      EVT_OBSTACLE * 10 + OBS_ROCK,
+      EVT_SPEED * 10 + SPD_COIN_RAIN,
+      EVT_ENVIRONMENT * 10 + ENV_GUST,
+      EVT_OBSTACLE * 10 + OBS_BRANCH,
+    ]);
   });
 
   function setupObstacle(sub: number, dir: number) {

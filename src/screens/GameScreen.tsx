@@ -36,6 +36,8 @@ interface GameScreenProps {
   skin: SkinPalette;
   /** Seed of today's course, or null for a random course */
   courseSeed: number | null;
+  ghostTrace?: number[];
+  flapButton?: boolean;
   showTutorial: boolean;
   runParams?: Omit<RunParams, 'shield' | 'slowmo' | 'scrollX'>;
   onGameOver: (stats: GameStats) => void;

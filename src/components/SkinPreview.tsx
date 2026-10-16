@@ -5,9 +5,10 @@ import { useFrameCallback, useSharedValue } from 'react-native-reanimated';
 import { SKIN_PRICES, SKINS, SkinPalette } from '../lib/skins';
 import { StorkPose, StorkRenderer } from '../game/render/StorkRenderer';
 import { GameButton } from '../ui/GameButton';
-import { CoinGlyph } from '../ui/MissionList';
+import { WalletChip } from '../ui/WalletChip';
 import { FONT_DISPLAY, titleShadow, UI } from '../ui/theme';
 import { formatNum, t, TKey } from '../i18n';
+import { ACHIEVEMENT_SKINS, achievementName } from '../lib/achievements';
 
 interface SkinPreviewProps {
   activeSkinId: string;
@@ -19,6 +20,8 @@ interface SkinPreviewProps {
   onEquip: (skinId: string) => void;
   /** Wear a skin for 24 hours (rewarded ad) */
   onRent: (skinId: string) => void;
+  /** Tapping the wallet opens the coin shop */
+  onOpenShop?: () => void;
   onClose: () => void;
 }
 
@@ -85,6 +88,7 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
   onBuy,
   onEquip,
   onRent,
+  onOpenShop,
   onClose,
 }) => {
   const { height } = useWindowDimensions();
@@ -94,10 +98,7 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
       <View style={[styles.modal, { maxHeight: height - 16 }]}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>{t('common.skins')}</Text>
-          <View style={styles.wallet}>
-            <CoinGlyph size={15} />
-            <Text style={styles.walletText}>{formatNum(wallet)}</Text>
-          </View>
+          <WalletChip wallet={wallet} onPress={onOpenShop} />
         </View>
         <Text style={styles.subtitle}>{t('skins.subtitle')}</Text>
 
@@ -107,6 +108,7 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
             const owned = ownedSkins.includes(skin.id) || skin.id === 'default';
             const price = SKIN_PRICES[skin.id] ?? 0;
             const affordable = wallet >= price;
+            const achievement = ACHIEVEMENT_SKINS[skin.id];
             return (
               <View key={skin.id} style={[styles.card, isActive && { borderColor: skin.body, backgroundColor: 'rgba(255,255,255,0.12)' }]}>
                 <MiniStork skin={skin} active={isActive} />
@@ -119,6 +121,12 @@ export const SkinPreview: React.FC<SkinPreviewProps> = ({
                   </View>
                 ) : owned ? (
                   <GameButton label={t('skins.wear')} size="sm" color={UI.mint} shade={UI.mintDark} onPress={() => onEquip(skin.id)} style={styles.cardButton} />
+                ) : achievement ? (
+                  <View style={styles.lock}>
+                    <Text style={styles.lockText} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+                      🏆 {t(achievementName(achievement))}
+                    </Text>
+                  </View>
                 ) : (
                   <View style={styles.buyOptions}>
                     <GameButton
@@ -174,24 +182,28 @@ const styles = StyleSheet.create({
     color: UI.text,
     ...titleShadow,
   },
-  wallet: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  walletText: {
-    fontFamily: FONT_DISPLAY,
-    fontSize: 16,
-    color: UI.gold,
-  },
   subtitle: {
     fontSize: 11,
     color: UI.textDim,
     marginBottom: 8,
+  },
+  lock: {
+    alignSelf: 'stretch',
+    minHeight: 36,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,201,60,0.6)',
+    backgroundColor: 'rgba(255,201,60,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+  lockText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: UI.gold,
+    textAlign: 'center',
   },
   scroller: {
     alignSelf: 'stretch',

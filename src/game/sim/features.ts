@@ -17,6 +17,7 @@ import {
 } from './constants';
 import { FX_BIOME, FX_CHICK_JOIN, FX_FEVER_END, FX_FEVER_START, FX_FLAP, FX_ITEM } from './fx';
 import { emote, partWorld, shake } from './helpers';
+import { awardPerfect } from './adventure';
 import type { SimState } from './state';
 import { HIT_CIRCLE_COUNT } from './storkGeometry';
 import { SimConfig, terrainOffsetAt } from './terrain';
@@ -137,7 +138,7 @@ export function pullCoins(s: SimState, cfg: SimConfig, dt: number): void {
   const step = ITEMS.MAGNET_PULL_U * U * dt;
   for (let c = 0; c < COIN.MAX; c++) {
     const b = c * COIN.SLOT;
-    if (slots[b] < 0.5) continue;
+    if (slots[b] < 0.5 || slots[b + 5] === 2) continue;
     const dx = tx - slots[b + 1];
     if (dx < -ITEMS.MAGNET_RANGE_U * U || dx > 6 * U) continue;
     const dy = ty - slots[b + 2];
@@ -165,7 +166,9 @@ export function updateFlap(s: SimState, input: number, dt: number): void {
   if (pressed && !wasPressed) {
     s.omega *= FLAP.OMEGA_KEEP;
     s.angle *= FLAP.ANGLE_KEEP;
-    s.flapCooldown = FLAP.COOLDOWN;
+    if (s.danger > 0.75 && s.hurtT <= 0 && s.t >= s.graceEnd) awardPerfect(s);
+    s.lastFlapAt = s.t;
+    s.flapCooldown = s.trait === 2 ? 3.5 : FLAP.COOLDOWN;
     s.flapAnim = FLAP.ANIM;
     s.flaps++;
     pushFx(s, FX_FLAP, 0);

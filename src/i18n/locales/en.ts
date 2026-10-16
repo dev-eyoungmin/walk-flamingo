@@ -1,8 +1,10 @@
+import { gameplay } from './gameplay';
 /**
  * English strings: the source of truth for every translation key.
  * Placeholders use {name}; every locale must keep the same placeholders.
  */
 export const en = {
+  ...gameplay,
   // Start screen
   'start.missions': "TODAY'S MISSIONS",
   'start.subtitle': 'THE WOBBLY FLAMINGO',
@@ -19,6 +21,7 @@ export const en = {
   'common.ad': 'AD',
   'common.watchAd': '{label}, watch an ad',
   'lang.title': 'LANGUAGE',
+  'rate.title': 'RATE',
   'lang.auto': 'Device language',
 
   // Daily login gift
@@ -178,6 +181,66 @@ export const en = {
   'tut.holdRight': 'NOW HOLD THE RIGHT SIDE',
   'tut.flap': 'TAP BOTH SIDES TO FLAP!',
   'tut.ready': "YOU'RE READY!",
+
+  // Shop, lucky wheel, achievements and game-feel bonuses
+  'hud.clutch': 'CLUTCH!',
+  'float.chain': 'CHAIN x{n}!',
+  'over.doubleCoins': 'x2 +{n}',
+  'streak.double': 'x2 +{n}',
+  'over.achievements': 'Achievements ready: {n}',
+  'over.noAds': 'Play without ads',
+  'shop.title': 'SHOP',
+  'shop.noAds': 'REMOVE ADS',
+  'shop.noAdsDesc': 'No banners or ad breaks. Bonus videos stay optional.',
+  'shop.owned': 'OWNED',
+  'shop.bestValue': 'BEST VALUE',
+  'shop.coins': 'coins',
+  'shop.free': 'FREE',
+  'shop.freeLeft': '{n} left today',
+  'shop.restore': 'Restore purchases',
+  'wheel.title': 'LUCKY WHEEL',
+  'wheel.hint': 'One free spin every day!',
+  'wheel.spinFree': 'FREE SPIN',
+  'wheel.spinAd': 'SPIN AGAIN',
+  'wheel.comeBack': 'Come back tomorrow!',
+  'wheel.adLeft': 'Bonus spins today: {n}/{max}',
+  'wheel.odds': 'Odds',
+  'wheel.wonCoins': '+{n} coins!',
+  'wheel.wonBalloon': 'Rescue balloon for your next run!',
+  'wheel.wonSkin': '{name} skin for 24 h!',
+  'ach.title': 'ACHIEVEMENTS',
+  'ach.claimAll': 'CLAIM ALL ({n})',
+  'ach.skinReward': 'Reward: {name} skin',
+  'ach.runner': 'Long Legs',
+  'ach.runnerDesc': 'Walk {n} m in one run',
+  'ach.walker': 'Globetrotter',
+  'ach.walkerDesc': 'Walk {n} m in total',
+  'ach.saver': 'Never Give Up',
+  'ach.saverDesc': 'Recover from the edge {n} times',
+  'ach.clutch': 'Clutch Master',
+  'ach.clutchDesc': 'Make {n} CLUTCH saves',
+  'ach.fever': 'Fever Fan',
+  'ach.feverDesc': 'Start FEVER {n} times',
+  'ach.dodger': 'Untouchable',
+  'ach.dodgerDesc': 'Dodge or brace {n} times',
+  'ach.family': 'Super Parent',
+  'ach.familyDesc': 'Bring {n} babies to the nest',
+  'ach.gold': 'Star Catcher',
+  'ach.goldDesc': 'Grab {n} gold star coins',
+  'ach.perfect': 'Perfectionist',
+  'ach.perfectDesc': 'Get {n} PERFECTs',
+  'ach.collector': 'Coin Hoarder',
+  'ach.collectorDesc': 'Earn {n} coins',
+  'ach.daily': 'Daily Walker',
+  'ach.dailyDesc': 'Play today\'s course {n} times',
+  'ach.loyal': 'Best Friends',
+  'ach.loyalDesc': 'Reach a {n}-day gift streak',
+  'ach.missions': 'Mission Pro',
+  'ach.missionsDesc': 'Complete {n} missions',
+  'ach.wardrobe': 'Fashionista',
+  'ach.wardrobeDesc': 'Own {n} skins',
+  'skin.neon': 'Neon',
+  'skin.shadow': 'Shadow',
 } as const;
 
 export type TKey = keyof typeof en;

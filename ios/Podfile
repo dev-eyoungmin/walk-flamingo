@@ -1,3 +1,5 @@
+source 'https://cdn.cocoapods.org/'
+
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
@@ -53,6 +55,16 @@ target 'Wobby' do
   )
 
   post_install do |installer|
+    # Current Xcode SDKs reject resource pods with deployment targets below iOS 15.
+    # Keep every dependency at least as new as this React Native app's iOS 15.1 floor.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        deployment = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if deployment && Gem::Version.new(deployment) < Gem::Version.new('15.1')
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        end
+      end
+    end
     react_native_post_install(
       installer,
       config[:reactNativePath],

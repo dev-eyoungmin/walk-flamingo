@@ -31,3 +31,6 @@ export const FX_TUTORIAL_STEP = 29;
 export const FX_GULL_LAND = 30;
 export const FX_GULL_SHOO = 31;
 export const FX_COIN_RAIN = 32;
+export const FX_PERFECT = 33;
+export const FX_RESCUE = 34;
+export const FX_STAGE_CLEAR = 35;

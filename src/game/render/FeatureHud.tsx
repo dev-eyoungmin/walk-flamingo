@@ -153,7 +153,7 @@ export const FeatureHud: React.FC<Props> = ({ sim, cfg, fonts, typeface, padX, m
     'worklet';
     const s = sim.value;
     if (s.flapCooldown <= 0) return;
-    const k = 1 - s.flapCooldown / FLAP.COOLDOWN;
+    const k = 1 - s.flapCooldown / (s.trait === 2 ? 3.5 : FLAP.COOLDOWN);
     p.addArc(Skia.XYWHRect(flapCx - 13, flapCy - 13, 26, 26), -90, 360 * k);
   });
   const flapGlow = useDerivedValue(() => {

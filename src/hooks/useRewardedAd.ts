@@ -5,6 +5,8 @@ export function useRewardedAd() {
   const [loaded, setLoaded] = useState(false);
   const adRef = useRef<any>(null);
   const onRewardRef = useRef<(() => void) | null>(null);
+  // Called when the ad is closed before the reward was earned
+  const onCancelRef = useRef<(() => void) | null>(null);
 
   const loadAd = useCallback(() => {
     if (IS_EXPO_GO || !REWARDED_AD_UNIT_ID || __DEV__) return () => {};
@@ -26,11 +28,15 @@ export function useRewardedAd() {
         () => {
           onRewardRef.current?.();
           onRewardRef.current = null;
+          onCancelRef.current = null;
         },
       );
 
       const unsubClosed = ad.addAdEventListener(AdEventType.CLOSED, () => {
         setLoaded(false);
+        onCancelRef.current?.();
+        onCancelRef.current = null;
+        onRewardRef.current = null;
         loadAd();
       });
 
@@ -39,6 +45,7 @@ export function useRewardedAd() {
         setLoaded(false);
         onRewardRef.current?.();
         onRewardRef.current = null;
+        onCancelRef.current = null;
         // Retry loading after a delay
         setTimeout(() => loadAd(), 5000);
       });
@@ -63,13 +70,16 @@ export function useRewardedAd() {
     return cleanup;
   }, [loadAd]);
 
+  /** Show the ad; `onReward` runs once it is earned (or right away when no ad is available). */
   const showAd = useCallback(
-    (onReward: () => void) => {
+    (onReward: () => void, onCancel?: () => void) => {
       if (loaded && adRef.current) {
         try {
           onRewardRef.current = onReward;
+          onCancelRef.current = onCancel ?? null;
           adRef.current.show();
         } catch {
+          onCancelRef.current = null;
           onReward();
         }
       } else {

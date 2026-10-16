@@ -19,6 +19,8 @@ import {
   CHL_CENTERED,
   CHL_LEAN,
   ENV_GUST,
+  ENV_WAVE,
+  ENV_LEAVES,
   ENV_ICE,
   EVENTS,
   EVT_CHALLENGE,
@@ -57,6 +59,7 @@ import {
   SPD_COIN_RAIN,
   TEXT_KIND_NICE,
   TEXT_KIND_SHOO,
+  TEXT_KIND_CHAIN,
   TUT_DONE,
   TUT_FLAP,
   TUT_HOLD_LEFT,
@@ -141,6 +144,13 @@ function bannerInfo(s: SimState): { text: string; color: string; arrow: number }
     return { text: sub === OBS_ROCK ? HUD.rock : HUD.branch, color: '#E8475F', arrow: -s.evDir };
   }
   if (t === EVT_ENVIRONMENT) {
+    if (sub === ENV_WAVE) {
+      const direction = s.evStage === STAGE_ACTIVE
+        ? (Math.sin((s.evDuration - s.evTimer) / s.evDuration * Math.PI * 2) >= 0 ? 1 : -1)
+        : 1;
+      return { text: HUD.wave, color: '#35B4E6', arrow: -s.evDir * direction };
+    }
+    if (sub === ENV_LEAVES) return { text: HUD.leaves, color: '#E19A38', arrow: -s.evDir };
     if (sub === ENV_GUST) return { text: HUD.gust, color: '#3D8BFF', arrow: -s.evDir };
     if (sub === ENV_ICE) return { text: HUD.ice, color: '#35B4E6', arrow: 0 };
     return { text: HUD.quake, color: '#C98A3D', arrow: 0 };
@@ -428,6 +438,14 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
   });
 
   const nearMissOpacity = useDerivedValue(() => Math.min(1, sim.value.nearMissT / 0.3));
+  // NICE SAVE / CLUTCH!, with the chain multiplier when saves come back to back
+  const nearMissText = useDerivedValue<string>(() => {
+    const s = sim.value;
+    const base = s.nearMissKind ? HUD.clutch : HUD.niceSave;
+    return s.saveChain > 1 ? `${base} x${s.saveChain}` : base;
+  });
+  const nearMissBoxW = useDerivedValue(() => (fonts ? textWidth(fonts.md, nearMissText.value) : 0) + 12);
+  const nearMissColor = useDerivedValue<string>(() => (sim.value.nearMissKind ? '#FFE14D' : '#5EE6C9'));
   const nearMissTransform = useDerivedValue(() => {
     const s = sim.value;
     const k = 1 - s.nearMissT / ANIM.NEAR_MISS;
@@ -595,8 +613,8 @@ export const HudRenderer: React.FC<Props> = React.memo(({ sim, cfg, bestScore, s
 
       {/* Near miss */}
       <Group transform={nearMissTransform} opacity={nearMissOpacity}>
-        <RoundedRect x={-4} y={-22} width={textWidthStatic(fonts.md, HUD.niceSave) + 12} height={30} r={10} color="rgba(43,22,48,0.7)" />
-        <OutlinedText x={2} y={0} text={HUD.niceSave} font={fonts.md} color="#5EE6C9" stroke={3} />
+        <RoundedRect x={-4} y={-22} width={nearMissBoxW} height={30} r={10} color="rgba(43,22,48,0.7)" />
+        <OutlinedText x={2} y={0} text={nearMissText} font={fonts.md} color={nearMissColor} stroke={3} />
       </Group>
 
       {/* Milestone / rank / shield popups */}
@@ -659,6 +677,7 @@ const FloatingText: React.FC<{ sim: SharedValue<SimState>; index: number; font: 
     if (kind === TEXT_KIND_BONK) return HUD.bonk;
     if (kind === TEXT_KIND_NICE) return HUD.nice;
     if (kind === TEXT_KIND_SHOO) return fill(HUD.shoo, { n: v });
+    if (kind === TEXT_KIND_CHAIN) return fill(HUD.chain, { n: v });
     return `+${v}`;
   });
   const color = useDerivedValue<string>(() => {
@@ -667,6 +686,7 @@ const FloatingText: React.FC<{ sim: SharedValue<SimState>; index: number; font: 
     if (kind === TEXT_KIND_BONUS) return '#5EE6C9';
     if (kind === TEXT_KIND_BONK) return '#FF6B7E';
     if (kind === TEXT_KIND_NICE) return '#7CFF8A';
+    if (kind === TEXT_KIND_CHAIN) return '#FFB347';
     return '#B8F27A';
   });
   const transform = useDerivedValue(() => {

@@ -2,12 +2,20 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform, View, StyleSheet, StatusBar } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Font from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import * as NavigationBar from 'expo-navigation-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { IS_EXPO_GO } from './src/lib/adConfig';
 import { initLocale } from './src/i18n';
 import { loadLanguageChoice } from './src/i18n/preference';
 import { useAndroidSafeInsets } from './src/hooks/useScreenDimensions';
+
+// The native splash stays up until the first screen is ready (no blank screen in between)
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
+SplashScreen.setOptions({ fade: true, duration: 250 });
+
+/** Ad SDK start-up can take seconds on a slow network; the menu does not wait longer than this */
+const ADS_INIT_WAIT_MS = 1500;
 
 const SafeRoot: React.FC<{ Root: React.ComponentType }> = ({ Root }) => {
   const { x } = useAndroidSafeInsets();
@@ -47,8 +55,11 @@ export default function App() {
     if (!IS_EXPO_GO) {
       try {
         const { default: mobileAds } = require('react-native-google-mobile-ads');
-        const adapterStatuses = await mobileAds().initialize();
-        console.log('[AdMob] Initialized:', JSON.stringify(adapterStatuses));
+        const init = mobileAds()
+          .initialize()
+          .then((adapterStatuses: unknown) => console.log('[AdMob] Initialized:', JSON.stringify(adapterStatuses)))
+          .catch((e: unknown) => console.warn('[AdMob] Initialization failed:', e));
+        await Promise.race([init, new Promise((resolve) => setTimeout(resolve, ADS_INIT_WAIT_MS))]);
       } catch (e) {
         console.warn('[AdMob] Initialization failed:', e);
       }
@@ -82,7 +93,7 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider onLayout={() => SplashScreen.hideAsync().catch(() => undefined)}>
       <SafeRoot Root={Root} />
     </SafeAreaProvider>
   );

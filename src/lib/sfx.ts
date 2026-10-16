@@ -222,6 +222,32 @@ function genCoinCollect(): number[] {
   return generateTone(1200, 0.1, 20, 0.65);
 }
 
+/** Major-scale steps above the coin note for chained pickups (chain 2..8). */
+const COIN_CHAIN_SEMITONES = [2, 4, 5, 7, 9, 11, 12] as const;
+
+function genCoinChain(semitones: number): number[] {
+  return generateTone(1200 * Math.pow(2, semitones / 12), 0.1, 20, 0.6);
+}
+
+function genClutch(): number[] {
+  // Fast C6-E6-G6-C7 sparkle over a low thump: a save from the very edge
+  const n = Math.floor(0.45 * SAMPLE_RATE);
+  const seg = Math.floor(0.06 * SAMPLE_RATE);
+  const freqs = [1046.5, 1318.5, 1568, 2093];
+  const samples: number[] = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    const t = i / SAMPLE_RATE;
+    for (let k = 0; k < freqs.length; k++) {
+      const start = k * seg;
+      if (i < start) continue;
+      const lt = (i - start) / SAMPLE_RATE;
+      samples[i] += Math.sin(2 * Math.PI * freqs[k] * t) * Math.exp(-9 * lt) * 0.22;
+    }
+    samples[i] += Math.sin(2 * Math.PI * 110 * t) * Math.exp(-14 * t) * 0.45;
+  }
+  return samples;
+}
+
 function genComboUp(): number[] {
   // C5 → E5 → G5 → C6 arpeggio, each ~0.08s
   const n = Math.floor(0.32 * SAMPLE_RATE);
@@ -291,6 +317,14 @@ export type SfxName =
   | 'challengeSuccess'
   | 'challengeFail'
   | 'coinCollect'
+  | 'coin2'
+  | 'coin3'
+  | 'coin4'
+  | 'coin5'
+  | 'coin6'
+  | 'coin7'
+  | 'coin8'
+  | 'clutch'
   | 'comboUp'
   | 'nearMiss'
   | 'gameOver'
@@ -309,11 +343,25 @@ function buildSfxUris(): SfxUriMap {
     challengeSuccess: samplesToBase64(genChallengeSuccess()),
     challengeFail:    samplesToBase64(genChallengeFail()),
     coinCollect:      samplesToBase64(genCoinCollect()),
+    coin2:            samplesToBase64(genCoinChain(COIN_CHAIN_SEMITONES[0])),
+    coin3:            samplesToBase64(genCoinChain(COIN_CHAIN_SEMITONES[1])),
+    coin4:            samplesToBase64(genCoinChain(COIN_CHAIN_SEMITONES[2])),
+    coin5:            samplesToBase64(genCoinChain(COIN_CHAIN_SEMITONES[3])),
+    coin6:            samplesToBase64(genCoinChain(COIN_CHAIN_SEMITONES[4])),
+    coin7:            samplesToBase64(genCoinChain(COIN_CHAIN_SEMITONES[5])),
+    coin8:            samplesToBase64(genCoinChain(COIN_CHAIN_SEMITONES[6])),
+    clutch:           samplesToBase64(genClutch()),
     comboUp:          samplesToBase64(genComboUp()),
     nearMiss:         samplesToBase64(genNearMiss()),
     gameOver:         samplesToBase64(genGameOver()),
     speedChange:      samplesToBase64(genSpeedChange()),
   };
+}
+
+/** Sound for the n-th coin of a pickup chain (1 = plain coin, tops out at the octave). */
+export function coinSfx(chain: number): SfxName {
+  const n = Math.max(1, Math.min(8, Math.floor(chain)));
+  return n === 1 ? 'coinCollect' : (`coin${n}` as SfxName);
 }
 
 // Generated once at module load; each entry is a self-contained data URI

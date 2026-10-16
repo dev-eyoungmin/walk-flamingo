@@ -46,6 +46,9 @@ export function hurt(s: SimState): void {
   s.happyT = 0;
   s.cheerT = 0;
   s.chickTimer = 0;
+  if (s.rescueCargo && !s.chicks) pushFx(s, FX_CHICK_LOST, 0);
+  s.rescueCargo = 0;
+  s.comboProtect = 0;
   if (s.chicks > 0) {
     s.chicks--;
     s.chickJoin[s.chicks] = 0;
@@ -75,7 +78,7 @@ export function shake(s: SimState, duration: number, magnitude: number): void {
 export function scoreMult(s: SimState): number {
   'worklet';
   const fever = s.feverT > 0 ? FEVER.SCORE_MULT : 1;
-  return s.combo * fever * (1 + CHICKS.SCORE_BONUS * s.chicks);
+  return s.combo * fever * (1 + CHICKS.SCORE_BONUS * s.chicks * (s.trait === 3 ? 2 : 1));
 }
 
 /** World position of a stork hit circle after tilt. Writes into out[0..1]. */

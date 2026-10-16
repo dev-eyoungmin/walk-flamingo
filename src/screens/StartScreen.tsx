@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GameButton } from '../ui/GameButton';
-import { CoinGlyph, MissionList } from '../ui/MissionList';
+import { MissionList } from '../ui/MissionList';
+import { WalletChip } from '../ui/WalletChip';
 import { FONT_DISPLAY, titleShadow, UI } from '../ui/theme';
 import { getRank } from '../lib/ranks';
 import type { Mission, StreakStatus } from '../lib/progress';
@@ -21,11 +22,38 @@ interface StartScreenProps {
   /** Show a dot on UPGRADES when something is affordable */
   upgradeBadge: boolean;
   streak: StreakStatus;
-  onClaimStreak: () => void;
+  /** Claim today's gift; `doubled` after watching an ad */
+  onClaimStreak: (doubled: boolean) => void;
+  onOpenShop: () => void;
+  onOpenWheel: () => void;
+  onOpenAchievements: () => void;
+  /** Opens the store's review page; absent where there is no store page */
+  onRate?: () => void;
+  /** A free spin is waiting */
+  wheelBadge: boolean;
+  /** Achievement tiers ready to claim */
+  achievementBadge: number;
 }
 
+const IconButton: React.FC<{ icon: string; label: string; onPress: () => void; badge?: number | boolean }> = ({ icon, label, onPress, badge }) => (
+  <Pressable
+    onPress={onPress}
+    accessibilityRole="button"
+    accessibilityLabel={label}
+    hitSlop={6}
+    style={({ pressed }) => [styles.langButton, pressed && { opacity: 0.6 }]}
+  >
+    <Text style={styles.langIcon}>{icon}</Text>
+    {!!badge && (
+      <View style={styles.iconBadge}>
+        {typeof badge === 'number' && <Text style={styles.iconBadgeText}>{badge > 9 ? '9+' : badge}</Text>}
+      </View>
+    )}
+  </Pressable>
+);
+
 /** Daily login gift: seven days, a bigger gift on day 7. */
-const StreakCard: React.FC<{ streak: StreakStatus; onClaim: () => void }> = ({ streak, onClaim }) => {
+const StreakCard: React.FC<{ streak: StreakStatus; onClaim: (doubled: boolean) => void }> = ({ streak, onClaim }) => {
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!streak.canClaim) return;
@@ -72,14 +100,25 @@ const StreakCard: React.FC<{ streak: StreakStatus; onClaim: () => void }> = ({ s
         })}
       </View>
       {streak.canClaim ? (
-        <GameButton
-          label={t('streak.claim', { n: streak.reward })}
-          size="sm"
-          color={UI.gold}
-          shade={UI.goldDark}
-          onPress={onClaim}
-          style={styles.streakButton}
-        />
+        <View style={styles.streakButtons}>
+          <GameButton
+            label={t('streak.claim', { n: streak.reward })}
+            size="sm"
+            color={UI.slate}
+            shade={UI.slateDark}
+            onPress={() => onClaim(false)}
+            style={styles.streakButton}
+          />
+          <GameButton
+            label={t('streak.double', { n: streak.reward * 2 })}
+            ad
+            size="sm"
+            color={UI.gold}
+            shade={UI.goldDark}
+            onPress={() => onClaim(true)}
+            style={styles.streakButton}
+          />
+        </View>
       ) : (
         <Text style={styles.streakNote}>{t('streak.claimed', { n: streak.nextReward })}</Text>
       )}
@@ -103,6 +142,12 @@ export const StartScreen: React.FC<StartScreenProps> = ({
   upgradeBadge,
   streak,
   onClaimStreak,
+  onOpenShop,
+  onOpenWheel,
+  onOpenAchievements,
+  onRate,
+  wheelBadge,
+  achievementBadge,
 }) => {
   const enter = useRef(new Animated.Value(0)).current;
   const bob = useRef(new Animated.Value(0)).current;
@@ -158,19 +203,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({
         ]}
       >
         <View style={styles.topRight}>
-          <Pressable
-            onPress={onOpenLanguage}
-            accessibilityRole="button"
-            accessibilityLabel={t('lang.title')}
-            hitSlop={8}
-            style={({ pressed }) => [styles.langButton, pressed && { opacity: 0.6 }]}
-          >
-            <Text style={styles.langIcon}>🌐</Text>
-          </Pressable>
-          <View style={styles.wallet}>
-            <CoinGlyph size={16} />
-            <Text style={styles.walletText}>{formatNum(wallet)}</Text>
-          </View>
+          <IconButton icon="🎡" label={t('wheel.title')} onPress={onOpenWheel} badge={wheelBadge} />
+          <IconButton icon="🏆" label={t('ach.title')} onPress={onOpenAchievements} badge={achievementBadge} />
+          {onRate && <IconButton icon="⭐" label={t('rate.title')} onPress={onRate} />}
+          <IconButton icon="🌐" label={t('lang.title')} onPress={onOpenLanguage} />
+          <WalletChip wallet={wallet} onPress={onOpenShop} size="md" />
         </View>
 
         <Animated.View
@@ -269,19 +306,24 @@ const styles = StyleSheet.create({
   langIcon: {
     fontSize: 18,
   },
-  wallet: {
-    flexDirection: 'row',
+  iconBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    paddingHorizontal: 3,
+    backgroundColor: '#FF3B5C',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(43,22,48,0.6)',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    justifyContent: 'center',
   },
-  walletText: {
-    fontFamily: FONT_DISPLAY,
-    fontSize: 17,
-    color: UI.gold,
+  iconBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
   },
   title: {
     fontFamily: FONT_DISPLAY,
@@ -380,9 +422,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: UI.text,
   },
-  streakButton: {
+  streakButtons: {
+    flexDirection: 'row',
+    gap: 6,
     marginTop: 7,
-    alignSelf: 'stretch',
+  },
+  streakButton: {
+    flex: 1,
+    paddingHorizontal: 6,
   },
   streakNote: {
     marginTop: 6,

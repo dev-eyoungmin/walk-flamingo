@@ -32,6 +32,7 @@ import {
   STAGE_ACTIVE,
   STAGE_IDLE,
   TEXT_KIND_BONUS,
+  TEXT_KIND_CHAIN,
   TEXT_KIND_COIN,
   WALK,
   WEATHER_RAIN,
@@ -47,6 +48,7 @@ import {
   TUT_HOLD_RIGHT,
   TUTORIAL,
 } from './constants';
+import { avoidanceWindow, regionalForce, spawnGold, updateAdventure } from './adventure';
 import { gullForce, updateEvents, updateObstacle } from './events';
 import { pullCoins, updateBiome, updateChicks, updateFever, updateFlap, updateItems } from './features';
 import {
@@ -157,6 +159,7 @@ function updateCoins(s: SimState, cfg: SimConfig, dt: number, canSpawn: boolean)
       continue;
     }
     if (Math.abs(wx - storkWorldX) > 14 * U || s.mode !== MODE_PLAYING) continue;
+    if (slots[b + 5] === 2 && Math.abs(s.angle) < 0.3) continue;
     const wy = slots[b + 2];
     for (let k = 0; k < HIT_CIRCLE_COUNT; k++) {
       const r = partWorld(s, cfg, k, cosA, sinA, p);
@@ -164,13 +167,22 @@ function updateCoins(s: SimState, cfg: SimConfig, dt: number, canSpawn: boolean)
       const dy = wy - p[1];
       const rr = r + coinR;
       if (dx * dx + dy * dy < rr * rr) {
-        const value = Math.round(slots[b + 3] * scoreMult(s));
+        const value = Math.round(slots[b + 3] * scoreMult(s) * (s.trait === 1 ? 1.35 : 1));
         slots[b] = 0;
         slots[b + 4] = COIN.COLLECT_ANIM;
-        s.coins += 1;
+        s.coins += slots[b + 5] === 2 ? 5 : 1;
+        if (slots[b + 5] === 2) s.golds++;
         s.score += value;
-        addText(s, wx - s.scrollX, wy - s.camY, value, TEXT_KIND_COIN);
-        pushFx(s, FX_COIN, value);
+        s.coinChain = s.t - s.lastCoinAt <= COIN.CHAIN_WINDOW ? s.coinChain + 1 : 1;
+        s.lastCoinAt = s.t;
+        if (s.coinChain % COIN.CHAIN_BONUS_EVERY === 0) {
+          s.coins += COIN.CHAIN_BONUS;
+          addText(s, wx - s.scrollX, wy - s.camY - 10 * U, s.coinChain, TEXT_KIND_CHAIN);
+        } else {
+          addText(s, wx - s.scrollX, wy - s.camY, value, TEXT_KIND_COIN);
+        }
+        // The value is the chain length: each coin in a chain sounds a step higher
+        pushFx(s, FX_COIN, s.coinChain);
         emote(s, ANIM.HAPPY_SHORT);
         break;
       }
@@ -389,7 +401,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
   // New players get a slower difficulty clock (walk speed and scoring keep the real one)
   const effD = effT * lerp(1, ROOKIE.SLOWEST, s.rookie);
   const slowmo = s.slowT > 0;
-  const calm = s.featherT > 0 ? ITEMS.FEATHER_CALM : 1;
+  const calm = (s.featherT > 0 ? ITEMS.FEATHER_CALM : 1) * (s.t < s.restUntil ? 0.4 : 1);
 
   // ── Difficulty ──
   const surge = 1 + DIFFICULTY.SURGE_AMOUNT * (Math.sin(effT * DIFFICULTY.SURGE_FREQ) + 1) * 0.5;
@@ -425,7 +437,12 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
   // ── Input ──
   const input = attract ? autopilotInput(s) : s.input;
   if (tutorial && s.tutStep === TUT_FLAP) s.flapCooldown = 0;
-  if (!attract) updateFlap(s, input, dt);
+  if (!attract) {
+    const previousDir = ((s.prevInput & 2) ? 1 : 0) - ((s.prevInput & 1) ? 1 : 0);
+    const nextDir = ((input & 2) ? 1 : 0) - ((input & 1) ? 1 : 0);
+    if (nextDir && nextDir !== previousDir) s.lastLeanAt = t;
+    updateFlap(s, input, dt);
+  }
   if (tutorial) updateTutorial(s, cfg, input, dt);
   const dir = ((input & 2) !== 0 ? 1 : 0) - ((input & 1) !== 0 ? 1 : 0);
   const tiltRatio = Math.min(1, Math.abs(s.angle) / PHYSICS.GAME_OVER_ANGLE);
@@ -448,7 +465,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
       Math.sin(t * 19.7 + 5.1) * 0.6) *
     wobbleAmp;
 
-  let eventForce = 0;
+  let eventForce = regionalForce(s);
   if (s.evStage === STAGE_ACTIVE) {
     if (s.evType === EVT_ENVIRONMENT) {
       if (s.evSub === ENV_GUST) eventForce += s.evDir * s.gustForce;
@@ -489,8 +506,11 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
     const sign = s.angle > 0 ? 1 : -1;
     if (s.shield > 0) {
       s.shield = 0;
+      // The balloon did the saving, not the player: no NICE SAVE / CLUTCH for it
+      s.wasDanger = 0;
       s.angle = sign * 0.2;
       s.omega = -sign * 1.2;
+      s.danger = Math.min(1, Math.abs(s.angle) / PHYSICS.GAME_OVER_ANGLE);
       s.invulnT = BOOST.SHIELD_INVULN;
       s.popKind = POPUP_SHIELD;
       s.popT = ANIM.SHIELD_SAVE;
@@ -498,6 +518,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
       pushFx(s, FX_SHIELD_SAVE, 0);
       emote(s, ANIM.HAPPY_LONG);
     } else {
+      s.rescueCargo = 0;
       s.mode = MODE_FALLING;
       s.fallT = 0;
       // Remember the circumstances for analytics
@@ -552,7 +573,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
         pushFx(s, FX_COMBO_UP, s.combo);
         emote(s, ANIM.HAPPY, ANIM.CHEER * 0.6);
       }
-    } else if (s.combo > 1) {
+    } else if (s.combo > 1 && s.comboProtect <= 0 && !avoidanceWindow(s)) {
       s.comboGrace += dt;
       if (s.comboGrace >= SCORE.COMBO_GRACE) breakCombo(s);
     } else {
@@ -566,22 +587,36 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
       if (s.slowT > 0) s.slowT = Math.max(0, s.slowT - dt);
     }
 
-    // ── Near miss ──
-    if (s.danger > SCORE.NEAR_MISS_ENTER) s.wasDanger = 1;
+    // ── Near miss ── (wasDanger keeps the deepest danger reached before the recovery)
+    if (s.danger > SCORE.NEAR_MISS_ENTER) s.wasDanger = Math.max(s.wasDanger, s.danger);
     if (s.wasDanger > 0.5 && s.danger < SCORE.NEAR_MISS_EXIT) {
+      const clutch = s.wasDanger >= SCORE.CLUTCH_ENTER;
       s.wasDanger = 0;
       if (s.nearMissCooldown <= 0) {
+        s.saveChain = s.t - s.lastSaveAt <= SCORE.SAVE_CHAIN_WINDOW ? Math.min(SCORE.SAVE_CHAIN_MAX, s.saveChain + 1) : 1;
+        s.lastSaveAt = s.t;
+        const points = (clutch ? SCORE.CLUTCH_POINTS : SCORE.NEAR_MISS_POINTS) * s.saveChain;
         s.nearMissT = ANIM.NEAR_MISS;
+        s.nearMissKind = clutch ? 1 : 0;
         s.nearMissCooldown = SCORE.NEAR_MISS_COOLDOWN;
         s.nearMisses++;
-        s.score += SCORE.NEAR_MISS_POINTS;
-        addText(s, cfg.storkX + 16 * U, s.feetY - s.camY - 16 * U, SCORE.NEAR_MISS_POINTS, TEXT_KIND_BONUS);
-        pushFx(s, FX_NEAR_MISS, 0);
-        emote(s, ANIM.HAPPY);
+        s.score += points;
+        addText(s, cfg.storkX + 16 * U, s.feetY - s.camY - 16 * U, points, TEXT_KIND_BONUS);
+        if (clutch) {
+          s.clutches++;
+          s.coins += SCORE.CLUTCH_COINS;
+          s.hitStopT = ANIM.HIT_STOP;
+          shake(s, 0.25, 3);
+          emote(s, ANIM.HAPPY_LONG, ANIM.CHEER);
+        } else {
+          emote(s, ANIM.HAPPY);
+        }
+        pushFx(s, FX_NEAR_MISS, clutch ? 1 : 0);
       }
     }
 
     const obstacleBusy = s.evType === EVT_OBSTACLE && s.evStage !== STAGE_IDLE;
+    spawnGold(s, cfg, !obstacleBusy && !tutorial && !inGrace);
     updateCoins(s, cfg, dt, !obstacleBusy && !tutorial);
     updateItems(s, cfg, dt, !obstacleBusy && !tutorial);
     updateBiome(s);
@@ -589,6 +624,7 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
     updateEnvironment(s, dt);
     updateProgression(s);
     updateChicks(s, dt, !inGrace);
+    updateAdventure(s, cfg, dt, !inGrace && !obstacleBusy);
   } else {
     // Title screen: occasional happy wiggle so the flamingo feels alive
     const every = ANIM.ATTRACT_EMOTE_EVERY;
@@ -607,7 +643,11 @@ export function stepSim(s: SimState, cfg: SimConfig, dt: number): void {
 /** Advance by a display frame using fixed simulation steps. */
 export function advanceSim(s: SimState, cfg: SimConfig, frameDt: number): void {
   'worklet';
-  s.acc += Math.min(Math.max(frameDt, 0), 0.1);
+  const real = Math.min(Math.max(frameDt, 0), 0.1);
+  // Hit-stop after a CLUTCH save: the world briefly runs in slow motion
+  const scale = s.hitStopT > 0 ? ANIM.HIT_STOP_SCALE : 1;
+  if (s.hitStopT > 0) s.hitStopT = Math.max(0, s.hitStopT - real);
+  s.acc += real * scale;
   let steps = 0;
   while (s.acc >= SIM_STEP) {
     stepSim(s, cfg, SIM_STEP);

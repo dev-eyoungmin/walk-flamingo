@@ -23,6 +23,8 @@ export const LAYOUT = {
   STORK_X_RATIO: 0.42,
   /** Stork unit size, ratio of min(width, height) */
   UNIT_RATIO: 0.014,
+  /** Height used for UNIT_RATIO is capped at this share of the width, so a 4:3 iPad shows as much course as a phone instead of a giant flamingo */
+  UNIT_MAX_HEIGHT_TO_WIDTH: 0.56,
   /** Terrain base segment width, ratio of canvas width */
   SEG_W_RATIO: 0.35,
   /** Max hill/valley height, ratio of canvas height */
@@ -43,7 +45,7 @@ export const PHYSICS = {
   /** Torque multiplier when input opposes the current angular velocity (rewards timing, not mashing) */
   COUNTER_STEER: 1.25,
   /** Angular damping rate (1/s) at the start. Higher = more sluggish/stable. */
-  DAMPING_START: 13.0,
+  DAMPING_START: 11.5,
   /** Angular damping rate (1/s) late game. Lower = more momentum = harder. */
   DAMPING_END: 9.0,
   DAMPING_RAMP_TIME: 130,
@@ -51,7 +53,7 @@ export const PHYSICS = {
   ICE_DAMPING: 3.5,
   /** Rain multiplies damping */
   RAIN_DAMPING_MULT: 0.92,
-  GRACE_PERIOD: 3.0,
+  GRACE_PERIOD: 1.5,
   /** Angle limit while in grace (game over is disabled, so keep the stork recoverable) */
   GRACE_MAX_ANGLE: (50 * Math.PI) / 180,
   FALL_DURATION: 0.9,
@@ -59,14 +61,14 @@ export const PHYSICS = {
 } as const;
 
 export const DIFFICULTY = {
-  GRAVITY_EARLY_START: 1.4,
+  GRAVITY_EARLY_START: 2.2,
   GRAVITY_EARLY_END: 2.9,
-  GRAVITY_EARLY_TIME: 35,
+  GRAVITY_EARLY_TIME: 30,
   GRAVITY_LATE_RATE: 0.013,
   GRAVITY_MAX: 5.0,
   SURGE_AMOUNT: 0.2,
   SURGE_FREQ: 1.2,
-  WIND_START: 1.0,
+  WIND_START: 1.8,
   WIND_EARLY_END: 3.2,
   WIND_EARLY_TIME: 40,
   WIND_LATE_RATE: 0.013,
@@ -77,7 +79,7 @@ export const DIFFICULTY = {
   WIND_HOLD_RANGE_END: 0.8,
   WIND_SMOOTH_TAU: 0.5,
   WIND_CALM_CHANCE: 0.25,
-  WOBBLE_START: 0.4,
+  WOBBLE_START: 0.7,
   WOBBLE_RATE: 0.011,
   WOBBLE_MAX: 1.4,
   RAMP_TIME: 150,
@@ -86,7 +88,7 @@ export const DIFFICULTY = {
 // ─── Movement ───────────────────────────────────────────────────────────────
 export const WALK = {
   /** meters / second */
-  SPEED_START: 1.6,
+  SPEED_START: 1.9,
   SPEED_END: 2.8,
   SPEED_RAMP_TIME: 150,
   /** Walk cycles per meter; ties leg animation to actual ground speed */
@@ -108,6 +110,13 @@ export const SCORE = {
   NEAR_MISS_EXIT: 0.3,
   NEAR_MISS_POINTS: 50,
   NEAR_MISS_COOLDOWN: 1.5,
+  /** A save from beyond this danger level is a CLUTCH: more points, coins and a hit-stop */
+  CLUTCH_ENTER: 0.9,
+  CLUTCH_POINTS: 150,
+  CLUTCH_COINS: 2,
+  /** Saves within this many seconds of the previous one multiply its points (up to SAVE_CHAIN_MAX) */
+  SAVE_CHAIN_WINDOW: 8,
+  SAVE_CHAIN_MAX: 5,
   DODGE_POINTS: 25,
   SPRINT_SCORE_MULT: 1.5,
 } as const;
@@ -122,10 +131,15 @@ export const COIN = {
   VALUE: 10,
   BIG_VALUE: 20,
   /** Meters between coin runs */
-  GAP_MIN: 7,
-  GAP_RANGE: 7,
+  GAP_MIN: 4,
+  GAP_RANGE: 5,
   SPACING_M: 0.9,
   COLLECT_ANIM: 0.4,
+  /** Coins picked up within this many seconds of each other form a chain (rising pitch) */
+  CHAIN_WINDOW: 0.9,
+  /** Every CHAIN_BONUS_EVERY coins in a chain pay CHAIN_BONUS extra coins */
+  CHAIN_BONUS_EVERY: 5,
+  CHAIN_BONUS: 2,
 } as const;
 
 // ─── Floating texts ─────────────────────────────────────────────────────────
@@ -136,6 +150,7 @@ export const TEXT_KIND_BRACE = 3;
 export const TEXT_KIND_BONK = 4;
 export const TEXT_KIND_NICE = 5;
 export const TEXT_KIND_SHOO = 6;
+export const TEXT_KIND_CHAIN = 7;
 
 export const FLOAT_TEXT = {
   MAX: 5,
@@ -159,6 +174,8 @@ export const OBS_GULL = 2;
 
 export const ENV_GUST = 0;
 export const ENV_QUAKE = 1;
+export const ENV_WAVE = 3;
+export const ENV_LEAVES = 4;
 export const ENV_ICE = 2;
 
 export const CHL_CENTERED = 0;
@@ -176,10 +193,13 @@ export const STAGE_ACTIVE = 2;
 
 export const EVENTS = {
   /** First event warning starts this long after the grace period */
-  FIRST_DELAY: 4.5,
-  GAP_START: 4.5,
+  FIRST_DELAY: 1.0,
+  GAP_START: 3.2,
   GAP_END: 1.8,
   GAP_RANDOM: 1.5,
+  /** Events in the scripted opening (rock, coin shower, gust, branch) and the short gap between them */
+  OPENING_EVENTS: 4,
+  OPENING_GAP: 1.0,
   WARN_OBSTACLE: 1.4,
   WARN_ENVIRONMENT: 1.6,
   WARN_CHALLENGE: 1.3,
@@ -228,9 +248,9 @@ export const EVENTS = {
   SLOW_DURATION: 3.5,
   SPEED_SMOOTH_TAU: 0.35,
   /** No sprints this early: a sprint plus the first rocks is the most common early fall */
-  SPRINT_MIN_T: 15,
+  SPRINT_MIN_T: 8,
 
-  GULL_MIN_T: 15,
+  GULL_MIN_T: 8,
   GULL_CHANCE: 0.2,
   /** Seconds to fly in and land */
   GULL_FLY_TIME: 1.0,
@@ -244,9 +264,9 @@ export const EVENTS = {
   GULL_BACK_X: -2.5,
   GULL_BACK_Y: -21.2,
 
-  COIN_RAIN_MIN_T: 20,
+  COIN_RAIN_MIN_T: 10,
   COIN_RAIN_CHANCE: 0.2,
-  COIN_RAIN_DURATION: 4.0,
+  COIN_RAIN_DURATION: 3.0,
   COIN_RAIN_EVERY: 0.22,
   /** Horizontal scatter around the stork's chest, stork units */
   COIN_RAIN_SPREAD_U: 12,
@@ -294,7 +314,7 @@ export const ITEMS = {
   MAX: 2,
   /** [active, worldX, worldY, type, collectT] */
   SLOT: 5,
-  FIRST_M: 22,
+  FIRST_M: 9,
   GAP_MIN_M: 35,
   GAP_RANGE_M: 25,
   HEIGHT_U: 26,
@@ -324,7 +344,7 @@ export const FLAP = {
 export const CHICKS = {
   MAX: 3,
   /** Seconds without getting hit to earn a chick */
-  EVERY: 30,
+  EVERY: 20,
   SCORE_BONUS: 0.1,
   JOIN_ANIM: 1.2,
   LEAVE_ANIM: 1.0,
@@ -337,7 +357,7 @@ export const ENVIRONMENT = {
   DAY_CYCLE: 120,
   /** Day cycle position used while on the start screen */
   ATTRACT_DAY_T: 0.08,
-  WEATHER_FIRST_MIN: 40,
+  WEATHER_FIRST_MIN: 22,
   WEATHER_FIRST_RANGE: 10,
   WEATHER_DURATION_MIN: 14,
   WEATHER_DURATION_RANGE: 6,
@@ -359,6 +379,9 @@ export const ANIM = {
   COMBO_PULSE: 0.6,
   COMBO_BREAK: 0.4,
   NEAR_MISS: 1.0,
+  /** Real seconds the game runs in slow motion after a CLUTCH save, and how slow */
+  HIT_STOP: 0.28,
+  HIT_STOP_SCALE: 0.3,
   POPUP: 2.2,
   HIT_FLASH: 0.25,
   SHIELD_SAVE: 1.2,

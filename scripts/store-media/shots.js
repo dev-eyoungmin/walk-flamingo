@@ -1,10 +1,10 @@
-// Raw localized screenshots (2868x1320) of real game states, written to WORK/raw/<lang>/.
+// Raw localized screenshots of real game states, written to WORK/raw/<device>/<lang>/.
 const fs = require('fs');
 const path = require('path');
 const { ROOT, WORK } = require('./paths');
 const { open, settle } = require('./lib');
 const installBot = require('./bot');
-const { SEED, DRAMA, SHOTS, PLAY } = require('./scenes');
+const { SEED, DRAMA, SHOTS, DEVICES } = require('./scenes');
 
 /** A string from the game's own translations (menu buttons are found by their label). */
 function label(lang, key) {
@@ -14,8 +14,11 @@ function label(lang, key) {
   return m[2].replace(/\\(['"])/g, '$1');
 }
 
-/** Freezes the title screen, pins the course position and starts a run played by the bot. */
-async function startRun(page, [x, y]) {
+/**
+ * Freezes the title screen, pins the course position and starts a run played by the bot. PLAY opens
+ * the walk setup sheet, whose own PLAY button (the last one on the page) starts the endless walk.
+ */
+async function startRun(page, lang) {
   await page.evaluate(installBot);
   await page.evaluate((d) => {
     globalThis.__drama = d;
@@ -23,15 +26,19 @@ async function startRun(page, [x, y]) {
     // The title screen scrolls in real time; start every run from the same spot
     globalThis.__wobby.sim.value.scrollX = 4000;
   }, DRAMA);
-  await page.mouse.click(x, y);
+  const play = page.getByText(label(lang, 'start.play'), { exact: true });
+  await play.first().click({ force: true });
+  await page.waitForTimeout(500);
+  if ((await play.count()) > 1) await play.last().click({ force: true });
   await page.waitForFunction(() => globalThis.__wobby.sim.value.mode === 1, null, { timeout: 10000 });
   await page.waitForTimeout(400);
 }
 
-async function run(lang, { menusOnly = false } = {}) {
-  const out = path.join(WORK, 'raw', lang);
+async function run(lang, { menusOnly = false, device = 'iphone' } = {}) {
+  const out = path.join(WORK, 'raw', device, lang);
   fs.mkdirSync(out, { recursive: true });
-  const { browser, page, errors } = await open({ lang, dsf: 3, seed: SEED });
+  const { width, height, dsf } = DEVICES[device];
+  const { browser, page, errors } = await open({ lang, width, height, dsf, seed: SEED });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${out}/7-start.png` });
   // Button widths follow the label, so the skins button sits somewhere else in every language
@@ -43,7 +50,7 @@ async function run(lang, { menusOnly = false } = {}) {
   await page.reload();
   await page.waitForFunction(() => globalThis.__wobby, null, { timeout: 30000 });
   await page.waitForTimeout(2000);
-  await startRun(page, PLAY);
+  await startRun(page, lang);
   for (const [name, t] of [...SHOTS].sort((a, b) => a[1] - b[1])) {
     await page.evaluate((tt) => globalThis.__wobbyFF(1e6, (s) => s.t >= tt), t);
     await settle(page);

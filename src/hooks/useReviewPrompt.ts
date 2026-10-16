@@ -8,7 +8,7 @@ const STORAGE_KEY = '@wobby_review_asked_at';
 const ASK_DELAY_MS = 1500;
 
 /**
- * Shows the system rating dialog on the game-over screen after a new best. `visible` is whether
+ * Shows the system rating dialog on the game-over screen after a new best or a long run. `visible` is whether
  * that screen is up: leaving it (retry, home) drops a queued request so it never lands mid-run.
  */
 export function useReviewPrompt(visible: boolean) {
@@ -23,7 +23,7 @@ export function useReviewPrompt(visible: boolean) {
       .catch(() => undefined);
   }, []);
 
-  const queueReview = useCallback((moment: { newBest: boolean; runs: number }) => {
+  const queueReview = useCallback((moment: { newBest: boolean; meters: number; runs: number }) => {
     if (shouldAskForReview({ ...moment, lastAskedAt: lastAskedAt.current, now: Date.now() })) setQueued(true);
   }, []);
 

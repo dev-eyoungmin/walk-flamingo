@@ -23,6 +23,9 @@ export const SKINS: SkinPalette[] = [
   { id: 'midnight', name: 'Midnight', body: '#7C4DFF', bodyLight: '#B388FF', legs: '#6200EA', legsDark: '#4A148C', wing: '#B388FF', neck: '#7C4DFF', cheek: '#651FFF', accessory: 'shades' },
   { id: 'sunset',   name: 'Sunset',   body: '#FF6D00', bodyLight: '#FF9E40', legs: '#E65100', legsDark: '#BF360C', wing: '#FF9E40', neck: '#FF6D00', cheek: '#FF3D00', accessory: 'flower' },
   { id: 'cherry',   name: 'Cherry',   body: '#FF1744', bodyLight: '#FF5252', legs: '#D50000', legsDark: '#B71C1C', wing: '#FF5252', neck: '#FF1744', cheek: '#FF0000', accessory: 'bow' },
+  // Achievement rewards (not for sale, see ACHIEVEMENT_SKINS)
+  { id: 'neon',     name: 'Neon',     body: '#3DF5D0', bodyLight: '#A6FFF0', legs: '#1FC9A8', legsDark: '#139C82', wing: '#00D9FF', neck: '#3DF5D0', cheek: '#FF4FD8', accessory: 'shades' },
+  { id: 'shadow',   name: 'Shadow',   body: '#4A4466', bodyLight: '#6E6690', legs: '#2E2945', legsDark: '#1C182C', wing: '#8A78C8', neck: '#4A4466', cheek: '#FF4D7A', accessory: 'crown' },
 ];
 
 export const DEFAULT_SKIN = SKINS[0];
@@ -62,6 +65,11 @@ export const SKIN_PRICES: Record<string, number> = {
   midnight: 450,
   golden: 600,
 };
+
+/** Skins sold in the shop that the player doesn't own yet (candidates for a wheel rental). */
+export function rentableSkins(owned: string[]): string[] {
+  return Object.keys(SKIN_PRICES).filter((id) => id !== 'default' && !owned.includes(id));
+}
 
 /** Wear a skin: rented for 24 hours (ad), or permanently when owned. */
 export async function unlockSkin(skinId: string, permanent = false): Promise<SkinPalette> {

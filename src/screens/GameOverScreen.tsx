@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { GameStats } from '../game/GameCanvas';
 import { getRank, getRankProgress } from '../lib/ranks';
 import type { Mission } from '../lib/progress';
@@ -36,6 +36,17 @@ interface GameOverScreenProps {
   metersShort: number;
   /** The best distance this run was chasing */
   bestMeters: number;
+  /** Bonus coins offered for a rewarded ad (0 = not offered) */
+  doubleCoins: number;
+  /** The bonus was already collected for this run */
+  doubled: boolean;
+  onDoubleCoins: () => void;
+  /** Achievement tiers ready to claim */
+  achievementsReady: number;
+  onOpenAchievements: () => void;
+  /** Offer Remove Ads (an interstitial just played) */
+  offerNoAds: boolean;
+  onOpenShop: () => void;
 }
 
 const INPUT_LOCK_MS = 700;
@@ -68,7 +79,15 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   onShare,
   metersShort,
   bestMeters,
+  doubleCoins,
+  doubled,
+  onDoubleCoins,
+  achievementsReady,
+  onOpenAchievements,
+  offerNoAds,
+  onOpenShop,
 }) => {
+  const tip = stats.stageWon ? t('play.tipClear') : stats.fallEvent === 12 ? t('play.tipIce') : [10, 13, 14, 22].includes(stats.fallEvent) ? t('play.tipWind') : stats.fallAfterHit ? t('play.tipHit') : stats.flaps === 0 ? t('play.tipFlap') : t('play.tipBalance');
   const close = metersShort > 0 && !isNewBest;
   const daily = summary.daily;
   const { width, height } = useScreenDimensions();
@@ -99,7 +118,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       useNativeDriver: false,
     }).start();
     let loop: Animated.CompositeAnimation | null = null;
-    if (isNewBest || close) {
+    if (isNewBest || close || doubleCoins > 0) {
       loop = Animated.loop(
         Animated.sequence([
           Animated.timing(badge, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -112,7 +131,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       countUp.removeListener(id);
       loop?.stop();
     };
-  }, [enter, countUp, badge, stats.score, isNewBest, close]);
+  }, [enter, countUp, badge, stats.score, isNewBest, close, doubleCoins]);
 
   const panelWidth = Math.min(width - 32, 640);
 
@@ -133,7 +152,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           {daily && <Text style={styles.dailyTag}>{t('over.dailyTag', { day: daily.day })}</Text>}
           <View style={styles.header}>
             <Text style={[styles.headerText, compact && { fontSize: 24 }, close && { color: UI.pink }]}>
-              {isNewBest ? t('over.newBest') : close ? t('over.soClose') : daily?.newBest ? t('over.dailyBest') : t('over.gameOver')}
+              {stats.stageWon ? t('play.clear') : stats.stageExpired ? t('play.timeout') : isNewBest ? t('over.newBest') : close ? t('over.soClose') : daily?.newBest ? t('over.dailyBest') : t('over.gameOver')}
             </Text>
             {isNewBest && (
               <Animated.Text style={[styles.headerStar, { transform: [{ scale: badge.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }] }]}>
@@ -157,6 +176,21 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 <Text style={styles.best}>{t('over.best', { n: formatNum(Math.max(bestScore, stats.score)) })}</Text>
               )}
 
+              {/* Coins first: the x2 offer has to be visible without scrolling */}
+              <View style={styles.coinsRow}>
+                <CoinGlyph size={16} />
+                <Text style={styles.coinsEarned}>+{summary.coinsEarned + summary.missionCoins + (doubled ? doubleCoins : 0)}</Text>
+                {doubleCoins > 0 && !doubled && (
+                  <Animated.View style={{ transform: [{ scale: badge.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) }] }}>
+                    <GameButton label={t('over.doubleCoins', { n: doubleCoins })} ad size="sm" color={UI.mint} shade={UI.mintDark} onPress={onDoubleCoins} style={styles.double} />
+                  </Animated.View>
+                )}
+                <Text style={styles.coinsWallet}>
+                  {summary.missionCoins > 0 ? `${t('over.fromMissions', { n: summary.missionCoins })} · ` : ''}
+                  {t('over.wallet', { n: formatNum(summary.wallet) })}
+                </Text>
+              </View>
+
               <View style={styles.rankRow}>
                 <Text style={styles.rankEmoji}>{rank.emoji}</Text>
                 <View style={{ flex: 1 }}>
@@ -179,14 +213,15 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 <StatChip icon="🐣" value={String(stats.chicksMax)} label={t('over.babies')} />
               </View>
 
-              <View style={styles.coinsRow}>
-                <CoinGlyph size={16} />
-                <Text style={styles.coinsEarned}>+{summary.coinsEarned + summary.missionCoins}</Text>
-                <Text style={styles.coinsWallet}>
-                  {summary.missionCoins > 0 ? `${t('over.fromMissions', { n: summary.missionCoins })} · ` : ''}
-                  {t('over.wallet', { n: formatNum(summary.wallet) })}
-                </Text>
-              </View>
+              <Text style={styles.newStats}>{t('play.results', { p: stats.perfects ?? 0, g: stats.golds ?? 0, r: stats.rescued ?? 0 })}</Text>
+              <Text style={styles.tip}>{tip}</Text>
+              {achievementsReady > 0 && (
+                <Pressable accessibilityRole="button" onPress={onOpenAchievements} style={({ pressed }) => [styles.achievement, pressed && { opacity: 0.7 }]}>
+                  <Text style={styles.achievementText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                    🏆 {t('over.achievements', { n: achievementsReady })} ›
+                  </Text>
+                </Pressable>
+              )}
 
               {daily && (
                 <View style={styles.dailyBox}>
@@ -232,6 +267,11 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 />
                 <GameButton label={t('common.skins')} size="sm" color={UI.purple} shade={UI.purpleDark} onPress={onOpenSkins} style={styles.half} />
               </View>
+              {offerNoAds && (
+                <Pressable accessibilityRole="button" onPress={onOpenShop} hitSlop={6}>
+                  <Text style={styles.noAds}>{t('over.noAds')} ›</Text>
+                </Pressable>
+              )}
             </View>
           </View>
 
@@ -247,6 +287,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
+  newStats: { color: UI.gold, fontSize: 12, marginTop: 6 },
+  tip: { color: UI.textDim, fontSize: 12, marginTop: 5, marginBottom: 6 },
   scrim: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: UI.scrim,
@@ -274,7 +316,7 @@ const styles = StyleSheet.create({
   coinsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 8,
     gap: 6,
     flexWrap: 'wrap',
   },
@@ -286,6 +328,31 @@ const styles = StyleSheet.create({
   coinsWallet: {
     fontSize: 11,
     color: UI.textDim,
+  },
+  double: {
+    paddingHorizontal: 10,
+  },
+  achievement: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,201,60,0.16)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,201,60,0.7)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  achievementText: {
+    fontFamily: FONT_DISPLAY,
+    fontSize: 13,
+    color: UI.gold,
+  },
+  noAds: {
+    marginTop: 8,
+    fontSize: 11,
+    color: UI.textDim,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
   dailyBox: {
     marginTop: 8,

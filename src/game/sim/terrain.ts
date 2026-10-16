@@ -42,7 +42,7 @@ export function generateTerrainRatios(random: () => number = Math.random): numbe
 }
 
 export function makeSimConfig(width: number, height: number, terrainRatios: number[]): SimConfig {
-  const unit = Math.min(width, height) * LAYOUT.UNIT_RATIO;
+  const unit = Math.min(width, height, width * LAYOUT.UNIT_MAX_HEIGHT_TO_WIDTH) * LAYOUT.UNIT_RATIO;
   const segW = width * LAYOUT.SEG_W_RATIO;
   const hillMax = height * LAYOUT.HILL_RATIO;
   const terrain: number[] = [];

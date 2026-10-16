@@ -3,12 +3,12 @@
 // screenshot and clip times in scenes.js can be re-picked after gameplay changes.
 const { open } = require('./lib');
 const { startRun } = require('./shots');
-const { SEED, PLAY } = require('./scenes');
+const { SEED } = require('./scenes');
 
 (async () => {
   const { browser, page } = await open({ seed: SEED });
   await page.waitForTimeout(1500);
-  await startRun(page, PLAY);
+  await startRun(page, 'en');
   const lines = await page.evaluate(() => {
     const out = [];
     const last = { ev: -1, biome: 0, chicks: 0, fever: 0, weather: 0, items: 0, dodges: 0, saves: 0, done: 0 };

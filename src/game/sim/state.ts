@@ -25,6 +25,26 @@ import type { SimConfig } from './terrain';
  */
 export interface SimState {
   mode: number;
+  trait: number;
+  stage: number;
+  stageWon: number;
+  stageExpired: number;
+  perfects: number;
+  perfectT: number;
+  comboProtect: number;
+  lastFlapAt: number;
+  lastLeanAt: number;
+  restUntil: number;
+  nextGoldAt: number;
+  golds: number;
+  trace: number[];
+  nextTraceAt: number;
+  rescued: number;
+  rescueCargo: number;
+  rescueX: number;
+  nestAt: number;
+  nextRescueAt: number;
+
   /** Seconds since the run started (includes grace) */
   t: number;
   acc: number;
@@ -68,6 +88,17 @@ export interface SimState {
   nearMissT: number;
   nearMissCooldown: number;
   nearMisses: number;
+  /** Last save was a CLUTCH (deep save): 1, otherwise 0 */
+  nearMissKind: number;
+  clutches: number;
+  /** Consecutive saves within SCORE.SAVE_CHAIN_WINDOW */
+  saveChain: number;
+  lastSaveAt: number;
+  /** Real seconds of slow motion left (see ANIM.HIT_STOP) */
+  hitStopT: number;
+  /** Coins picked up in quick succession */
+  coinChain: number;
+  lastCoinAt: number;
   dodges: number;
   coins: number;
   shakeT: number;
@@ -206,6 +237,8 @@ export const OBS_SLOT = 11;
 
 /** Per-run options chosen outside the simulation (boosts, upgrades, onboarding). */
 export interface RunParams {
+  trait?: number;
+  stage?: number;
   shield?: boolean;
   slowmo?: boolean;
   scrollX?: number;
@@ -242,6 +275,25 @@ export function createSimState(
 
   return {
     mode,
+    trait: options?.trait ?? 0,
+    stage: options?.stage ?? 0,
+    stageWon: 0,
+    stageExpired: 0,
+    perfects: 0,
+    perfectT: 0,
+    comboProtect: 0,
+    lastFlapAt: -100,
+    lastLeanAt: -100,
+    restUntil: 0,
+    nextGoldAt: 15,
+    golds: 0,
+    trace: [0],
+    nextTraceAt: 0.5,
+    rescued: 0,
+    rescueCargo: 0,
+    rescueX: -1,
+    nestAt: 0,
+    nextRescueAt: 18,
     t: 0,
     acc: 0,
     rng: (seed >>> 0) || 1,
@@ -279,6 +331,13 @@ export function createSimState(
     nearMissT: 0,
     nearMissCooldown: 0,
     nearMisses: 0,
+    nearMissKind: 0,
+    clutches: 0,
+    saveChain: 0,
+    lastSaveAt: -100,
+    hitStopT: 0,
+    coinChain: 0,
+    lastCoinAt: -100,
     dodges: 0,
     coins: 0,
     shakeT: 0,
@@ -286,7 +345,7 @@ export function createSimState(
     hitFlash: 0,
 
     coinSlots,
-    nextCoinAt: 6,
+    nextCoinAt: 2,
 
     texts,
 

@@ -3,14 +3,16 @@ import { Animated, ScrollView, StyleSheet, Text, useWindowDimensions, View } fro
 import { formatNum, t, TKey } from '../i18n';
 import { maxLevel, upgradeCost, UpgradeId, UpgradeLevels, UPGRADES, upgradeValue } from '../lib/upgrades';
 import { GameButton } from '../ui/GameButton';
-import { CoinGlyph } from '../ui/MissionList';
 import { FONT_DISPLAY, titleShadow, UI } from '../ui/theme';
+import { WalletChip } from '../ui/WalletChip';
 
 interface UpgradeShopProps {
   levels: UpgradeLevels;
   wallet: number;
   /** Returns true when the purchase went through */
   onBuy: (id: UpgradeId) => boolean;
+  /** Tapping the wallet opens the coin shop */
+  onOpenShop?: () => void;
   onClose: () => void;
 }
 
@@ -85,17 +87,14 @@ const UpgradeCard: React.FC<{ id: UpgradeId; level: number; wallet: number; onBu
   );
 };
 
-export const UpgradeShop: React.FC<UpgradeShopProps> = ({ levels, wallet, onBuy, onClose }) => {
+export const UpgradeShop: React.FC<UpgradeShopProps> = ({ levels, wallet, onBuy, onOpenShop, onClose }) => {
   const { height } = useWindowDimensions();
   return (
     <View style={styles.scrim}>
       <View style={[styles.modal, { maxHeight: height - 16 }]}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>{t('common.upgrades')}</Text>
-          <View style={styles.wallet}>
-            <CoinGlyph size={15} />
-            <Text style={styles.walletText}>{formatNum(wallet)}</Text>
-          </View>
+          <WalletChip wallet={wallet} onPress={onOpenShop} />
         </View>
         <Text style={styles.subtitle}>{t('up.subtitle')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroller} contentContainerStyle={styles.cards}>
@@ -137,20 +136,6 @@ const styles = StyleSheet.create({
     fontSize: 26,
     color: UI.text,
     ...titleShadow,
-  },
-  wallet: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  walletText: {
-    fontFamily: FONT_DISPLAY,
-    fontSize: 16,
-    color: UI.gold,
   },
   subtitle: {
     fontSize: 11,

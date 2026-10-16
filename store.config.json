@@ -1,7 +1,7 @@
 {
   "configVersion": 0,
   "apple": {
-    "version": "1.3.1",
+    "version": "1.4.0",
     "copyright": "© 2026 Wobbly Games",
     "release": {
       "automaticRelease": true
@@ -27,7 +27,7 @@
           "easy",
           "fun"
         ],
-        "releaseNotes": "• Share your score with a link so friends can jump right in\n• Minor fixes and polish",
+        "releaseNotes": "• New short adventures: walk, dodge or rescue babies against the clock\n• Choose a trait before each walk and race the ghost of your best walk\n• New shop with Remove Ads and coin packs, plus a daily lucky wheel and achievements\n• A livelier, more challenging start\n• Now on iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "title": "Wobbly Flamingo: Balance Game",
@@ -41,6 +41,15 @@
             "store/apple/screenshot/en-US/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/en-US/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "subtitle": "Tilt, flap & walk a funny bird",
@@ -71,7 +80,7 @@
           "endlos",
           "Tier"
         ],
-        "releaseNotes": "• Teile deinen Punktestand mit einem Link, damit Freunde direkt mitspielen können\n• Kleine Fehlerbehebungen und Verbesserungen",
+        "releaseNotes": "• Neue kurze Abenteuer: laufen, ausweichen oder Babys retten – gegen die Uhr\n• Wähle vor jedem Spaziergang eine Eigenschaft und tritt gegen den Geist deines besten Laufs an\n• Neuer Shop mit „Werbung entfernen“ und Münzpaketen, dazu ein tägliches Glücksrad und Erfolge\n• Ein lebendigerer, anspruchsvollerer Start\n• Jetzt auch auf dem iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -84,6 +93,15 @@
             "store/apple/screenshot/de/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/de/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/de/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/de/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/de/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/de/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/de/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/de/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/de/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/de/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -115,7 +133,7 @@
           "birds",
           "wobby"
         ],
-        "releaseNotes": "• Share your score with a link so friends can jump right in\n• Minor fixes and polish",
+        "releaseNotes": "• New short adventures: walk, dodge or rescue babies against the clock\n• Choose a trait before each walk and race the ghost of your best walk\n• New shop with Remove Ads and coin packs, plus a daily lucky wheel and achievements\n• A livelier, more challenging start\n• Now on iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -128,6 +146,15 @@
             "store/apple/screenshot/en-US/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/en-US/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -159,7 +186,7 @@
           "easy",
           "fun"
         ],
-        "releaseNotes": "• Share your score with a link so friends can jump right in\n• Minor fixes and polish",
+        "releaseNotes": "• New short adventures: walk, dodge or rescue babies against the clock\n• Choose a trait before each walk and race the ghost of your best walk\n• New shop with Remove Ads and coin packs, plus a daily lucky wheel and achievements\n• A livelier, more challenging start\n• Now on iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -172,6 +199,15 @@
             "store/apple/screenshot/en-US/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/en-US/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/en-US/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/en-US/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -201,7 +237,7 @@
           "un toque",
           "fácil"
         ],
-        "releaseNotes": "• Comparte tu puntuación con un enlace para que tus amigos se unan al instante\n• Pequeñas correcciones y mejoras",
+        "releaseNotes": "• Nuevas aventuras cortas: camina, esquiva o rescata crías contrarreloj\n• Elige un rasgo antes de cada paseo y compite contra el fantasma de tu mejor paseo\n• Nueva tienda con Quitar anuncios y packs de monedas, además de una ruleta diaria y logros\n• Un comienzo más animado y desafiante\n• Ya disponible en iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -214,6 +250,15 @@
             "store/apple/screenshot/es/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/es/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/es/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -244,7 +289,7 @@
           "jump",
           "wobby"
         ],
-        "releaseNotes": "• Comparte tu puntuación con un enlace para que tus amigos se unan al instante\n• Pequeñas correcciones y mejoras",
+        "releaseNotes": "• Nuevas aventuras cortas: camina, esquiva o rescata crías contrarreloj\n• Elige un rasgo antes de cada paseo y compite contra el fantasma de tu mejor paseo\n• Nueva tienda con Quitar anuncios y packs de monedas, además de una ruleta diaria y logros\n• Un comienzo más animado y desafiante\n• Ya disponible en iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -257,6 +302,15 @@
             "store/apple/screenshot/es/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/es/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/es/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/es/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -285,7 +339,7 @@
           "pencher",
           "sans fin"
         ],
-        "releaseNotes": "• Partage ton score avec un lien pour que tes amis te rejoignent tout de suite\n• Petites corrections et améliorations",
+        "releaseNotes": "• Nouvelles aventures courtes : marche, esquive ou sauve des bébés contre la montre\n• Choisis un atout avant chaque balade et affronte le fantôme de ta meilleure balade\n• Nouvelle boutique avec Supprimer les pubs et packs de pièces, plus une roue de la chance quotidienne et des succès\n• Un début plus animé et plus exigeant\n• Désormais sur iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -298,6 +352,15 @@
             "store/apple/screenshot/fr/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/fr/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/fr/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/fr/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/fr/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/fr/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/fr/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/fr/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/fr/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/fr/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -327,7 +390,7 @@
           "game seru",
           "asyik"
         ],
-        "releaseNotes": "• Bagikan skormu dengan tautan agar teman bisa langsung ikut bermain\n• Perbaikan kecil dan penyempurnaan",
+        "releaseNotes": "• Petualangan singkat baru: berjalan, menghindar, atau selamatkan bayi sebelum waktu habis\n• Pilih sifat sebelum berjalan dan balapan dengan hantu jalan terbaikmu\n• Toko baru dengan Hapus Iklan dan paket koin, plus roda keberuntungan harian dan pencapaian\n• Awal permainan yang lebih seru dan menantang\n• Kini tersedia di iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -340,6 +403,15 @@
             "store/apple/screenshot/id/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/id/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/id/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/id/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/id/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/id/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/id/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/id/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/id/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/id/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -367,7 +439,7 @@
           "gioco",
           "rosa"
         ],
-        "releaseNotes": "• Condividi il tuo punteggio con un link, così gli amici possono unirsi subito\n• Piccole correzioni e miglioramenti",
+        "releaseNotes": "• Nuove brevi avventure: cammina, schiva o salva i piccoli contro il tempo\n• Scegli un tratto prima di ogni passeggiata e sfida il fantasma della tua passeggiata migliore\n• Nuovo negozio con Rimuovi pubblicità e pacchetti di monete, più una ruota della fortuna giornaliera e obiettivi\n• Un inizio più vivace e impegnativo\n• Ora anche su iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -380,6 +452,15 @@
             "store/apple/screenshot/it/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/it/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/it/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/it/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/it/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/it/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/it/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/it/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/it/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/it/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -418,7 +499,7 @@
           "バード",
           "バランス感覚"
         ],
-        "releaseNotes": "• スコアをリンク付きでシェアできるようになりました。友だちもすぐに遊べます\n• 細かな修正と改善",
+        "releaseNotes": "• 新しいショートアドベンチャー：制限時間内に歩く・よける・ヒナを助ける\n• 歩く前に特性を選び、ベスト記録のゴーストと競争\n• 広告削除やコインパックが買える新ショップ、毎日のラッキールーレット、実績を追加\n• 序盤がにぎやかで歯ごたえのある展開に\n• iPadに対応",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -431,6 +512,15 @@
             "store/apple/screenshot/ja/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/ja/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/ja/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/ja/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/ja/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/ja/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/ja/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/ja/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/ja/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/ja/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -460,7 +550,7 @@
           "caminhar",
           "infinito"
         ],
-        "releaseNotes": "• Compartilhe sua pontuação com um link para seus amigos entrarem na hora\n• Pequenas correções e melhorias",
+        "releaseNotes": "• Novas aventuras curtas: ande, desvie ou resgate filhotes contra o relógio\n• Escolha uma característica antes de cada caminhada e dispute com o fantasma da sua melhor caminhada\n• Nova loja com Remover anúncios e pacotes de moedas, além de uma roleta diária e conquistas\n• Um começo mais animado e desafiador\n• Agora no iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -473,6 +563,15 @@
             "store/apple/screenshot/pt-BR/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/pt-BR/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/pt-BR/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/pt-BR/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/pt-BR/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/pt-BR/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/pt-BR/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/pt-BR/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/pt-BR/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/pt-BR/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -500,7 +599,7 @@
           "комбо",
           "розовый"
         ],
-        "releaseNotes": "• Делись результатом со ссылкой — друзья смогут сразу присоединиться\n• Небольшие исправления и улучшения",
+        "releaseNotes": "• Новые короткие приключения: пройди, увернись или спаси птенцов на время\n• Выбирай черту перед прогулкой и соревнуйся с призраком своей лучшей прогулки\n• Новый магазин: отключение рекламы и наборы монет, а также ежедневное колесо удачи и достижения\n• Более живое и сложное начало\n• Теперь и на iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -513,6 +612,15 @@
             "store/apple/screenshot/ru/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/ru/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/ru/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/ru/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/ru/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/ru/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/ru/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/ru/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/ru/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/ru/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -543,7 +651,7 @@
           "ออฟไลน์",
           "สมดุล"
         ],
-        "releaseNotes": "• แชร์คะแนนพร้อมลิงก์ ให้เพื่อนเข้ามาเล่นได้ทันที\n• แก้ไขและปรับปรุงเล็กน้อย",
+        "releaseNotes": "• การผจญภัยสั้นแบบใหม่: เดิน หลบ หรือช่วยลูกนกให้ทันเวลา\n• เลือกคุณสมบัติก่อนออกเดิน แล้วแข่งกับเงาของการเดินที่ดีที่สุดของคุณ\n• ร้านค้าใหม่ พร้อมลบโฆษณาและแพ็กเหรียญ รวมถึงวงล้อนำโชครายวันและความสำเร็จ\n• ช่วงเริ่มต้นที่คึกคักและท้าทายยิ่งขึ้น\n• รองรับ iPad แล้ว",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -556,6 +664,15 @@
             "store/apple/screenshot/th/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/th/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/th/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/th/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/th/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/th/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/th/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/th/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/th/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/th/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -583,7 +700,7 @@
           "trò chơi",
           "ngoại tuyến"
         ],
-        "releaseNotes": "• Chia sẻ điểm số kèm liên kết để bạn bè vào chơi ngay\n• Sửa lỗi nhỏ và cải thiện",
+        "releaseNotes": "• Chuyến phiêu lưu ngắn mới: đi bộ, né tránh hoặc giải cứu chim non trước khi hết giờ\n• Chọn đặc điểm trước mỗi lượt đi và đua với bóng ma của lượt đi tốt nhất\n• Cửa hàng mới với Xóa quảng cáo và gói xu, cùng vòng quay may mắn hằng ngày và thành tích\n• Khởi đầu sôi động và thử thách hơn\n• Đã có trên iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -596,6 +713,15 @@
             "store/apple/screenshot/vi/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/vi/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/vi/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/vi/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/vi/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/vi/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/vi/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/vi/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/vi/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/vi/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -643,7 +769,7 @@
           "平衡感",
           "休闲游戏"
         ],
-        "releaseNotes": "• 分享成绩时会附上链接，朋友可以直接加入\n• 小幅修复与优化",
+        "releaseNotes": "• 全新短篇冒险：限时行走、躲避或营救小宝宝\n• 每次出发前选择特性，与最佳成绩的幽灵比赛\n• 全新商店：去除广告和金币礼包，另有每日幸运转盘和成就\n• 开局更热闹、更有挑战\n• 现已支持 iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -656,6 +782,15 @@
             "store/apple/screenshot/zh-Hans/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/zh-Hans/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/zh-Hans/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/zh-Hans/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/zh-Hans/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/zh-Hans/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/zh-Hans/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/zh-Hans/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/zh-Hans/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/zh-Hans/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {
@@ -702,7 +837,7 @@
           "平衡感",
           "休閒遊戲"
         ],
-        "releaseNotes": "• 分享成績時會附上連結，朋友可以直接加入\n• 小幅修正與優化",
+        "releaseNotes": "• 全新短篇冒險：限時行走、閃避或救援小寶寶\n• 每次出發前選擇特性，與最佳紀錄的幽靈比賽\n• 全新商店：移除廣告與金幣包，另有每日幸運轉盤與成就\n• 開局更熱鬧、更具挑戰\n• 現已支援 iPad",
         "marketingUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "supportUrl": "https://dev-eyoungmin.github.io/walk-flamingo/",
         "privacyPolicyUrl": "https://dev-eyoungmin.github.io/walk-flamingo/privacy-policy",
@@ -715,6 +850,15 @@
             "store/apple/screenshot/zh-Hant/APP_IPHONE_67/05-gull.jpg",
             "store/apple/screenshot/zh-Hant/APP_IPHONE_67/06-skins.jpg",
             "store/apple/screenshot/zh-Hant/APP_IPHONE_67/07-start.jpg"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "store/apple/screenshot/zh-Hant/APP_IPAD_PRO_3GEN_129/01-balance.jpg",
+            "store/apple/screenshot/zh-Hant/APP_IPAD_PRO_3GEN_129/02-crab.jpg",
+            "store/apple/screenshot/zh-Hant/APP_IPAD_PRO_3GEN_129/03-chicks.jpg",
+            "store/apple/screenshot/zh-Hant/APP_IPAD_PRO_3GEN_129/04-fever.jpg",
+            "store/apple/screenshot/zh-Hant/APP_IPAD_PRO_3GEN_129/05-gull.jpg",
+            "store/apple/screenshot/zh-Hant/APP_IPAD_PRO_3GEN_129/06-skins.jpg",
+            "store/apple/screenshot/zh-Hant/APP_IPAD_PRO_3GEN_129/07-start.jpg"
           ]
         },
         "previews": {

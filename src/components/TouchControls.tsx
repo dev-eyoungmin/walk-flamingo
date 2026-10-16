@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GestureResponderEvent, Platform, StyleSheet, View } from 'react-native';
+import { GestureResponderEvent, Platform, StyleSheet, Text, View } from 'react-native';
 import { Canvas, Path, RoundedRect, Skia } from '@shopify/react-native-skia';
+import { t } from '../i18n';
+import { FONT_DISPLAY } from '../ui/theme';
 import * as Haptics from 'expo-haptics';
 
 interface TouchControlsProps {
@@ -10,6 +12,9 @@ interface TouchControlsProps {
   onInputChange: (mask: number) => void;
   enabled: boolean;
   bottomInset?: number;
+  flapButton?: boolean;
+  flapSeconds?: number;
+  flapReady?: boolean;
 }
 
 const HINT_W = 92;
@@ -51,7 +56,7 @@ const Hint: React.FC<{ dir: 1 | -1; pressed: boolean }> = ({ dir, pressed }) => 
  * Whole-screen input: the left half leans left, the right half leans right. Multi-touch aware,
  * so holding both sides cancels out instead of getting stuck.
  */
-export const TouchControls: React.FC<TouchControlsProps> = ({ width, height, onInputChange, enabled, bottomInset = 0 }) => {
+export const TouchControls: React.FC<TouchControlsProps> = ({ width, height, onInputChange, enabled, bottomInset = 0, flapButton = true, flapSeconds = 0, flapReady = true }) => {
   const [mask, setMask] = useState(0);
   const maskRef = useRef(0);
 
@@ -72,14 +77,17 @@ export const TouchControls: React.FC<TouchControlsProps> = ({ width, height, onI
       const touches = e.nativeEvent.touches ?? [];
       let next = 0;
       for (let i = 0; i < touches.length; i++) {
-        next |= touches[i].pageX < width / 2 ? 1 : 2;
+        const touch = touches[i];
+        const flap = flapButton && Math.abs(touch.pageX - width / 2) <= 55 && touch.pageY >= height - 66 - bottomInset;
+        next |= flap ? 4 : touch.pageX < width / 2 ? 1 : 2;
       }
       if (touches.length === 0 && !ended) {
-        next = e.nativeEvent.pageX < width / 2 ? 1 : 2;
+        const flap = flapButton && Math.abs(e.nativeEvent.pageX - width / 2) <= 55 && e.nativeEvent.pageY >= height - 66 - bottomInset;
+        next = flap ? 4 : e.nativeEvent.pageX < width / 2 ? 1 : 2;
       }
       apply(enabled ? next : 0);
     },
-    [apply, enabled, width],
+    [apply, enabled, width, height, bottomInset, flapButton],
   );
 
   // Drop input when controls get disabled mid-press
@@ -102,6 +110,7 @@ export const TouchControls: React.FC<TouchControlsProps> = ({ width, height, onI
     >
       {enabled && (
         <>
+          {flapButton && <View pointerEvents="none" style={[styles.flap, { left: width / 2 - 55, bottom: 10 + bottomInset, backgroundColor: flapReady ? '#5EE6C9' : '#43334D' }]}><Text style={styles.flapText}>{flapReady ? t('play.ready') : `${flapSeconds}s`}</Text><Text style={styles.flapLabel}>{t('play.flap')}</Text></View>}
           <View style={[styles.hintWrap, { left: SAFE_X, bottom: 10 + bottomInset }]} pointerEvents="none">
             <Hint dir={-1} pressed={(mask & 1) !== 0} />
           </View>
@@ -115,6 +124,9 @@ export const TouchControls: React.FC<TouchControlsProps> = ({ width, height, onI
 };
 
 const styles = StyleSheet.create({
+  flap: { position: 'absolute', width: 110, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  flapText: { fontFamily: FONT_DISPLAY, color: '#FFFFFF', fontSize: 16 },
+  flapLabel: { fontFamily: FONT_DISPLAY, color: '#FFFFFF', fontSize: 11 },
   hintWrap: {
     position: 'absolute',
   },

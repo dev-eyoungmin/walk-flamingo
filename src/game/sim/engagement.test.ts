@@ -1,6 +1,7 @@
 import {
   COIN,
   EVT_OBSTACLE,
+  EVENTS,
   EVT_SPEED,
   FEVER,
   ITEMS,
@@ -254,7 +255,7 @@ describe('coin rain', () => {
 });
 
 describe('early game', () => {
-  it('never sprints in the first 15 seconds', () => {
+  it('never sprints before SPRINT_MIN_T', () => {
     for (let seed = 1; seed <= 30; seed++) {
       const s = createSimState(cfg, MODE_PLAYING, seed);
       for (let t = 0; t < 28; t += DT) {
@@ -262,7 +263,7 @@ describe('early game', () => {
         balanced(s, DT);
         if (s.mode !== MODE_PLAYING) break;
         if (s.evCount > prev && s.evType === EVT_SPEED) {
-          expect(s.evSub === SPD_SPRINT && s.t - PHYSICS.GRACE_PERIOD < 15).toBe(false);
+          expect(s.evSub === SPD_SPRINT && s.t - PHYSICS.GRACE_PERIOD < EVENTS.SPRINT_MIN_T).toBe(false);
         }
       }
     }

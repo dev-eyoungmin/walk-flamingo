@@ -48,6 +48,8 @@ import {
   FX_GULL_LAND,
   FX_GULL_SHOO,
 } from './fx';
+import { rewardDodge } from './adventure';
+import { ENV_WAVE, ENV_LEAVES } from './constants';
 import { addText, breakCombo, emote, hurt, partWorld, scoreMult, shake } from './helpers';
 import type { SimState } from './state';
 import { HEAD_PART_COUNT, STORK } from './storkGeometry';
@@ -58,12 +60,20 @@ function pickEvent(s: SimState, effT: number): void {
   'worklet';
   let type = EVT_OBSTACLE;
   let sub = OBS_ROCK;
+  // A scripted opening shows the game's range in the first 20 m: a hit to brace for, a coin
+  // shower, a gust, then a branch — after that events are random
   if (s.evCount === 0) {
-    type = EVT_CHALLENGE;
-    sub = CHL_CENTERED;
-  } else if (s.evCount === 1) {
     type = EVT_OBSTACLE;
     sub = OBS_ROCK;
+  } else if (s.evCount === 1) {
+    type = EVT_SPEED;
+    sub = SPD_COIN_RAIN;
+  } else if (s.evCount === 2) {
+    type = EVT_ENVIRONMENT;
+    sub = ENV_GUST;
+  } else if (s.evCount === 3) {
+    type = EVT_OBSTACLE;
+    sub = OBS_BRANCH;
   } else {
     const late = smooth01(effT / 60);
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -93,6 +103,10 @@ function pickEvent(s: SimState, effT: number): void {
       if (effT >= EVENTS.COIN_RAIN_MIN_T && r2 >= 1 - EVENTS.COIN_RAIN_CHANCE) sub = SPD_COIN_RAIN;
       if (sub === SPD_SPRINT && effT < EVENTS.SPRINT_MIN_T) sub = SPD_SLOW;
     }
+  }
+  if (s.evCount >= 4 && s.evCount % 3 === 2 && s.biome !== 0) {
+    type = EVT_ENVIRONMENT;
+    sub = s.biome === 1 ? ENV_WAVE : s.biome === 2 ? ENV_ICE : ENV_LEAVES;
   }
   s.evType = type;
   s.evSub = sub;
@@ -145,7 +159,10 @@ function activateEvent(s: SimState, cfg: SimConfig, effT: number): void {
       o[5] = 0;
     }
   } else if (s.evType === EVT_ENVIRONMENT) {
-    if (s.evSub === ENV_GUST) {
+    if (s.evSub === ENV_WAVE || s.evSub === ENV_LEAVES) {
+      s.evTimer = 4;
+      pushFx(s, FX_GUST, s.evDir);
+    } else if (s.evSub === ENV_GUST) {
       s.evTimer = EVENTS.GUST_DURATION;
       s.gustForce = lerp(EVENTS.GUST_FORCE_START, EVENTS.GUST_FORCE_END, late);
       pushFx(s, FX_GUST, s.evDir);
@@ -187,15 +204,38 @@ function activateEvent(s: SimState, cfg: SimConfig, effT: number): void {
   s.evDuration = s.evTimer;
 }
 
-function finishEvent(s: SimState, effT: number): void {
+function finishEvent(s: SimState, cfg: SimConfig, effT: number): void {
   'worklet';
+  const hard = s.evType === EVT_ENVIRONMENT || s.evType === EVT_CHALLENGE && s.evSub === CHL_STORM;
+  if (hard) {
+    s.restUntil = s.t + 3;
+    s.nextCoinAt = s.meters;
+    let placed = 0;
+    for (let c = 0; c < COIN.MAX && placed < 3; c++) {
+      const b = c * COIN.SLOT;
+      if (s.coinSlots[b] > 0.5 || s.coinSlots[b+4] > 0) continue;
+      const wx = s.scrollX + cfg.storkX + (10 + placed * 8) * cfg.unit;
+      s.coinSlots[b] = 1;
+      s.coinSlots[b+1] = wx;
+      s.coinSlots[b+2] = cfg.groundY + terrainOffsetAt(cfg, wx) - 17 * cfg.unit;
+      s.coinSlots[b+3] = COIN.VALUE;
+      s.coinSlots[b+4] = 0;
+      s.coinSlots[b+5] = 0;
+      s.coinSlots[b+6] = 0;
+      placed++;
+    }
+  }
   s.evStage = STAGE_IDLE;
   s.evLastType = s.evType;
   if (s.evType === EVT_SPEED) s.speedModTarget = 1;
   s.evType = EVT_NONE;
   s.evTimer = 0;
-  s.evNextAt =
-    s.t + lerp(EVENTS.GAP_START, EVENTS.GAP_END, smooth01(effT / 150)) + randEvent(s) * EVENTS.GAP_RANDOM;
+  // The scripted opening follows on quickly so the first 20 m are busy
+  const gap =
+    s.evCount < EVENTS.OPENING_EVENTS
+      ? EVENTS.OPENING_GAP
+      : lerp(EVENTS.GAP_START, EVENTS.GAP_END, smooth01(effT / 150)) + randEvent(s) * EVENTS.GAP_RANDOM;
+  s.evNextAt = Math.max(s.restUntil + 0.4, s.t + gap);
 }
 
 function challengeReward(s: SimState): number {
@@ -259,6 +299,7 @@ function updateGull(s: SimState, cfg: SimConfig, dt: number): void {
       // Shooed away with a flap
       gullLeave(o, U);
       s.dodges++;
+      rewardDodge(s);
       const pts = Math.round(SCORE.DODGE_POINTS * scoreMult(s));
       s.score += pts;
       addText(s, cfg.storkX, s.feetY - s.camY - 36 * U, pts, TEXT_KIND_SHOO);
@@ -336,6 +377,7 @@ export function updateObstacle(s: SimState, cfg: SimConfig, dt: number): void {
         const ty = s.feetY - s.camY - 20 * U;
         if (braced) {
           s.dodges++;
+          rewardDodge(s);
           const pts = Math.round(SCORE.DODGE_POINTS * scoreMult(s));
           s.score += pts;
           addText(s, tx, ty, pts, TEXT_KIND_BRACE);
@@ -398,6 +440,7 @@ export function updateObstacle(s: SimState, cfg: SimConfig, dt: number): void {
         if (o[7] < 0.5 && o[3] > s.feetY + (STORK.HIP_Y - 5) * U) {
           o[7] = 2;
           s.dodges++;
+          rewardDodge(s);
           const pts = Math.round(SCORE.DODGE_POINTS * scoreMult(s));
           s.score += pts;
           addText(s, cfg.storkX, s.feetY - s.camY - 30 * U, pts, TEXT_KIND_DODGE);
@@ -445,7 +488,7 @@ export function updateEvents(s: SimState, cfg: SimConfig, dt: number, effT: numb
 
   // Active
   if (s.evType === EVT_OBSTACLE) {
-    if (s.obs[0] < 0.5 || s.evTimer <= 0) finishEvent(s, effT);
+    if (s.obs[0] < 0.5 || s.evTimer <= 0) finishEvent(s, cfg, effT);
     return;
   }
 
@@ -469,11 +512,11 @@ export function updateEvents(s: SimState, cfg: SimConfig, dt: number, effT: numb
         s.chResultT = -EVENTS.RESULT_ANIM;
         pushFx(s, FX_CHALLENGE_FAIL, s.evSub);
       }
-      finishEvent(s, effT);
+      finishEvent(s, cfg, effT);
     }
     return;
   }
 
   if (s.evType === EVT_SPEED && s.evSub === SPD_COIN_RAIN && s.mode === MODE_PLAYING) updateCoinRain(s, cfg, dt);
-  if (s.evTimer <= 0) finishEvent(s, effT);
+  if (s.evTimer <= 0) finishEvent(s, cfg, effT);
 }

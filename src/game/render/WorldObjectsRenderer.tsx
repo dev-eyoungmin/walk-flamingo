@@ -57,6 +57,24 @@ export const CoinRenderer: React.FC<Props> = React.memo(({ sim, cfg }) => {
   const inner = usePathValue(buildCoins(1));
   const shine = usePathValue(buildCoins(2));
 
+  const goldHalo = usePathValue((p) => {
+    'worklet';
+    const s = sim.value;
+    for (let c = 0; c < COIN.MAX; c++) {
+      const b = c * COIN.SLOT;
+      if (s.coinSlots[b] < 0.5 || s.coinSlots[b+5] !== 2) continue;
+      const x = s.coinSlots[b+1] - s.scrollX;
+      const y = s.coinSlots[b+2] - s.camY;
+      const r = R * 1.7;
+      for (let i = 0; i < 10; i++) {
+        const a = i / 10 * Math.PI * 2 - Math.PI / 2;
+        const d = i % 2 ? r * 0.5 : r;
+        if (!i) p.moveTo(x + Math.cos(a)*d, y + Math.sin(a)*d);
+        else p.lineTo(x + Math.cos(a)*d, y + Math.sin(a)*d);
+      }
+      p.close();
+    }
+  });
   const sparkle = usePathValue((p) => {
     'worklet';
     const s = sim.value;
@@ -85,6 +103,7 @@ export const CoinRenderer: React.FC<Props> = React.memo(({ sim, cfg }) => {
 
   return (
     <Group>
+      <Path path={goldHalo} color="#FFF2A8" style="stroke" strokeWidth={U * 0.4} />
       <Path path={outer} color="#D08A12" />
       <Path path={inner} color="#FFD23F" />
       <Path path={outer} color="#7A4B00" style="stroke" strokeWidth={U * 0.28} />

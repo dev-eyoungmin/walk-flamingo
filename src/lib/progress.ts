@@ -65,8 +65,31 @@ export interface StreakRecord {
   count: number;
 }
 
+/** Lifetime counters for achievements (added in v3). */
+export interface RunTotals {
+  meters: number;
+  bestMeters: number;
+  fevers: number;
+  dodges: number;
+  perfects: number;
+  golds: number;
+  rescued: number;
+  saves: number;
+  clutches: number;
+  dailyRuns: number;
+  missions: number;
+}
+
+/** Reward-ad and wheel counters for the current day (reset with the missions). */
+export interface TodayCounters {
+  freeSpinUsed: boolean;
+  adSpins: number;
+  adCoins: number;
+  giftDoubled: boolean;
+}
+
 export interface ProgressData {
-  version: 2;
+  version: 3;
   wallet: number;
   lifetimeCoins: number;
   ownedSkins: string[];
@@ -80,7 +103,32 @@ export interface ProgressData {
   /** Starter balloons used today (reset daily) */
   balloonsUsed: number;
   streak: StreakRecord;
+  /** Added in v3 */
+  totals: RunTotals;
+  /** Achievement id -> tiers claimed */
+  achievements: Record<string, number>;
+  today: TodayCounters;
+  /** Rescue balloons won on the lucky wheel, used after the daily starter balloons */
+  bonusBalloons: number;
+  /** Longest daily-gift streak reached */
+  bestStreak: number;
 }
+
+export const NO_TOTALS: RunTotals = {
+  meters: 0,
+  bestMeters: 0,
+  fevers: 0,
+  dodges: 0,
+  perfects: 0,
+  golds: 0,
+  rescued: 0,
+  saves: 0,
+  clutches: 0,
+  dailyRuns: 0,
+  missions: 0,
+};
+
+export const NO_TODAY: TodayCounters = { freeSpinUsed: false, adSpins: 0, adCoins: 0, giftDoubled: false };
 
 /** Daily gift coins for days 1..7 of a streak (then it starts over). */
 export const STREAK_REWARDS: readonly number[] = [20, 30, 40, 60, 80, 100, 200];
@@ -180,7 +228,7 @@ export function missionsForDay(day: string): Mission[] {
 export function emptyProgress(now: Date): ProgressData {
   const day = dayKey(now);
   return {
-    version: 2,
+    version: 3,
     wallet: 0,
     lifetimeCoins: 0,
     ownedSkins: ['default'],
@@ -192,6 +240,11 @@ export function emptyProgress(now: Date): ProgressData {
     upgrades: { ...NO_UPGRADES },
     balloonsUsed: 0,
     streak: { lastDay: '', count: 0 },
+    totals: { ...NO_TOTALS },
+    achievements: {},
+    today: { ...NO_TODAY },
+    bonusBalloons: 0,
+    bestStreak: 0,
   };
 }
 
@@ -207,12 +260,25 @@ export function migrateProgress(raw: unknown, now: Date): ProgressData {
   const fresh = emptyProgress(now);
   if (!raw || typeof raw !== 'object') return fresh;
   const d = raw as Partial<Omit<ProgressData, 'version'>> & { version?: number };
-  if (d.version !== 1 && d.version !== 2) return fresh;
+  if (d.version !== 1 && d.version !== 2 && d.version !== 3) return fresh;
   const up = (d.upgrades ?? {}) as Partial<UpgradeLevels>;
+  const tot = (d.totals ?? {}) as Partial<RunTotals>;
+  const today = (d.today ?? {}) as Partial<TodayCounters>;
+  const totals = Object.fromEntries(
+    (Object.keys(NO_TOTALS) as (keyof RunTotals)[]).map((k) => [k, num(tot[k], 0)]),
+  ) as unknown as RunTotals;
+  // Saves from before v3 still count towards the distance achievements
+  if (d.version !== 3 && Array.isArray(d.runLog)) {
+    totals.bestMeters = Math.max(totals.bestMeters, ...d.runLog.map((r) => num(r?.meters, 0)));
+  }
+  const achievements: Record<string, number> = {};
+  if (d.achievements && typeof d.achievements === 'object') {
+    for (const [k, v] of Object.entries(d.achievements)) if (typeof v === 'number' && v > 0) achievements[k] = v;
+  }
   return {
     ...fresh,
     ...d,
-    version: 2,
+    version: 3,
     wallet: num(d.wallet, 0),
     lifetimeCoins: num(d.lifetimeCoins, 0),
     ownedSkins: Array.isArray(d.ownedSkins) ? d.ownedSkins : fresh.ownedSkins,
@@ -231,6 +297,16 @@ export function migrateProgress(raw: unknown, now: Date): ProgressData {
       d.streak && typeof d.streak.lastDay === 'string'
         ? { lastDay: d.streak.lastDay, count: num(d.streak.count, 0) }
         : fresh.streak,
+    totals,
+    achievements,
+    today: {
+      freeSpinUsed: today.freeSpinUsed === true,
+      adSpins: num(today.adSpins, 0),
+      adCoins: num(today.adCoins, 0),
+      giftDoubled: today.giftDoubled === true,
+    },
+    bonusBalloons: num(d.bonusBalloons, 0),
+    bestStreak: Math.max(num(d.bestStreak, 0), d.streak && typeof d.streak.count === 'number' ? d.streak.count : 0),
   };
 }
 
@@ -244,6 +320,7 @@ export function ensureDay(data: ProgressData, now: Date): ProgressData {
     missions: missionsForDay(day),
     daily: { day, best: 0, bestMeters: 0, attempts: 0, top: [] },
     balloonsUsed: 0,
+    today: { ...NO_TODAY },
   };
 }
 
@@ -351,6 +428,22 @@ export function applyRun(
 
   const coinsEarned = Math.max(0, stats.coins - (prev?.coins ?? 0));
   const log = prev && data.runLog.length > 0 ? data.runLog.slice(0, -1) : data.runLog;
+  // Stats are cumulative across a continue, so only the part since the last record is added
+  const delta = (pick: (g: GameStats) => number | undefined) => Math.max(0, (pick(stats) ?? 0) - (prev ? pick(prev) ?? 0 : 0));
+  const t0 = data.totals;
+  const totals: RunTotals = {
+    meters: t0.meters + delta((g) => g.meters),
+    bestMeters: Math.max(t0.bestMeters, stats.meters),
+    fevers: t0.fevers + delta((g) => g.fevers),
+    dodges: t0.dodges + delta((g) => g.dodges),
+    perfects: t0.perfects + delta((g) => g.perfects),
+    golds: t0.golds + delta((g) => g.golds),
+    rescued: t0.rescued + delta((g) => g.rescued),
+    saves: t0.saves + delta((g) => g.nearMisses),
+    clutches: t0.clutches + delta((g) => g.clutches),
+    dailyRuns: t0.dailyRuns + (opts.daily && !prev ? 1 : 0),
+    missions: t0.missions + completed.length,
+  };
   return {
     data: {
       ...data,
@@ -360,6 +453,7 @@ export function applyRun(
       missions,
       daily,
       runLog: [...log, entry].slice(-RUN_LOG_MAX),
+      totals,
     },
     coinsEarned,
     completed,
@@ -402,16 +496,48 @@ export function purchaseUpgrade(data: ProgressData, id: UpgradeId): ProgressData
   return { ...data, wallet: data.wallet - cost, upgrades: { ...data.upgrades, [id]: level + 1 } };
 }
 
-/** Starter balloons left today from the balloon upgrade. */
+/** Rescue balloons available for the next runs: today's starter balloons plus any won ones. */
 export function balloonsLeft(data: ProgressData): number {
-  return Math.max(0, upgradeValue('balloon', data.upgrades.balloon) - data.balloonsUsed);
+  return Math.max(0, upgradeValue('balloon', data.upgrades.balloon) - data.balloonsUsed) + data.bonusBalloons;
 }
 
-/** Use one starter balloon. Returns null when none are left today. */
+/** Use one balloon (today's starter balloons first). Returns null when there are none. */
 export function takeStarterBalloon(data: ProgressData, now: Date): ProgressData | null {
   const current = ensureDay(data, now);
-  if (balloonsLeft(current) <= 0) return null;
-  return { ...current, balloonsUsed: current.balloonsUsed + 1 };
+  if (upgradeValue('balloon', current.upgrades.balloon) - current.balloonsUsed > 0) {
+    return { ...current, balloonsUsed: current.balloonsUsed + 1 };
+  }
+  if (current.bonusBalloons > 0) return { ...current, bonusBalloons: current.bonusBalloons - 1 };
+  return null;
+}
+
+/** Add coins from outside a run (ads, purchases, prizes). */
+export function addCoins(data: ProgressData, amount: number): ProgressData {
+  const n = Math.max(0, Math.floor(amount));
+  return { ...data, wallet: data.wallet + n, lifetimeCoins: data.lifetimeCoins + n };
+}
+
+/** Rewarded "free coins": FREE_COINS.AMOUNT up to FREE_COINS.PER_DAY times a day. */
+export const FREE_COINS = { AMOUNT: 50, PER_DAY: 3 } as const;
+
+export function freeCoinsLeft(data: ProgressData): number {
+  return Math.max(0, FREE_COINS.PER_DAY - data.today.adCoins);
+}
+
+export function takeFreeCoins(data: ProgressData, now: Date): ProgressData | null {
+  const current = ensureDay(data, now);
+  if (freeCoinsLeft(current) <= 0) return null;
+  return { ...addCoins(current, FREE_COINS.AMOUNT), today: { ...current.today, adCoins: current.today.adCoins + 1 } };
+}
+
+/**
+ * Coins offered for watching an ad on the game-over screen: the run's pickups again, at least
+ * DOUBLE_COINS_MIN so short runs are still worth it.
+ */
+export const DOUBLE_COINS_MIN = 20;
+
+export function doubleCoinsAmount(runCoins: number): number {
+  return Math.max(DOUBLE_COINS_MIN, Math.floor(runCoins));
 }
 
 /** The calendar day before a YYYY-MM-DD key (built from the date parts, so DST shifts don't matter). */
@@ -442,18 +568,24 @@ export function streakStatus(data: ProgressData, now: Date): StreakStatus {
   return { day, reward: STREAK_REWARDS[day - 1], canClaim: true, nextReward: STREAK_REWARDS[day % n] };
 }
 
-/** Claim today's gift. Returns null when it was already claimed today. */
-export function claimStreak(data: ProgressData, now: Date): { data: ProgressData; reward: number } | null {
+/**
+ * Claim today's gift, `mult` times over (2 after a rewarded ad). Returns null when it was already
+ * claimed today.
+ */
+export function claimStreak(data: ProgressData, now: Date, mult = 1): { data: ProgressData; reward: number } | null {
   const status = streakStatus(data, now);
   if (!status.canClaim) return null;
   const continues = data.streak.lastDay !== '' && data.streak.lastDay === prevDayKey(dayKey(now));
+  const count = continues ? data.streak.count + 1 : 1;
+  const reward = status.reward * Math.max(1, Math.floor(mult));
+  const current = ensureDay(data, now);
   return {
-    reward: status.reward,
+    reward,
     data: {
-      ...data,
-      wallet: data.wallet + status.reward,
-      lifetimeCoins: data.lifetimeCoins + status.reward,
-      streak: { lastDay: dayKey(now), count: continues ? data.streak.count + 1 : 1 },
+      ...addCoins(current, reward),
+      streak: { lastDay: dayKey(now), count },
+      bestStreak: Math.max(current.bestStreak, count),
+      today: mult > 1 ? { ...current.today, giftDoubled: true } : current.today,
     },
   };
 }
