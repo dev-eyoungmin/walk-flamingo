@@ -27,6 +27,8 @@ in `scripts/.font-cache` (run `scripts/subset-fonts.py` once to download them).
 - `scenes.js` — the seed, screenshot times and video clips. After gameplay changes run
   `node scripts/store-media/survey.js` to see when things happen and pick new times.
 - `captions.js` — one caption per scene and language.
+- `compose.js` — frames each shot under its caption, and builds `00-hero.jpg` first: icon, name and
+  the App Store subtitle (from `store.config.json`) beside a game shot, for search results.
 - `bot.js` — the player. It never touches the simulation state, only the input.
 
 The preview videos are about 12 MB each and are not committed (see `.gitignore`); `eas
