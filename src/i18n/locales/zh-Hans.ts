@@ -196,6 +196,8 @@ export const zhHans: Strings = {
   'shop.free': '免费',
   'shop.freeLeft': '今日剩余 {n} 次',
   'shop.restore': '恢复购买',
+  'shop.unavailable': '商店暂时不可用。请检查网络连接后重试。',
+  'shop.restoreNone': '未找到以前的购买记录。',
   'wheel.title': '幸运转盘',
   'wheel.hint': '每天免费转一次！',
   'wheel.spinFree': '免费转',

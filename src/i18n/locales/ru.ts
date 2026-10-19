@@ -196,6 +196,8 @@ export const ru: Strings = {
   'shop.free': 'БЕСПЛАТНО',
   'shop.freeLeft': 'Сегодня ещё {n}',
   'shop.restore': 'Восстановить покупки',
+  'shop.unavailable': 'Магазин сейчас недоступен. Проверь подключение и попробуй ещё раз.',
+  'shop.restoreNone': 'Предыдущие покупки не найдены.',
   'wheel.title': 'КОЛЕСО УДАЧИ',
   'wheel.hint': 'Бесплатное вращение каждый день!',
   'wheel.spinFree': 'КРУТИТЬ',

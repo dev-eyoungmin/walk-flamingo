@@ -196,6 +196,8 @@ export const ptBR: Strings = {
   'shop.free': 'GRÁTIS',
   'shop.freeLeft': 'Restam {n} hoje',
   'shop.restore': 'Restaurar compras',
+  'shop.unavailable': 'A loja não está disponível agora. Verifique sua conexão e tente novamente.',
+  'shop.restoreNone': 'Nenhuma compra anterior encontrada.',
   'wheel.title': 'ROLETA DA SORTE',
   'wheel.hint': 'Um giro grátis todo dia!',
   'wheel.spinFree': 'GIRO GRÁTIS',

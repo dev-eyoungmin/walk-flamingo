@@ -196,6 +196,8 @@ export const de: Strings = {
   'shop.free': 'GRATIS',
   'shop.freeLeft': 'Heute noch {n}',
   'shop.restore': 'Käufe wiederherstellen',
+  'shop.unavailable': 'Der Store ist gerade nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.',
+  'shop.restoreNone': 'Keine früheren Käufe gefunden.',
   'wheel.title': 'GLÜCKSRAD',
   'wheel.hint': 'Jeden Tag einmal gratis drehen!',
   'wheel.spinFree': 'GRATIS DREHEN',

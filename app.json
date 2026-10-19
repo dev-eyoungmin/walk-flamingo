@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "requireFullScreen": true,
       "bundleIdentifier": "com.wobbly.flamingo.game",
-      "buildNumber": "7",
+      "buildNumber": "9",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": [
@@ -54,7 +54,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.wobbly.flamingo.game",
-      "versionCode": 7
+      "versionCode": 9
     },
     "plugins": [
       "expo-font",

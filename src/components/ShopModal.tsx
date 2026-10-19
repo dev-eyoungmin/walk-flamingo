@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { formatNum, t } from '../i18n';
 import { COIN_PACKS, REMOVE_ADS_ID } from '../lib/shop';
@@ -20,6 +20,8 @@ interface ShopModalProps {
   onFreeCoins: () => void;
   onRestore: () => void;
   onClose: () => void;
+  /** Called once when the shop opens, to fetch prices that did not load yet */
+  onOpen?: () => void;
 }
 
 const CARD_W = 124;
@@ -44,10 +46,19 @@ export const ShopModal: React.FC<ShopModalProps> = ({
   onFreeCoins,
   onRestore,
   onClose,
+  onOpen,
 }) => {
   const { height } = useWindowDimensions();
   const busy = state !== 'idle';
   const noAds = products[REMOVE_ADS_ID];
+  // Paid items appear only once the store returns them (none until the products are live)
+  const paidPacks = COIN_PACKS.filter((pack) => products[pack.id]);
+  const storeLive = !!noAds || paidPacks.length > 0;
+
+  useEffect(() => {
+    onOpen?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View style={styles.scrim}>
@@ -58,33 +69,36 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroller} contentContainerStyle={styles.cards}>
-          <View style={[styles.card, styles.noAdsCard]}>
-            <Text style={styles.icon}>🚫📺</Text>
-            <Text style={[styles.name, { color: UI.pink }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
-              {t('shop.noAds')}
-            </Text>
-            <Text style={styles.desc} numberOfLines={4} adjustsFontSizeToFit minimumFontScale={0.8}>
-              {t('shop.noAdsDesc')}
-            </Text>
-            {adsRemoved ? (
-              <View style={styles.owned}>
-                <Text style={styles.ownedText}>✓ {t('shop.owned')}</Text>
-              </View>
-            ) : (
-              <GameButton
-                label={noAds?.price ?? '—'}
-                size="sm"
-                color={UI.pink}
-                shade={UI.pinkDark}
-                onPress={() => onBuy(REMOVE_ADS_ID)}
-                disabled={!noAds || busy}
-                style={styles.buy}
-              />
-            )}
-          </View>
+          {(noAds || adsRemoved) && (
+            <View style={[styles.card, styles.noAdsCard]}>
+              <Text style={styles.icon}>🚫📺</Text>
+              <Text style={[styles.name, { color: UI.pink }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.7}>
+                {t('shop.noAds')}
+              </Text>
+              <Text style={styles.desc} numberOfLines={4} adjustsFontSizeToFit minimumFontScale={0.8}>
+                {t('shop.noAdsDesc')}
+              </Text>
+              {adsRemoved || !noAds ? (
+                <View style={styles.owned}>
+                  <Text style={styles.ownedText}>✓ {t('shop.owned')}</Text>
+                </View>
+              ) : (
+                <GameButton
+                  label={noAds.price}
+                  size="sm"
+                  color={UI.pink}
+                  shade={UI.pinkDark}
+                  onPress={() => onBuy(REMOVE_ADS_ID)}
+                  disabled={busy}
+                  style={styles.buy}
+                />
+              )}
+            </View>
+          )}
 
-          {COIN_PACKS.map((pack, i) => {
-            const product = products[pack.id];
+          {paidPacks.map((pack) => {
+            const i = COIN_PACKS.indexOf(pack);
+            const product = products[pack.id]!;
             return (
               <View key={pack.id} style={styles.card}>
                 {pack.bonusPct > 0 && (
@@ -96,12 +110,12 @@ export const ShopModal: React.FC<ShopModalProps> = ({
                 <Text style={styles.amount}>{formatNum(pack.coins)}</Text>
                 <Text style={styles.desc}>{t('shop.coins')}</Text>
                 <GameButton
-                  label={product?.price ?? '—'}
+                  label={product.price}
                   size="sm"
                   color={UI.gold}
                   shade={UI.goldDark}
                   onPress={() => onBuy(pack.id)}
-                  disabled={!product || busy}
+                  disabled={busy}
                   style={styles.buy}
                 />
               </View>
@@ -128,7 +142,7 @@ export const ShopModal: React.FC<ShopModalProps> = ({
         <View style={styles.footer}>
           {busy ? (
             <ActivityIndicator color={UI.gold} />
-          ) : (
+          ) : !storeLive ? null : (
             <Pressable accessibilityRole="button" onPress={onRestore} hitSlop={8}>
               <Text style={styles.restore}>{t('shop.restore')}</Text>
             </Pressable>

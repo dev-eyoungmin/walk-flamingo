@@ -196,6 +196,8 @@ export const vi: Strings = {
   'shop.free': 'MIỄN PHÍ',
   'shop.freeLeft': 'Hôm nay còn {n}',
   'shop.restore': 'Khôi phục giao dịch',
+  'shop.unavailable': 'Cửa hàng hiện không khả dụng. Hãy kiểm tra kết nối và thử lại.',
+  'shop.restoreNone': 'Không tìm thấy giao dịch trước đó.',
   'wheel.title': 'VÒNG QUAY MAY MẮN',
   'wheel.hint': 'Mỗi ngày một lượt quay miễn phí!',
   'wheel.spinFree': 'QUAY MIỄN PHÍ',

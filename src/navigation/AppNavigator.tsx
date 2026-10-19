@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Share, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Share, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RunSetup, WalkPlan } from '../components/RunSetup';
@@ -36,6 +36,7 @@ import { getRank } from '../lib/ranks';
 import { rentableSkins, SKIN_PRICES } from '../lib/skins';
 import { REVIEW_URL, STORE_URL } from '../lib/storeLinks';
 import { formatNum, t } from '../i18n';
+import { REMOVE_ADS_ID } from '../lib/shop';
 
 /** New players see the flap tutorial during their first few runs. */
 const TUTORIAL_RUNS = 5;
@@ -411,7 +412,16 @@ export const AppNavigator: React.FC = () => {
 
   const handleRestore = useCallback(async () => {
     if (await store.restore()) celebrate();
+    else Alert.alert(t('shop.restore'), t('shop.restoreNone'));
   }, [store, celebrate]);
+
+  const handleBuy = useCallback(
+    async (productId: string) => {
+      const result = await store.buy(productId);
+      if (result === 'unavailable') Alert.alert(t('shop.title'), t('shop.unavailable'));
+    },
+    [store],
+  );
 
   // Lucky wheel: ad spins wait for the reward; a skin prize rents a random skin for a day
   const handleSpin = useCallback(
@@ -536,7 +546,7 @@ export const AppNavigator: React.FC = () => {
           onDoubleCoins={handleDoubleCoins}
           achievementsReady={achievementsReady}
           onOpenAchievements={() => setShowAchievements(true)}
-          offerNoAds={offerNoAds && !adsRemoved && store.available}
+          offerNoAds={offerNoAds && !adsRemoved && !!store.products[REMOVE_ADS_ID]}
           onOpenShop={openShop}
         />
       )}
@@ -595,7 +605,8 @@ export const AppNavigator: React.FC = () => {
           adsRemoved={adsRemoved}
           state={store.state}
           freeCoinsLeft={freeCoinsLeft(progress)}
-          onBuy={store.buy}
+          onBuy={handleBuy}
+          onOpen={store.refresh}
           onFreeCoins={handleFreeCoins}
           onRestore={handleRestore}
           onClose={() => setShowShop(false)}

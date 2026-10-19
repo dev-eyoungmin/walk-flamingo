@@ -196,6 +196,8 @@ export const id: Strings = {
   'shop.free': 'GRATIS',
   'shop.freeLeft': 'Sisa {n} hari ini',
   'shop.restore': 'Pulihkan pembelian',
+  'shop.unavailable': 'Toko sedang tidak tersedia. Periksa koneksimu dan coba lagi.',
+  'shop.restoreNone': 'Tidak ada pembelian sebelumnya.',
   'wheel.title': 'RODA KEBERUNTUNGAN',
   'wheel.hint': 'Satu putaran gratis tiap hari!',
   'wheel.spinFree': 'PUTAR GRATIS',

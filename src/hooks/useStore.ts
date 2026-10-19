@@ -26,6 +26,12 @@ export interface StoreProduct {
 }
 
 export type PurchaseState = 'idle' | 'buying' | 'restoring';
+/** How a buy tap ended: started (the store sheet takes over), unavailable (no store/product) or failed */
+export type BuyResult = 'started' | 'unavailable' | 'failed';
+
+/** Product fetches on launch: retried because the first one can fail on a slow or fresh network */
+const FETCH_RETRY_MS = [0, 2000, 6000];
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface Options {
   /** Coins from a coin pack (called once per transaction) */
@@ -43,6 +49,10 @@ export function useStore({ onCoins, onSuccess }: Options) {
   const [products, setProducts] = useState<Record<string, StoreProduct>>({});
   const [state, setState] = useState<PurchaseState>('idle');
   const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const productsRef = useRef(products);
+  productsRef.current = products;
+  const connected = useRef(false);
   const onCoinsRef = useRef(onCoins);
   const onSuccessRef = useRef(onSuccess);
   onCoinsRef.current = onCoins;
@@ -77,6 +87,35 @@ export function useStore({ onCoins, onSuccess }: Options) {
     [unlockNoAds],
   );
 
+  /** Connects if needed and fetches the catalog; returns what the store knows (may be empty) */
+  const loadProducts = useCallback(async (): Promise<Record<string, StoreProduct>> => {
+    if (!IAP) return {};
+    setLoading(true);
+    try {
+      if (!connected.current) {
+        await IAP.initConnection();
+        connected.current = true;
+      }
+      const items = await IAP.fetchProducts({ skus: [...PRODUCT_IDS], type: 'in-app' });
+      const map: Record<string, StoreProduct> = {};
+      if (Array.isArray(items)) {
+        for (const it of items as { id: string; displayPrice: string }[]) map[it.id] = { id: it.id, price: it.displayPrice };
+      }
+      if (Object.keys(map).length) setProducts(map);
+      return map;
+    } catch {
+      connected.current = false;
+      return {};
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /** Fetches again when the shop opens with prices missing */
+  const refresh = useCallback(() => {
+    if (Object.keys(productsRef.current).length < PRODUCT_IDS.length) void loadProducts();
+  }, [loadProducts]);
+
   useEffect(() => {
     let cancelled = false;
     const subs: { remove: () => void }[] = [];
@@ -97,13 +136,12 @@ export function useStore({ onCoins, onSuccess }: Options) {
       try {
         subs.push(IAP.purchaseUpdatedListener((p) => void handlePurchase(p as never)));
         subs.push(IAP.purchaseErrorListener(() => setState('idle')));
-        await IAP.initConnection();
-        const items = await IAP.fetchProducts({ skus: [...PRODUCT_IDS], type: 'in-app' });
-        if (!cancelled && Array.isArray(items)) {
-          const map: Record<string, StoreProduct> = {};
-          for (const it of items as { id: string; displayPrice: string }[]) map[it.id] = { id: it.id, price: it.displayPrice };
-          setProducts(map);
+        for (const delay of FETCH_RETRY_MS) {
+          await wait(delay);
+          if (cancelled) return;
+          if (Object.keys(await loadProducts()).length) break;
         }
+        if (!connected.current) return;
         // Remove Ads bought on another device or before a reinstall
         const owned = await IAP.getAvailablePurchases();
         if (!cancelled && owned.some((p) => p.productId === REMOVE_ADS_ID)) unlockNoAds();
@@ -117,25 +155,41 @@ export function useStore({ onCoins, onSuccess }: Options) {
     return () => {
       cancelled = true;
       subs.forEach((s) => s.remove());
+      connected.current = false;
       IAP?.endConnection().catch(() => undefined);
     };
-  }, [handlePurchase, unlockNoAds]);
+  }, [handlePurchase, unlockNoAds, loadProducts]);
 
-  const buy = useCallback(async (productId: string) => {
-    if (!IAP || state !== 'idle') return;
-    setState('buying');
-    try {
-      await IAP.requestPurchase({ request: { apple: { sku: productId }, google: { skus: [productId] } }, type: 'in-app' });
-    } catch {
-      setState('idle');
-    }
-  }, [state]);
+  const buy = useCallback(
+    async (productId: string): Promise<BuyResult> => {
+      if (!IAP) return 'unavailable';
+      if (state !== 'idle') return 'started';
+      setState('buying');
+      // A tap on a price that never loaded tries the store again before giving up
+      if (!productsRef.current[productId] && !(await loadProducts())[productId]) {
+        setState('idle');
+        return 'unavailable';
+      }
+      try {
+        await IAP.requestPurchase({ request: { apple: { sku: productId }, google: { skus: [productId] } }, type: 'in-app' });
+        return 'started';
+      } catch {
+        setState('idle');
+        return 'failed';
+      }
+    },
+    [state, loadProducts],
+  );
 
   /** Restore Remove Ads. Returns true when it was found. */
   const restore = useCallback(async (): Promise<boolean> => {
     if (!IAP || state !== 'idle') return false;
     setState('restoring');
     try {
+      if (!connected.current) {
+        await IAP.initConnection();
+        connected.current = true;
+      }
       await IAP.restorePurchases();
       const owned = await IAP.getAvailablePurchases();
       const found = owned.some((p) => p.productId === REMOVE_ADS_ID);
@@ -148,5 +202,5 @@ export function useStore({ onCoins, onSuccess }: Options) {
     }
   }, [state, unlockNoAds]);
 
-  return { adsRemoved, products, state, loaded, available: IAP !== null, buy, restore };
+  return { adsRemoved, products, state, loaded, loading, available: IAP !== null, buy, restore, refresh };
 }

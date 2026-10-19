@@ -196,6 +196,8 @@ export const zhHant: Strings = {
   'shop.free': '免費',
   'shop.freeLeft': '今日剩餘 {n} 次',
   'shop.restore': '恢復購買',
+  'shop.unavailable': '商店暫時無法使用。請檢查網路連線後再試一次。',
+  'shop.restoreNone': '找不到先前的購買紀錄。',
   'wheel.title': '幸運轉盤',
   'wheel.hint': '每天免費轉一次！',
   'wheel.spinFree': '免費轉',

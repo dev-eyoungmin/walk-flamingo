@@ -196,6 +196,8 @@ export const fr: Strings = {
   'shop.free': 'GRATUIT',
   'shop.freeLeft': 'Encore {n} aujourd’hui',
   'shop.restore': 'Restaurer les achats',
+  'shop.unavailable': 'La boutique n\'est pas disponible pour le moment. Vérifie ta connexion et réessaie.',
+  'shop.restoreNone': 'Aucun achat précédent trouvé.',
   'wheel.title': 'ROUE DE LA CHANCE',
   'wheel.hint': 'Un tour gratuit chaque jour !',
   'wheel.spinFree': 'TOUR GRATUIT',

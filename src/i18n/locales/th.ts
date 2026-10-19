@@ -196,6 +196,8 @@ export const th: Strings = {
   'shop.free': 'ฟรี',
   'shop.freeLeft': 'วันนี้เหลือ {n} ครั้ง',
   'shop.restore': 'กู้คืนการซื้อ',
+  'shop.unavailable': 'ร้านค้าไม่พร้อมใช้งานในขณะนี้ ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง',
+  'shop.restoreNone': 'ไม่พบการซื้อก่อนหน้า',
   'wheel.title': 'วงล้อนำโชค',
   'wheel.hint': 'หมุนฟรีวันละครั้ง!',
   'wheel.spinFree': 'หมุนฟรี',

@@ -198,6 +198,8 @@ export const en = {
   'shop.free': 'FREE',
   'shop.freeLeft': '{n} left today',
   'shop.restore': 'Restore purchases',
+  'shop.unavailable': 'The store isn\'t available right now. Check your connection and try again.',
+  'shop.restoreNone': 'No previous purchases were found.',
   'wheel.title': 'LUCKY WHEEL',
   'wheel.hint': 'One free spin every day!',
   'wheel.spinFree': 'FREE SPIN',

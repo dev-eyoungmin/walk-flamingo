@@ -196,6 +196,8 @@ export const ja: Strings = {
   'shop.free': '無料',
   'shop.freeLeft': '今日はあと{n}回',
   'shop.restore': '購入を復元',
+  'shop.unavailable': '現在ストアに接続できません。通信環境を確認して、もう一度お試しください。',
+  'shop.restoreNone': '以前の購入は見つかりませんでした。',
   'wheel.title': 'ラッキールーレット',
   'wheel.hint': '毎日1回無料で回せる！',
   'wheel.spinFree': '無料で回す',

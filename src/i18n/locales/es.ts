@@ -196,6 +196,8 @@ export const es: Strings = {
   'shop.free': 'GRATIS',
   'shop.freeLeft': 'Quedan {n} hoy',
   'shop.restore': 'Restaurar compras',
+  'shop.unavailable': 'La tienda no está disponible ahora. Revisa tu conexión e inténtalo de nuevo.',
+  'shop.restoreNone': 'No se encontraron compras anteriores.',
   'wheel.title': 'RULETA DE LA SUERTE',
   'wheel.hint': '¡Un giro gratis cada día!',
   'wheel.spinFree': 'GIRO GRATIS',
